@@ -197,9 +197,22 @@ function Board() {
               {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
+              {me.name
+                ? `${me.greeting} — here's what's ahead`
+                : batch
+                  ? `${batch.name} — Deadlines, Timetable & Attendance`
+                  : "MAHE Student Portal"}
             </h1>
+            {me.name && (
+              <p className="font-mono text-xs text-dim">
+                {batch ? `${batch.name} · ` : ""}
+                {dueSoonCount > 0
+                  ? `${dueSoonCount} deadline${dueSoonCount === 1 ? "" : "s"} on ${me.name}'s plate in the next 48 hours.`
+                  : "Nothing burning in the next 48 hours — nice work."}
+              </p>
+            )}
           </div>
+
           <p className="font-mono text-xs text-faint">
             {new Intl.DateTimeFormat("en-GB", {
               weekday: "short",
