@@ -14,16 +14,122 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      deadlines: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_at: string
+          group_size: number | null
+          id: string
+          location: string | null
+          notes: string | null
+          subject: string
+          subject_code: string | null
+          submission_link: string | null
+          title: string
+          type: Database["public"]["Enums"]["deadline_type"]
+          updated_at: string
+          work_mode: Database["public"]["Enums"]["work_mode"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_at: string
+          group_size?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          subject: string
+          subject_code?: string | null
+          submission_link?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["deadline_type"]
+          updated_at?: string
+          work_mode?: Database["public"]["Enums"]["work_mode"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_at?: string
+          group_size?: number | null
+          id?: string
+          location?: string | null
+          notes?: string | null
+          subject?: string
+          subject_code?: string | null
+          submission_link?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["deadline_type"]
+          updated_at?: string
+          work_mode?: Database["public"]["Enums"]["work_mode"]
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_moderator: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "mod" | "admin"
+      deadline_type:
+        | "quiz"
+        | "assignment"
+        | "presentation"
+        | "midterm"
+        | "endterm"
+      work_mode: "individual" | "group"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +256,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "mod", "admin"],
+      deadline_type: [
+        "quiz",
+        "assignment",
+        "presentation",
+        "midterm",
+        "endterm",
+      ],
+      work_mode: ["individual", "group"],
+    },
   },
 } as const
