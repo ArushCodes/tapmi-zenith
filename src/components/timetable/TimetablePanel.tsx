@@ -426,7 +426,7 @@ function CourseCatalogue({
               {isOn ? (
                 <Check className="size-3" />
               ) : (
-                <span className="size-2 rounded-full" style={{ backgroundColor: o.color }} />
+                <Marker shape={o.key === HOLIDAY_KEY ? "bar" : "circle"} color={o.color} size={8} />
               )}
               {o.label}
               {o.count > 0 && <span className="text-[9px] opacity-70">{o.count}</span>}
