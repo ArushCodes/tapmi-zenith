@@ -84,9 +84,10 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
         if (error) throw error;
       } else {
         const { data: userData } = await supabase.auth.getUser();
+        if (!batchId) throw new Error("Select a batch first");
         const { error } = await supabase
           .from("deadlines")
-          .insert({ ...payload, created_by: userData.user?.id ?? null });
+          .insert({ ...payload, batch_id: batchId, created_by: userData.user?.id ?? null });
         if (error) throw error;
       }
     },
