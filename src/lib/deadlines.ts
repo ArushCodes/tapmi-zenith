@@ -25,36 +25,67 @@ export const FILTERS = [
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
 
-/** Visual identity per event type — colours come from the design tokens. */
+/** Visual identity per event type — colours come from the design tokens.
+ *  Class strings are written literally so Tailwind can see them. */
 export type EventMeta = {
   label: string;
-  /** tailwind colour name registered in styles.css */
-  color: "evt-exam" | "evt-quiz" | "evt-assign" | "evt-present" | "evt-lecture";
   dot: string;
   text: string;
   chip: string;
   ring: string;
   bar: string;
+  glow: string;
 };
 
-const meta = (label: string, color: EventMeta["color"]): EventMeta => ({
-  label,
-  color,
-  dot: `bg-${color}`,
-  text: `text-${color}`,
-  chip: `bg-${color}/12 text-${color} ring-1 ring-${color}/30`,
-  ring: `ring-${color}/40`,
-  bar: `bg-${color}`,
-});
+const EXAM: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-exam",
+  text: "text-evt-exam",
+  chip: "bg-evt-exam/12 text-evt-exam ring-1 ring-evt-exam/30",
+  ring: "ring-evt-exam/40",
+  bar: "bg-evt-exam",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-exam)]",
+};
+const QUIZ: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-quiz",
+  text: "text-evt-quiz",
+  chip: "bg-evt-quiz/12 text-evt-quiz ring-1 ring-evt-quiz/30",
+  ring: "ring-evt-quiz/40",
+  bar: "bg-evt-quiz",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-quiz)]",
+};
+const ASSIGN: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-assign",
+  text: "text-evt-assign",
+  chip: "bg-evt-assign/12 text-evt-assign ring-1 ring-evt-assign/30",
+  ring: "ring-evt-assign/40",
+  bar: "bg-evt-assign",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-assign)]",
+};
+const PRESENT: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-present",
+  text: "text-evt-present",
+  chip: "bg-evt-present/12 text-evt-present ring-1 ring-evt-present/30",
+  ring: "ring-evt-present/40",
+  bar: "bg-evt-present",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-present)]",
+};
+const LECTURE: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-lecture",
+  text: "text-evt-lecture",
+  chip: "bg-evt-lecture/12 text-evt-lecture ring-1 ring-evt-lecture/30",
+  ring: "ring-evt-lecture/40",
+  bar: "bg-evt-lecture",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-lecture)]",
+};
 
 export const EVENT_META: Record<DeadlineType, EventMeta> = {
-  midterm: meta("Midterm", "evt-exam"),
-  endterm: meta("Endterm", "evt-exam"),
-  quiz: meta("Quiz", "evt-quiz"),
-  assignment: meta("Assignment", "evt-assign"),
-  presentation: meta("Presentation", "evt-present"),
-  guest_lecture: meta("Guest Lecture", "evt-lecture"),
-  other: meta("Other", "evt-lecture"),
+  midterm: { label: "Midterm", ...EXAM },
+  endterm: { label: "Endterm", ...EXAM },
+  quiz: { label: "Quiz", ...QUIZ },
+  assignment: { label: "Assignment", ...ASSIGN },
+  presentation: { label: "Presentation", ...PRESENT },
+  guest_lecture: { label: "Guest Lecture", ...LECTURE },
+  other: { label: "Other", ...LECTURE },
 };
 
 export function eventMeta(type: DeadlineType): EventMeta {
