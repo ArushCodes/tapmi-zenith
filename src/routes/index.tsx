@@ -281,7 +281,7 @@ function Board() {
                   </div>
                 )}
 
-                {isModerator && (
+                {isMod && (
                   <button
                     onClick={() => {
                       setEditing(null);
