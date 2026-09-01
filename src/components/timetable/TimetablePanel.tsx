@@ -119,29 +119,8 @@ export function TimetablePanel() {
           Next →
         </button>
 
-        <select
-          value={course}
-          onChange={(e) => setCourse(e.target.value)}
-          className="rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border outline-none"
-        >
-          <option value="all">All courses</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.code}>
-              {c.short_name}
-            </option>
-          ))}
-        </select>
-
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => {
-              void navigator.clipboard.writeText(feedUrl);
-              toast.success("Calendar feed link copied");
-            }}
-            className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
-          >
-            <Copy className="size-3.5" /> Subscribe link
-          </button>
+
           {canManage && (
             <>
               <button
