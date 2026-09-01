@@ -225,7 +225,7 @@ export function TimetablePanel() {
                     <motion.div
                       key={s.id}
                       whileHover={{ scale: 1.01, y: -2 }}
-                      style={color ? { borderLeftColor: color } : undefined}
+                      style={{ borderLeftColor: color ?? "transparent" }}
                       className={`flex items-center gap-3 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
                         s.is_holiday ? "border-l-evt-present ring-evt-present/30" : "ring-border"
                       }`}
