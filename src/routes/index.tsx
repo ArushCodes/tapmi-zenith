@@ -2,19 +2,32 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarRange, ListFilter, ShieldCheck } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarRange,
+  ListFilter,
+  Mail,
+  ShieldCheck,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useBatch } from "@/hooks/use-batch";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
 import { EventDrawer } from "@/components/board/EventDrawer";
 import { ApprovalsPanel } from "@/components/board/ApprovalsPanel";
 import { CalendarPanel } from "@/components/calendar/CalendarPanel";
+import { TimetablePanel } from "@/components/timetable/TimetablePanel";
+import { AttendancePanel } from "@/components/attendance/AttendancePanel";
+import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
+import { MembersPanel } from "@/components/board/MembersPanel";
 import {
   FILTERS,
-  deadlinesQuery,
+  deadlinesQueryFor,
   filterByKey,
   formatWeek,
   weekKey,
