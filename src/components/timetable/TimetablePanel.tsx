@@ -9,13 +9,18 @@ import { useBatch } from "@/hooks/use-batch";
 import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
 import {
   FALLBACK_COURSE_COLOR,
+  HOLIDAY_KEY,
   buildColorMap,
   courseKey,
   isAcademicEvent,
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
+import { Marker } from "@/lib/shapes";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
+
+const HOLIDAY_COLOR = "#10B981";
+
 
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
