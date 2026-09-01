@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
+import { useMe } from "@/hooks/use-me";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
@@ -71,6 +72,7 @@ type TabKey =
 
 function Board() {
   const { isModerator } = useAuth();
+  const me = useMe();
   const { batchId, batch, canManage } = useBatch();
   const isMod = canManage || isModerator;
   const queryClient = useQueryClient();
@@ -137,6 +139,15 @@ function Board() {
     [deadlines],
   );
 
+  const dueSoonCount = useMemo(
+    () =>
+      approved.filter((d) => {
+        const t = new Date(d.due_at).getTime();
+        return t >= now && t - now <= 48 * 3600_000;
+      }).length,
+    [approved, now],
+  );
+
   const filtered = useMemo(
     () => filterByKey(approved, filter, search),
     [approved, filter, search],
@@ -197,9 +208,22 @@ function Board() {
               {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
+              {me.name
+                ? `${me.greeting} — here's what's ahead`
+                : batch
+                  ? `${batch.name} — Deadlines, Timetable & Attendance`
+                  : "MAHE Student Portal"}
             </h1>
+            {me.name && (
+              <p className="font-mono text-xs text-dim">
+                {batch ? `${batch.name} · ` : ""}
+                {dueSoonCount > 0
+                  ? `${dueSoonCount} deadline${dueSoonCount === 1 ? "" : "s"} on ${me.name}'s plate in the next 48 hours.`
+                  : "Nothing burning in the next 48 hours — nice work."}
+              </p>
+            )}
           </div>
+
           <p className="font-mono text-xs text-faint">
             {new Intl.DateTimeFormat("en-GB", {
               weekday: "short",

@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 import { LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useMe } from "@/hooks/use-me";
 import { BatchSelector } from "@/components/board/BatchSelector";
 
 const spring = { type: "spring" as const, stiffness: 420, damping: 32 };
 
 export function BoardHeader() {
   const { user, isModerator } = useAuth();
+  const me = useMe();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -78,7 +80,7 @@ export function BoardHeader() {
                     {initials || "IP"}
                   </span>
                   <span className="hidden font-mono text-[11px] uppercase tracking-wide text-dim sm:inline">
-                    Profile
+                    {me.name || "Profile"}
                   </span>
                 </Link>
               </motion.div>
