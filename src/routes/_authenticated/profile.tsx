@@ -53,7 +53,7 @@ export const Route = createFileRoute("/_authenticated/profile")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: ProfilePage;
+  component: ProfilePage,
 });
 
 type SectionKey = "identity" | "links" | "prefs" | "locked";
