@@ -59,12 +59,22 @@ export const Route = createFileRoute("/")({
   component: Board,
 });
 
-type TabKey = "feed" | "calendar" | "approvals";
+type TabKey =
+  | "feed"
+  | "calendar"
+  | "timetable"
+  | "attendance"
+  | "approvals"
+  | "inbox"
+  | "members";
 
 function Board() {
   const { isModerator } = useAuth();
+  const { batchId, batch, canManage } = useBatch();
+  const isMod = canManage || isModerator;
   const queryClient = useQueryClient();
-  const { data: deadlines = [], isLoading } = useQuery(deadlinesQuery);
+  const { data: deadlines = [], isLoading } = useQuery(deadlinesQueryFor(batchId));
+
 
   const [tab, setTab] = useState<TabKey>("feed");
   const [filter, setFilter] = useState<FilterKey>("all");
