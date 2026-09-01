@@ -139,7 +139,7 @@ export function TimetablePanel() {
                 onClick={() => setShowSettings((v) => !v)}
                 className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
               >
-                <Settings2 className="size-3.5" /> Registro
+                <Settings2 className="size-3.5" /> Calendar link
               </button>
               <button
                 onClick={() => sync.mutate()}
