@@ -62,6 +62,13 @@
   --color-amber: var(--amber);
   --color-rose: var(--rose);
   --color-hairline: var(--hairline);
+
+  /* Event type palette */
+  --color-evt-exam: var(--evt-exam);
+  --color-evt-quiz: var(--evt-quiz);
+  --color-evt-assign: var(--evt-assign);
+  --color-evt-present: var(--evt-present);
+  --color-evt-lecture: var(--evt-lecture);
 }
 
 :root {
