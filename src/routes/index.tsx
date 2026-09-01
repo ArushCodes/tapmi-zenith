@@ -327,7 +327,7 @@ function Board() {
                         key={d.id}
                         deadline={d}
                         now={now}
-                        canManage={isModerator}
+                        canManage={isMod}
                         onEdit={openEdit}
                         onDelete={(x) => remove.mutate(x)}
                         onOpen={setSelected}
@@ -351,7 +351,7 @@ function Board() {
                               key={d.id}
                               deadline={d}
                               now={now}
-                              canManage={isModerator}
+                              canManage={isMod}
                               onEdit={openEdit}
                               onDelete={(x) => remove.mutate(x)}
                               onOpen={setSelected}
@@ -391,13 +391,13 @@ function Board() {
       <EventDrawer
         deadline={selected}
         now={now}
-        canManage={isModerator}
+        canManage={isMod}
         onClose={() => setSelected(null)}
         onEdit={openEdit}
         onDelete={(d) => remove.mutate(d)}
       />
 
-      {isModerator && (
+      {isMod && (
         <DeadlineDialog open={dialogOpen} onOpenChange={setDialogOpen} deadline={editing} />
       )}
     </div>
