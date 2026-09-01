@@ -39,7 +39,7 @@ function isPrivateIpv6(host: string): boolean {
   if (h === "::" || h === "::1") return true;
   if (h.startsWith("fe80") || h.startsWith("fc") || h.startsWith("fd")) return true;
   const mapped = h.match(/::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-  if (mapped) return isPrivateIpv4(mapped[1]);
+  if (mapped) return isPrivateIpv4(mapped[1] ?? "");
   return false;
 }
 
