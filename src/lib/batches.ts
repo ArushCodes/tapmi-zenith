@@ -75,7 +75,7 @@ export function batchMembersQuery(batchId: string | null, enabled: boolean) {
         .eq("batch_id", batchId!)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as (Membership & {
+      return (data ?? []) as unknown as (Membership & {
         profiles: { full_name: string | null; email: string | null } | null;
       })[];
     },

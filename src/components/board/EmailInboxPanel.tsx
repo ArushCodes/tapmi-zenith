@@ -43,7 +43,7 @@ export function EmailInboxPanel() {
     }: {
       item: EmailIngest;
       approve: boolean;
-      draft?: Extracted;
+      draft?: Extracted | undefined;
     }) => {
       if (approve) {
         const d = draft ?? ((item.extracted ?? {}) as Extracted);
