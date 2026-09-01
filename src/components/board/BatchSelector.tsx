@@ -33,7 +33,7 @@ export function BatchSelector() {
       <div className="relative">
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-lg bg-surface2 px-3 py-2 text-left ring-1 ring-border transition-colors hover:ring-cyan/40"
+          className="flex max-w-[62vw] items-center gap-2 rounded-lg bg-surface2 px-3 py-2 text-left ring-1 ring-border transition-colors hover:ring-cyan/40 sm:max-w-none"
         >
           <GraduationCap className="size-4 shrink-0 text-cyan" />
           <span className="min-w-0">
@@ -56,7 +56,7 @@ export function BatchSelector() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                 transition={{ duration: 0.16 }}
-                className="absolute left-0 z-40 mt-2 max-h-80 w-72 overflow-auto rounded-xl bg-surface p-1.5 shadow-2xl shadow-black/50 ring-1 ring-border"
+                className="absolute left-0 z-40 mt-2 max-h-80 w-[min(18rem,80vw)] overflow-auto rounded-xl bg-surface p-1.5 shadow-2xl shadow-black/50 ring-1 ring-border"
               >
                 {batches.length === 0 && (
                   <p className="px-3 py-4 text-center font-mono text-[11px] text-faint">

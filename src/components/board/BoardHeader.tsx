@@ -37,22 +37,28 @@ export function BoardHeader() {
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       className="relative z-20"
     >
-      <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-8">
-        <Link to="/" className="group flex items-center gap-3.5">
+      <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-3 px-5 py-5 sm:gap-4 sm:px-8 sm:py-6">
+        <Link to="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3.5">
           <motion.div
             whileHover={{ rotate: -6, scale: 1.06 }}
             transition={spring}
-            className="grid size-10 place-items-center rounded-xl bg-surface2 ring-1 ring-border group-hover:ring-cyan/40"
+            className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface2 ring-1 ring-border group-hover:ring-cyan/40 sm:size-10"
           >
-            <span className="font-display text-sm font-semibold tracking-tight text-cyan">MA</span>
+            <span className="font-display text-xs font-semibold tracking-tight text-cyan sm:text-sm">
+              TM
+            </span>
           </motion.div>
-          <div className="leading-tight">
-            <p className="font-display text-base font-semibold tracking-tight">MAHE Portal</p>
-            <p className="font-mono text-[11px] text-dim">Deadlines · Timetable · Attendance</p>
+          <div className="min-w-0 leading-tight">
+            <p className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
+              TAPMI Manipal
+            </p>
+            <p className="hidden font-mono text-[11px] text-dim sm:block">
+              Deadlines · Timetable · Attendance
+            </p>
           </div>
         </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
           <BatchSelector />
           {isModerator && (
             <motion.div whileHover={{ y: -2 }} transition={spring}>
