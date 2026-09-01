@@ -14,6 +14,9 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as ApiPublicEmailIntakeRouteImport } from './routes/api/public/email-intake'
+import { Route as ApiPublicSyncTimetableRouteImport } from './routes/api/public/sync-timetable'
+import { Route as ApiPublicIcsTokenRouteImport } from './routes/api/public/ics/$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -39,18 +42,39 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicEmailIntakeRoute = ApiPublicEmailIntakeRouteImport.update({
+  id: '/api/public/email-intake',
+  path: '/api/public/email-intake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicSyncTimetableRoute = ApiPublicSyncTimetableRouteImport.update({
+  id: '/api/public/sync-timetable',
+  path: '/api/public/sync-timetable',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicIcsTokenRoute = ApiPublicIcsTokenRouteImport.update({
+  id: '/api/public/ics/$token',
+  path: '/api/public/ics/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
+  '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
+  '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
+  '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
+  '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +83,29 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
+  '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
+  '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/sitemap.xml' | '/admin'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/sitemap.xml'
+    | '/admin'
+    | '/api/public/email-intake'
+    | '/api/public/sync-timetable'
+    | '/api/public/ics/$token'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/sitemap.xml' | '/admin'
+  to:
+    | '/'
+    | '/auth'
+    | '/sitemap.xml'
+    | '/admin'
+    | '/api/public/email-intake'
+    | '/api/public/sync-timetable'
+    | '/api/public/ics/$token'
   id:
     | '__root__'
     | '/'
@@ -72,6 +113,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/_authenticated/admin'
+    | '/api/public/email-intake'
+    | '/api/public/sync-timetable'
+    | '/api/public/ics/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -79,6 +123,9 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiPublicEmailIntakeRoute: typeof ApiPublicEmailIntakeRoute
+  ApiPublicSyncTimetableRoute: typeof ApiPublicSyncTimetableRoute
+  ApiPublicIcsTokenRoute: typeof ApiPublicIcsTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -118,6 +165,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/email-intake': {
+      id: '/api/public/email-intake'
+      path: '/api/public/email-intake'
+      fullPath: '/api/public/email-intake'
+      preLoaderRoute: typeof ApiPublicEmailIntakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/sync-timetable': {
+      id: '/api/public/sync-timetable'
+      path: '/api/public/sync-timetable'
+      fullPath: '/api/public/sync-timetable'
+      preLoaderRoute: typeof ApiPublicSyncTimetableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/ics/$token': {
+      id: '/api/public/ics/$token'
+      path: '/api/public/ics/$token'
+      fullPath: '/api/public/ics/$token'
+      preLoaderRoute: typeof ApiPublicIcsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -137,6 +205,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiPublicEmailIntakeRoute: ApiPublicEmailIntakeRoute,
+  ApiPublicSyncTimetableRoute: ApiPublicSyncTimetableRoute,
+  ApiPublicIcsTokenRoute: ApiPublicIcsTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

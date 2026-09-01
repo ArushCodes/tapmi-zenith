@@ -92,17 +92,21 @@ export function eventMeta(type: DeadlineType): EventMeta {
   return EVENT_META[type] ?? EVENT_META.other;
 }
 
-export const deadlinesQuery = {
-  queryKey: ["deadlines"],
-  queryFn: async (): Promise<Deadline[]> => {
-    const { data, error } = await supabase
-      .from("deadlines")
-      .select("*")
-      .order("due_at", { ascending: true });
-    if (error) throw error;
-    return data;
-  },
-};
+export function deadlinesQueryFor(batchId: string | null) {
+  return {
+    queryKey: ["deadlines", batchId],
+    enabled: !!batchId,
+    queryFn: async (): Promise<Deadline[]> => {
+      const { data, error } = await supabase
+        .from("deadlines")
+        .select("*")
+        .eq("batch_id", batchId!)
+        .order("due_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  };
+}
 
 export function typeLabel(type: DeadlineType) {
   return eventMeta(type).label;
