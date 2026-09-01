@@ -90,22 +90,27 @@ function Board() {
     return () => clearInterval(id);
   }, []);
 
-  // Real-time sync with the deadlines table
+  // Real-time sync with the deadlines table for the selected batch
   useEffect(() => {
+    if (!batchId) return;
     const channel = supabase
-      .channel("deadlines-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "deadlines" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["deadlines"] });
-      })
+      .channel(`deadlines-realtime-${batchId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deadlines", filter: `batch_id=eq.${batchId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["deadlines", batchId] });
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, batchId]);
 
   useEffect(() => {
-    if (!isModerator && tab === "approvals") setTab("feed");
-  }, [isModerator, tab]);
+    if (!isMod && (tab === "approvals" || tab === "inbox" || tab === "members")) setTab("feed");
+  }, [isMod, tab]);
 
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
