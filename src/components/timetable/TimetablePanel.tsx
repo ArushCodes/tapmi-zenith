@@ -9,13 +9,18 @@ import { useBatch } from "@/hooks/use-batch";
 import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
 import {
   FALLBACK_COURSE_COLOR,
+  HOLIDAY_KEY,
   buildColorMap,
   courseKey,
   isAcademicEvent,
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
+import { Marker } from "@/lib/shapes";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
+
+const HOLIDAY_COLOR = "#10B981";
+
 
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
@@ -47,6 +52,9 @@ export function TimetablePanel() {
   const [selected, setSelected] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  /** Day drill-down: clicking a date switches to that day's agenda. */
+  const [dayFocus, setDayFocus] = useState<string | null>(null);
+
 
   const runSync = useServerFn(syncTimetableNow);
   const saveFeed = useServerFn(saveIcsUrl);
@@ -80,7 +88,8 @@ export function TimetablePanel() {
     );
   }, [sessions, weekStart, weekEnd, selected]);
 
-  /** Every class that appears anywhere in the feed, plus catalogued courses. */
+  /** Every class that appears anywhere in the feed, plus catalogued courses.
+   *  All holidays collapse into a single "Holidays" filter. */
   const options = useMemo(() => {
     const m = new Map<
       string,
@@ -105,14 +114,19 @@ export function TimetablePanel() {
       }
       m.set(key, {
         key,
-        label: s.short_name ?? s.course_name ?? s.title,
-        sub: [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
-        color: FALLBACK_COURSE_COLOR,
+        label: key === HOLIDAY_KEY ? "Holidays" : (s.short_name ?? s.course_name ?? s.title),
+        sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
+        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : FALLBACK_COURSE_COLOR,
         count: 1,
       });
     }
-    return [...m.values()].sort((a, b) => a.label.localeCompare(b.label));
+    return [...m.values()].sort((a, b) => {
+      if (a.key === HOLIDAY_KEY) return 1;
+      if (b.key === HOLIDAY_KEY) return -1;
+      return a.label.localeCompare(b.label);
+    });
   }, [courses, sessions]);
+
 
   const colorMap = useMemo(() => buildColorMap(courses), [courses]);
 
@@ -233,55 +247,86 @@ export function TimetablePanel() {
         </p>
       ) : (
         <div className="flex flex-col gap-5">
-          {grouped.map(([day, list]) => (
-            <div key={day}>
-              <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-                {dayFmt.format(new Date(day))}
-              </p>
-              <div className="flex flex-col gap-2">
-                {list.map((s) => {
-                  const color = colorOf(s);
-                  return (
-                    <motion.div
-                      key={s.id}
-                      whileHover={{ scale: 1.01, y: -2 }}
-                      style={{ borderLeftColor: color ?? "transparent" }}
-                      className={`flex items-center gap-3 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
-                        s.is_holiday ? "border-l-evt-present ring-evt-present/30" : "ring-border"
-                      }`}
-                    >
-                      <span className="font-mono text-[11px] text-dim">
-                        {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-display text-sm font-semibold">
-                          {s.title}
+          <AnimatePresence initial={false}>
+            {dayFocus && (
+              <motion.button
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                onClick={() => setDayFocus(null)}
+                className="self-start rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-cyan ring-1 ring-cyan/30"
+              >
+                ← Back to the whole week
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          {grouped
+            .filter(([day]) => !dayFocus || day === dayFocus)
+            .map(([day, list]) => (
+              <motion.div key={day} layout>
+                <button
+                  onClick={() => setDayFocus((d) => (d === day ? null : day))}
+                  className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
+                >
+                  {dayFmt.format(new Date(day))}
+                  <span className="normal-case tracking-normal text-faint">
+                    {dayFocus === day ? "· agenda" : `· ${list.length} entr${list.length === 1 ? "y" : "ies"}`}
+                  </span>
+                </button>
+                <div className="flex flex-col gap-2">
+                  {list.map((s) => {
+                    const color = s.is_holiday ? HOLIDAY_COLOR : colorOf(s);
+                    return (
+                      <motion.div
+                        key={s.id}
+                        layout
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        style={{ borderLeftColor: color ?? "transparent" }}
+                        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
+                          s.is_holiday ? "ring-evt-present/30" : "ring-border"
+                        }`}
+                      >
+                        <Marker
+                          shape={s.is_holiday ? "bar" : "circle"}
+                          color={color ?? FALLBACK_COURSE_COLOR}
+                          size={9}
+                        />
+                        <span className="font-mono text-[11px] text-dim">
+                          {s.is_holiday
+                            ? "All day"
+                            : `${timeFmt.format(new Date(s.start_at))}–${timeFmt.format(new Date(s.end_at))}`}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-dim">
-                          {[s.course_name, s.faculty_name, s.classroom, s.section]
-                            .filter(Boolean)
-                            .join(" · ") || "—"}
+                        <span className="min-w-0 flex-1 basis-full sm:basis-auto">
+                          <span className="block truncate font-display text-sm font-semibold">
+                            {s.title}
+                          </span>
+                          <span className="block truncate font-mono text-[11px] text-dim">
+                            {[s.course_name, s.faculty_name, s.classroom, s.section]
+                              .filter(Boolean)
+                              .join(" · ") || "—"}
+                          </span>
                         </span>
-                      </span>
-                      {s.course_code && (
-                        <span
-                          className="shrink-0 rounded-md px-2 py-1 font-mono text-[10px]"
-                          style={{
-                            color: color ?? undefined,
-                            backgroundColor: color ? `${color}1a` : undefined,
-                          }}
-                        >
-                          {s.course_code}
-                        </span>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+                        {s.course_code && (
+                          <span
+                            className="shrink-0 rounded-md px-2 py-1 font-mono text-[10px]"
+                            style={{
+                              color: color ?? undefined,
+                              backgroundColor: color ? `${color}1a` : undefined,
+                            }}
+                          >
+                            {s.course_code}
+                          </span>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            ))}
         </div>
       )}
+
 
     </section>
   );
@@ -381,7 +426,7 @@ function CourseCatalogue({
               {isOn ? (
                 <Check className="size-3" />
               ) : (
-                <span className="size-2 rounded-full" style={{ backgroundColor: o.color }} />
+                <Marker shape={o.key === HOLIDAY_KEY ? "bar" : "circle"} color={o.color} size={8} />
               )}
               {o.label}
               {o.count > 0 && <span className="text-[9px] opacity-70">{o.count}</span>}
