@@ -182,13 +182,18 @@ function Board() {
 
       <BoardHeader />
 
-      <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-16">
-        <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
-          <div>
+      <main className="relative z-10 mx-auto max-w-[1180px] px-6 pb-24 sm:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-wrap items-end justify-between gap-5 pb-8 pt-2"
+        >
+          <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
               {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
               {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
             </h1>
           </div>
@@ -203,22 +208,23 @@ function Board() {
               hour12: false,
             }).format(new Date(now))}
           </p>
-        </div>
+        </motion.div>
 
         {/* Top-level tab switcher */}
-        <div className="mb-4 flex flex-wrap gap-1 rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
+        <div className="mb-6 flex flex-wrap gap-1.5 rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border">
           {tabs.map((t) => (
-            <button
+            <motion.button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide transition-colors ${
+              whileTap={{ scale: 0.96 }}
+              className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
                 tab === t.key ? "text-ink" : "text-dim hover:text-ink"
               }`}
             >
               {tab === t.key && (
                 <motion.span
                   layoutId="tab-pill"
-                  className="absolute inset-0 rounded-lg bg-surface ring-1 ring-cyan/30"
+                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
@@ -226,7 +232,7 @@ function Board() {
                 {t.icon}
                 {t.label}
               </span>
-            </button>
+            </motion.button>
           ))}
         </div>
 
