@@ -118,7 +118,7 @@ function Board() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deadlines"] });
+      queryClient.invalidateQueries({ queryKey: ["deadlines", batchId] });
       setSelected(null);
       toast.success("Deadline removed");
     },
