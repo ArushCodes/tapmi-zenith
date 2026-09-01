@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
+import { useMe } from "@/hooks/use-me";
 import {
   attendanceQuery,
   batchMembersQuery,
@@ -27,6 +28,7 @@ type SubTab = "live" | "workbook";
 
 export function AttendancePanel({ now }: { now: number }) {
   const { user } = useAuth();
+  const me = useMe();
   const { batchId, batch, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<SubTab>("live");
@@ -80,6 +82,18 @@ export function AttendancePanel({ now }: { now: number }) {
     () => classes.filter((s) => new Date(s.start_at).getTime() > now).slice(0, 6),
     [classes, now],
   );
+
+  /** Recently finished classes still open for marking (last 7 days). */
+  const recent = useMemo(() => {
+    const window = 7 * 24 * 3600_000;
+    return classes
+      .filter((s) => {
+        const end = new Date(s.end_at).getTime();
+        return end < now && now - end <= window;
+      })
+      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
+      .slice(0, 12);
+  }, [classes, now]);
 
   const myMarks = useMemo(() => {
     const map = new Map<string, AttendanceMark>();
@@ -157,7 +171,8 @@ export function AttendancePanel({ now }: { now: number }) {
   if (!isMember)
     return (
       <p className="mt-10 text-center font-mono text-xs text-faint">
-        Attendance is visible to approved batch members. Request access from the batch selector.
+        {me.name ? `${me.name}, attendance` : "Attendance"} is visible to approved batch members.
+        Request access from the batch selector.
       </p>
     );
 
@@ -221,19 +236,48 @@ export function AttendancePanel({ now }: { now: number }) {
             </p>
             <div className="flex flex-col gap-2">
               {upcoming.map((s) => (
-                <div
+                <SessionCard
                   key={s.id}
-                  className="flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 ring-1 ring-border"
-                >
-                  <span className="font-mono text-[11px] text-dim">
-                    {timeFmt.format(new Date(s.start_at))}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-sm">{s.title}</span>
-                  <span className="font-mono text-[10px] text-faint">{s.classroom ?? ""}</span>
-                </div>
+                  session={s}
+                  tone="upcoming"
+                  myMark={myMarks.get(`${s.id}-self`) ?? null}
+                  canManage={canManage}
+                  members={members}
+                  marks={marks}
+                  onMark={(status, userId, source) =>
+                    mark.mutate({ session: s, userId, status, source })
+                  }
+                  meId={user?.id ?? ""}
+                />
               ))}
               {upcoming.length === 0 && (
                 <p className="font-mono text-[11px] text-faint">Nothing scheduled ahead.</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              Recent classes · mark if {me.name ? `${me.name} missed` : "you missed"} one
+            </p>
+            <div className="flex flex-col gap-2">
+              {recent.map((s) => (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  tone="past"
+                  myMark={myMarks.get(`${s.id}-self`) ?? null}
+                  canManage={canManage}
+                  members={members}
+                  marks={marks}
+                  onMark={(status, userId, source) =>
+                    mark.mutate({ session: s, userId, status, source })
+                  }
+                  meId={user?.id ?? ""}
+                />
+              ))}
+              {recent.length === 0 && (
+                <p className="font-mono text-[11px] text-faint">No classes in the last 7 days.</p>
               )}
             </div>
           </div>
@@ -248,7 +292,7 @@ export function AttendancePanel({ now }: { now: number }) {
           )}
           {stats.length === 0 ? (
             <p className="mt-6 text-center font-mono text-xs text-faint">
-              No attendance recorded yet.
+              {me.name ? `${me.name}, no attendance recorded yet.` : "No attendance recorded yet."}
             </p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -297,6 +341,7 @@ export function AttendancePanel({ now }: { now: number }) {
 
 function SessionCard({
   session,
+  tone = "live",
   myMark,
   canManage,
   members,
@@ -305,6 +350,7 @@ function SessionCard({
   meId,
 }: {
   session: ClassSession;
+  tone?: "live" | "upcoming" | "past";
   myMark: AttendanceMark | null;
   canManage: boolean;
   members: { user_id: string; status: string; profiles: { full_name: string | null; email: string | null } | null }[];
@@ -325,7 +371,13 @@ function SessionCard({
   }, [marks, session.id]);
 
   return (
-    <div className="rounded-xl bg-surface p-3 ring-1 ring-cyan/30">
+    <motion.div
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 420, damping: 30 }}
+      className={`rounded-xl bg-surface p-3 ring-1 ${
+        tone === "live" ? "ring-cyan/30" : "ring-border"
+      }`}
+    >
       <div className="flex flex-wrap items-center gap-3">
         <span className="min-w-0 flex-1">
           <span className="block truncate font-display text-sm font-semibold">{session.title}</span>
@@ -399,6 +451,6 @@ function SessionCard({
             })}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
