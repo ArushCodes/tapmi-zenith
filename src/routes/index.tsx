@@ -58,8 +58,23 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "canonical", href: "https://tapmi-zenith.lovable.app/" }],
   }),
-  component: Board,
+  component: IndexPage,
 });
+
+function IndexPage() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-ground font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
+        Loading…
+      </div>
+    );
+  }
+
+  if (!user) return <Landing />;
+  return <Board />;
+}
 
 type TabKey =
   | "feed"
