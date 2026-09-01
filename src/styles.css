@@ -148,3 +148,11 @@
 @utility aurora-c { animation: aurora 26s ease-in-out infinite; }
 @utility blink { animation: board-blink 1.4s ease-in-out infinite; }
 
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
+  70% { box-shadow: 0 0 0 7px transparent; opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0.9; }
+}
+
+@utility pulse-dot { animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
