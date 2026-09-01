@@ -369,9 +369,17 @@ function Board() {
               <CalendarPanel deadlines={filtered} now={now} onSelect={setSelected} />
             )}
 
-            {tab === "approvals" && isModerator && (
+            {tab === "timetable" && <TimetablePanel />}
+
+            {tab === "attendance" && <AttendancePanel now={now} />}
+
+            {tab === "approvals" && isMod && (
               <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
             )}
+
+            {tab === "inbox" && isMod && <EmailInboxPanel />}
+
+            {tab === "members" && isMod && <MembersPanel />}
           </motion.div>
         </AnimatePresence>
 
