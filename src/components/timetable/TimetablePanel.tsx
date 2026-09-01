@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatch } from "@/hooks/use-batch";
 import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
-import { saveRegistroCredentials, syncTimetableNow } from "@/lib/registro.functions";
+import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "long",
