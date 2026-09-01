@@ -182,13 +182,18 @@ function Board() {
 
       <BoardHeader />
 
-      <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-16">
-        <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
-          <div>
+      <main className="relative z-10 mx-auto max-w-[1180px] px-6 pb-24 sm:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-wrap items-end justify-between gap-5 pb-8 pt-2"
+        >
+          <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
               {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
               {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
             </h1>
           </div>
@@ -203,22 +208,23 @@ function Board() {
               hour12: false,
             }).format(new Date(now))}
           </p>
-        </div>
+        </motion.div>
 
         {/* Top-level tab switcher */}
-        <div className="mb-4 flex flex-wrap gap-1 rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
+        <div className="mb-6 flex flex-wrap gap-1.5 rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border">
           {tabs.map((t) => (
-            <button
+            <motion.button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-2 rounded-lg px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide transition-colors ${
+              whileTap={{ scale: 0.96 }}
+              className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
                 tab === t.key ? "text-ink" : "text-dim hover:text-ink"
               }`}
             >
               {tab === t.key && (
                 <motion.span
                   layoutId="tab-pill"
-                  className="absolute inset-0 rounded-lg bg-surface ring-1 ring-cyan/30"
+                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
                   transition={{ type: "spring", stiffness: 400, damping: 32 }}
                 />
               )}
@@ -226,32 +232,35 @@ function Board() {
                 {t.icon}
                 {t.label}
               </span>
-            </button>
+            </motion.button>
           ))}
         </div>
 
         {(tab === "feed" || tab === "calendar") && (
-          <div className="sticky top-0 z-20 -mx-5 mb-5 bg-ground/80 px-5 py-3 backdrop-blur-md">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-wrap gap-1.5">
+          <div className="sticky top-0 z-20 -mx-6 mb-7 bg-ground/80 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap gap-2">
                 {FILTERS.map((f) => (
-                  <button
+                  <motion.button
                     key={f.key}
                     onClick={() => setFilter(f.key)}
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ y: -2 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
                     className={
                       filter === f.key
-                        ? "rounded-lg bg-cyan/15 px-3 py-1.5 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
-                        : "rounded-lg px-3 py-1.5 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
+                        ? "rounded-xl bg-cyan/15 px-3.5 py-2 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
+                        : "rounded-xl px-3.5 py-2 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
                     }
                   >
                     {f.label}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex flex-wrap items-center gap-2.5">
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
                     ⌕
                   </span>
                   <input
@@ -259,38 +268,46 @@ function Board() {
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search course or code…"
                     aria-label="Search deadlines"
-                    className="w-44 rounded-lg bg-surface2/70 py-1.5 pl-8 pr-3 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/40 sm:w-56"
+                    className="w-44 rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:w-52 focus:ring-2 focus:ring-cyan/40 sm:w-60 sm:focus:w-72"
                   />
                 </div>
 
                 {tab === "feed" && (
-                  <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
+                  <div className="flex rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
                     {(["list", "timeline"] as const).map((v) => (
                       <button
                         key={v}
                         onClick={() => setView(v)}
-                        className={
-                          view === v
-                            ? "rounded-md bg-surface px-2.5 py-1 font-mono text-[11px] text-ink"
-                            : "rounded-md px-2.5 py-1 font-mono text-[11px] text-dim"
-                        }
+                        className={`relative rounded-lg px-3 py-1.5 font-mono text-[11px] transition-colors ${
+                          view === v ? "text-ink" : "text-dim hover:text-ink"
+                        }`}
                       >
-                        {v === "list" ? "List" : "Weeks"}
+                        {view === v && (
+                          <motion.span
+                            layoutId="view-pill"
+                            className="absolute inset-0 rounded-lg bg-surface"
+                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative">{v === "list" ? "List" : "Weeks"}</span>
                       </button>
                     ))}
                   </div>
                 )}
 
                 {isMod && (
-                  <button
+                  <motion.button
                     onClick={() => {
                       setEditing(null);
                       setDialogOpen(true);
                     }}
-                    className="flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_24px_-6px_var(--cyan)]"
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                    className="flex items-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_28px_-6px_var(--cyan)]"
                   >
                     <span className="text-base leading-none">+</span> Add
-                  </button>
+                  </motion.button>
                 )}
               </div>
             </div>
@@ -300,14 +317,14 @@ function Board() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={tab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22 }}
+            initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === "feed" && (
               <>
-                <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+                <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
                   <span className="hidden text-right sm:block">Type</span>
                   <span className="hidden text-right sm:block">Work</span>
@@ -315,37 +332,59 @@ function Board() {
                 </div>
 
                 {isLoading ? (
-                  <p className="mt-6 text-center font-mono text-xs text-faint">Loading the board…</p>
+                  <div className="mt-5 flex flex-col gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface2/40" />
+                    ))}
+                  </div>
                 ) : filtered.length === 0 ? (
-                  <p className="mt-6 text-center font-mono text-xs text-faint">
-                    Nothing on the board for this filter.
-                  </p>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mt-10 rounded-2xl bg-surface/50 px-8 py-14 text-center ring-1 ring-border"
+                  >
+                    <p className="font-display text-lg font-semibold">Nothing on the board</p>
+                    <p className="mt-2 font-mono text-xs text-faint">
+                      No items match this filter{search ? ` and “${search}”` : ""}.
+                    </p>
+                  </motion.div>
                 ) : view === "list" ? (
-                  <div className="mt-2 flex flex-col gap-2">
-                    {filtered.map((d) => (
-                      <DeadlineRow
+                  <div className="mt-4 flex flex-col gap-3">
+                    {filtered.map((d, i) => (
+                      <motion.div
                         key={d.id}
-                        deadline={d}
-                        now={now}
-                        canManage={isMod}
-                        onEdit={openEdit}
-                        onDelete={(x) => remove.mutate(x)}
-                        onOpen={setSelected}
-                      />
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <DeadlineRow
+                          deadline={d}
+                          now={now}
+                          canManage={isMod}
+                          onEdit={openEdit}
+                          onDelete={(x) => remove.mutate(x)}
+                          onOpen={setSelected}
+                        />
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <div className="mt-4 flex flex-col gap-6">
-                    {weeks.map(([week, items]) => (
-                      <section key={week}>
-                        <div className="mb-2 flex items-center gap-3">
+                  <div className="mt-6 flex flex-col gap-9">
+                    {weeks.map(([week, items], wi) => (
+                      <motion.section
+                        key={week}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(wi * 0.06, 0.3), duration: 0.35 }}
+                      >
+                        <div className="mb-3 flex items-center gap-3">
                           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
                             {formatWeek(week)}
                           </p>
                           <span className="h-px flex-1 bg-border" />
                           <p className="font-mono text-[10px] text-faint">{items.length} items</p>
                         </div>
-                        <div className="flex flex-col gap-2 border-l border-border pl-4">
+                        <div className="flex flex-col gap-3 border-l border-border pl-5">
                           {items.map((d) => (
                             <DeadlineRow
                               key={d.id}
@@ -358,7 +397,7 @@ function Board() {
                             />
                           ))}
                         </div>
-                      </section>
+                      </motion.section>
                     ))}
                   </div>
                 )}

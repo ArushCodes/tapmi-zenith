@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as ApiPublicEmailIntakeRouteImport } from './routes/api/public/email-intake'
 import { Route as ApiPublicSyncTimetableRouteImport } from './routes/api/public/sync-timetable'
 import { Route as ApiPublicIcsTokenRouteImport } from './routes/api/public/ics/$token'
@@ -42,6 +43,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicEmailIntakeRoute = ApiPublicEmailIntakeRouteImport.update({
   id: '/api/public/email-intake',
   path: '/api/public/email-intake',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
   '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
   '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/profile': typeof AuthenticatedProfileRoute
   '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
   '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
   '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/api/public/email-intake': typeof ApiPublicEmailIntakeRoute
   '/api/public/sync-timetable': typeof ApiPublicSyncTimetableRoute
   '/api/public/ics/$token': typeof ApiPublicIcsTokenRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/admin'
+    | '/profile'
     | '/api/public/email-intake'
     | '/api/public/sync-timetable'
     | '/api/public/ics/$token'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/admin'
+    | '/profile'
     | '/api/public/email-intake'
     | '/api/public/sync-timetable'
     | '/api/public/ics/$token'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/sitemap.xml'
     | '/_authenticated/admin'
+    | '/_authenticated/profile'
     | '/api/public/email-intake'
     | '/api/public/sync-timetable'
     | '/api/public/ics/$token'
@@ -165,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/email-intake': {
       id: '/api/public/email-intake'
       path: '/api/public/email-intake'
@@ -191,10 +210,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedProfileRoute: AuthenticatedProfileRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
