@@ -230,7 +230,7 @@ function Board() {
           ))}
         </div>
 
-        {tab !== "approvals" && (
+        {(tab === "feed" || tab === "calendar") && (
           <div className="sticky top-0 z-20 -mx-5 mb-5 bg-ground/80 px-5 py-3 backdrop-blur-md">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-wrap gap-1.5">
