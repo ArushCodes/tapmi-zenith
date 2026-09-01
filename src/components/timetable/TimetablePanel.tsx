@@ -278,62 +278,110 @@ export function TimetablePanel() {
   );
 }
 
+type CourseOption = {
+  key: string;
+  label: string;
+  sub: string;
+  color: string;
+  count: number;
+};
+
 function CourseCatalogue({
-  courses,
+  options,
   selected,
   onToggle,
+  onSelectAll,
   onClear,
 }: {
-  courses: Course[];
+  options: CourseOption[];
   selected: string[];
   onToggle: (code: string) => void;
+  onSelectAll: () => void;
   onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  if (courses.length === 0) return null;
+  const [q, setQ] = useState("");
+  if (options.length === 0) return null;
+
+  const query = q.trim().toLowerCase();
+  const shown = query
+    ? options.filter(
+        (o) =>
+          o.label.toLowerCase().includes(query) || o.sub.toLowerCase().includes(query),
+      )
+    : options;
+
   return (
-    <div className="mb-5 rounded-xl bg-surface p-3 ring-1 ring-border">
-      <div className="flex w-full items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-        <span>Courses · {courses.length}</span>
+    <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
+      <div className="flex w-full flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+        <span>
+          Classes · {options.length}
+          {selected.length > 0 ? ` · ${selected.length} selected` : ""}
+        </span>
         <span className="h-px flex-1 bg-border" />
-        {selected.length > 0 && (
-          <button onClick={onClear} className="text-faint normal-case hover:text-ink">
-            Clear filter
-          </button>
-        )}
+        <button onClick={onSelectAll} className="text-faint normal-case hover:text-ink">
+          Select all
+        </button>
+        <button
+          onClick={onClear}
+          disabled={selected.length === 0}
+          className="text-faint normal-case hover:text-ink disabled:opacity-40"
+        >
+          Deselect all
+        </button>
         <button onClick={() => setOpen((v) => !v)} className="text-faint hover:text-ink">
           {open ? "Hide" : "Details"}
         </button>
       </div>
+
+      <div className="mt-3 flex items-center gap-2">
+        <Search className="size-3.5 shrink-0 text-faint" />
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search a class, code or faculty…"
+          className="w-full rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] ring-1 ring-border outline-none focus:ring-cyan/40"
+        />
+      </div>
+
       <p className="mt-2 font-mono text-[10px] normal-case text-faint">
-        Tap subjects to filter — pick as many as you like.
+        No selection = every class shown. Tap to add a class, tap again to deselect it.
       </p>
+
       <div className="mt-3 flex flex-wrap gap-2">
-        {courses.map((c) => {
-          const code = c.code.toLowerCase();
-          const on = selected.length === 0 || selected.includes(code);
-          const color = c.color ?? "#64748B";
+        {shown.map((o) => {
+          const isOn = selected.includes(o.key);
+          const dimmed = selected.length > 0 && !isOn;
           return (
             <motion.button
-              key={c.id}
+              key={o.key}
+              layout
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.96 }}
-              onClick={() => onToggle(code)}
-              title={[c.name, c.faculty_name].filter(Boolean).join(" · ")}
-              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] transition-opacity ${
-                on ? "opacity-100" : "opacity-40"
+              onClick={() => onToggle(o.key)}
+              title={o.sub || o.label}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-opacity ${
+                dimmed ? "opacity-40" : "opacity-100"
               }`}
               style={{
-                color,
-                backgroundColor: `${color}1a`,
-                boxShadow: selected.includes(code) ? `0 0 0 1px ${color}` : undefined,
+                color: o.color,
+                backgroundColor: `${o.color}1a`,
+                boxShadow: isOn ? `0 0 0 1px ${o.color}` : undefined,
               }}
             >
-              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
-              {c.short_name}
+              {isOn ? (
+                <Check className="size-3" />
+              ) : (
+                <span className="size-2 rounded-full" style={{ backgroundColor: o.color }} />
+              )}
+              {o.label}
+              {o.count > 0 && <span className="text-[9px] opacity-70">{o.count}</span>}
             </motion.button>
           );
         })}
+        {shown.length === 0 && (
+          <p className="font-mono text-[10px] text-faint">No class matches “{q}”.</p>
+        )}
       </div>
 
       <AnimatePresence initial={false}>
@@ -345,17 +393,21 @@ function CourseCatalogue({
             className="overflow-hidden"
           >
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {courses.map((c) => (
-                <div
-                  key={c.id}
-                  className="rounded-lg border-l-[3px] bg-surface2 px-3 py-2"
-                  style={{ borderLeftColor: c.color ?? "transparent" }}
+              {shown.map((o) => (
+                <button
+                  key={o.key}
+                  onClick={() => onToggle(o.key)}
+                  className={`rounded-lg border-l-[3px] bg-surface2 px-3 py-2 text-left transition-opacity hover:bg-surface ${
+                    selected.length > 0 && !selected.includes(o.key) ? "opacity-50" : ""
+                  }`}
+                  style={{ borderLeftColor: o.color }}
                 >
-                  <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                  <p className="truncate font-display text-sm font-semibold">{o.label}</p>
                   <p className="truncate font-mono text-[11px] text-dim">
-                    {[c.code, c.faculty_name].filter(Boolean).join(" · ")}
+                    {o.sub || "—"}
+                    {o.count > 0 ? ` · ${o.count} sessions` : ""}
                   </p>
-                </div>
+                </button>
               ))}
             </div>
           </motion.div>
@@ -363,6 +415,7 @@ function CourseCatalogue({
       </AnimatePresence>
     </div>
   );
+
 }
 
 function IcsSettings({
