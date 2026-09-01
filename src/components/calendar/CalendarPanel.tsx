@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
 import { dayKey, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
+import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
 import {
   FALLBACK_COURSE_COLOR,
   buildColorMap,
@@ -54,6 +55,8 @@ type Props = {
 
 export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onSelect }: Props) {
   const [subView, setSubView] = useState<SubView>("month");
+  /** Clicking a date drills into that single day's agenda. */
+  const [focusDay, setFocusDay] = useState<string | null>(null);
   const [cursor, setCursor] = useState(() => new Date());
   const [direction, setDirection] = useState(1);
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
@@ -169,7 +172,10 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
           {SUB_VIEWS.map((v) => (
             <button
               key={v.key}
-              onClick={() => setSubView(v.key)}
+              onClick={() => {
+                setSubView(v.key);
+                if (v.key !== "agenda") setFocusDay(null);
+              }}
               className={
                 subView === v.key
                   ? "flex items-center gap-1.5 rounded-md bg-surface px-2.5 py-1 font-mono text-[11px] text-ink"
@@ -194,6 +200,10 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
           >
             {subView === "month" && (
               <MonthGrid
+                onPickDay={(k) => {
+                  setFocusDay(k);
+                  setSubView("agenda");
+                }}
                 cursor={cursor}
                 byDay={byDay}
                 classesByDay={classesByDay}
@@ -205,6 +215,10 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
             )}
             {subView === "week" && (
               <WeekTimeline
+                onPickDay={(k) => {
+                  setFocusDay(k);
+                  setSubView("agenda");
+                }}
                 weekStart={weekStart}
                 byDay={byDay}
                 classesByDay={classesByDay}
@@ -216,6 +230,8 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
             )}
             {subView === "agenda" && (
               <Agenda
+                focusDay={focusDay}
+                onClearFocus={() => setFocusDay(null)}
                 cursor={cursor}
                 deadlines={deadlines}
                 classes={visibleClasses}
@@ -344,8 +360,10 @@ function EventPill({
       onClick={() => onSelect(deadline)}
       className={`flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-1 text-left font-mono text-[10px] ${m.chip} ${critical ? m.glow : ""}`}
     >
-      <span
-        className={`size-1.5 shrink-0 rounded-full ${m.dot} ${critical && deadline.is_major ? "pulse-dot" : ""}`}
+      <Marker
+        shape={shapeForDeadline(deadline.type)}
+        size={9}
+        className={`${m.dot} ${critical && deadline.is_major ? "pulse-dot" : ""}`}
       />
       {showTime && <span className="shrink-0 opacity-80">{timeFmt.format(new Date(deadline.due_at))}</span>}
       <span className="truncate">{deadline.subject_code ?? deadline.subject}</span>
@@ -379,18 +397,20 @@ function AcademicChip({ entry, dense = false }: { entry: ClassSession; dense?: b
   return (
     <span
       title={entry.title}
-      className={`block truncate rounded-md px-1.5 py-0.5 font-mono ${dense ? "text-[9px]" : "text-[10px]"} ${
+      className={`flex items-center gap-1 truncate rounded-md px-1.5 py-0.5 font-mono ${dense ? "text-[9px]" : "text-[10px]"} ${
         entry.is_holiday
           ? "bg-evt-present/15 text-evt-present"
           : "bg-cyan/12 text-cyan"
       }`}
     >
-      {entry.title}
+      <Marker shape="bar" size={7} className={entry.is_holiday ? "bg-evt-present" : "bg-cyan"} />
+      <span className="truncate">{entry.title}</span>
     </span>
   );
 }
 
 function MonthGrid({
+  onPickDay,
   cursor,
   byDay,
   classesByDay,
@@ -399,6 +419,7 @@ function MonthGrid({
   now,
   onSelect,
 }: {
+  onPickDay: (dayKey: string) => void;
   cursor: Date;
   byDay: Map<string, Deadline[]>;
   classesByDay: Map<string, ClassSession[]>;
@@ -436,9 +457,15 @@ function MonthGrid({
           return (
             <motion.div
               key={k}
+              role="button"
+              tabIndex={0}
+              onClick={() => onPickDay(k)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") onPickDay(k);
+              }}
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className={`min-h-[74px] rounded-lg p-1.5 ring-1 transition-shadow sm:min-h-[118px] ${
+              className={`min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} hover:shadow-lg hover:shadow-black/30`}
             >
@@ -486,6 +513,7 @@ function MonthGrid({
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 08:00 → 22:00
 
 function WeekTimeline({
+  onPickDay,
   weekStart,
   byDay,
   classesByDay,
@@ -494,6 +522,7 @@ function WeekTimeline({
   now,
   onSelect,
 }: {
+  onPickDay: (dayKey: string) => void;
   weekStart: Date;
   byDay: Map<string, Deadline[]>;
   classesByDay: Map<string, ClassSession[]>;
@@ -511,14 +540,15 @@ function WeekTimeline({
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
           <span />
           {days.map((d) => (
-            <span
+            <button
               key={d.toISOString()}
-              className={`text-center font-mono text-[10px] uppercase tracking-[0.16em] ${
+              onClick={() => onPickDay(dayKey(d))}
+              className={`text-center font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:text-ink ${
                 dayKey(d) === todayKey ? "text-cyan" : "text-faint"
               }`}
             >
               {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
-            </span>
+            </button>
           ))}
         </div>
 
@@ -587,6 +617,8 @@ function WeekTimeline({
 }
 
 function Agenda({
+  focusDay,
+  onClearFocus,
   cursor,
   deadlines,
   classes,
@@ -595,6 +627,8 @@ function Agenda({
   now,
   onSelect,
 }: {
+  focusDay: string | null;
+  onClearFocus: () => void;
   cursor: Date;
   deadlines: Deadline[];
   classes: ClassSession[];
@@ -604,6 +638,7 @@ function Agenda({
   onSelect: (d: Deadline) => void;
 }) {
   const inMonth = (iso: string) => {
+    if (focusDay) return dayKey(iso) === focusDay;
     const d = new Date(iso);
     return d.getMonth() === cursor.getMonth() && d.getFullYear() === cursor.getFullYear();
   };
@@ -627,15 +662,30 @@ function Agenda({
     groups.set(k, [...(groups.get(k) ?? []), r]);
   }
 
+  const backBar = focusDay ? (
+    <motion.button
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      onClick={onClearFocus}
+      className="self-start rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-cyan ring-1 ring-cyan/30"
+    >
+      ← Back to the whole month
+    </motion.button>
+  ) : null;
+
   if (rows.length === 0)
     return (
-      <p className="py-10 text-center font-mono text-xs text-faint">
-        Nothing scheduled this month.
-      </p>
+      <div className="flex flex-col gap-4">
+        {backBar}
+        <p className="py-10 text-center font-mono text-xs text-faint">
+          Nothing scheduled {focusDay ? "on this day" : "this month"}.
+        </p>
+      </div>
     );
 
   return (
     <div className="flex flex-col gap-4">
+      {backBar}
       {[...groups.entries()].map(([key, list]) => (
         <div key={key}>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
@@ -720,19 +770,21 @@ function Agenda({
 }
 
 function Legend() {
-  const entries = [
-    { label: "Midterm / Endterm", cls: "bg-evt-exam" },
-    { label: "Quiz", cls: "bg-evt-quiz" },
-    { label: "Assignment", cls: "bg-evt-assign" },
-    { label: "Presentation", cls: "bg-evt-present" },
-    { label: "Guest lecture / Other", cls: "bg-evt-lecture" },
+  const entries: { label: string; cls: string; shape: MarkerShape }[] = [
+    { label: SHAPE_LABEL.star, cls: "bg-evt-exam", shape: "star" },
+    { label: SHAPE_LABEL.triangle, cls: "bg-evt-quiz", shape: "triangle" },
+    { label: SHAPE_LABEL.square, cls: "bg-evt-assign", shape: "square" },
+    { label: SHAPE_LABEL.diamond, cls: "bg-evt-present", shape: "diamond" },
+    { label: SHAPE_LABEL.pentagon, cls: "bg-evt-lecture", shape: "pentagon" },
+    { label: SHAPE_LABEL.bar, cls: "bg-evt-present", shape: "bar" },
+    { label: SHAPE_LABEL.circle, cls: "bg-dim", shape: "circle" },
   ];
   return (
     <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
-      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Deadlines</span>
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Shapes</span>
       {entries.map((e) => (
         <span key={e.label} className="flex items-center gap-1.5 font-mono text-[10px] text-dim">
-          <span className={`size-2 rounded-full ${e.cls}`} /> {e.label}
+          <Marker shape={e.shape} size={9} className={e.cls} /> {e.label}
         </span>
       ))}
     </div>
