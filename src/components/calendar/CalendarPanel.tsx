@@ -357,7 +357,10 @@ function EventPill({
     <motion.button
       whileHover={{ scale: 1.02, y: -1 }}
       whileTap={{ scale: 0.99 }}
-      onClick={() => onSelect(deadline)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(deadline);
+      }}
       className={`flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-1 text-left font-mono text-[10px] ${m.chip} ${critical ? m.glow : ""}`}
     >
       <Marker
