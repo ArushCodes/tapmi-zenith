@@ -62,7 +62,7 @@ export function TimetablePanel() {
       if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
       if (start < weekStart || start >= weekEnd) continue;
-      if (selected.length > 0 && !selected.includes((s.course_code ?? "").toLowerCase())) continue;
+      if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
       const k = start.toDateString();
       map.set(k, [...(map.get(k) ?? []), s]);
     }
@@ -71,21 +71,44 @@ export function TimetablePanel() {
     );
   }, [sessions, weekStart, weekEnd, selected]);
 
-
-  const colorMap = useMemo(() => {
-    const m = new Map<string, string>();
+  /** Every class that appears anywhere in the feed, plus catalogued courses. */
+  const options = useMemo(() => {
+    const m = new Map<
+      string,
+      { key: string; label: string; sub: string; color: string; count: number }
+    >();
     for (const c of courses) {
-      if (!c.color) continue;
-      m.set(c.code.toLowerCase(), c.color);
-      m.set(c.short_name.toLowerCase(), c.color);
+      m.set(courseKey(c), {
+        key: courseKey(c),
+        label: c.short_name || c.code,
+        sub: [c.code, c.faculty_name].filter(Boolean).join(" · "),
+        color: c.color ?? FALLBACK_COURSE_COLOR,
+        count: 0,
+      });
     }
-    return m;
-  }, [courses]);
+    for (const s of sessions) {
+      if (isAcademicEvent(s)) continue;
+      const key = sessionKey(s);
+      const existing = m.get(key);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+      m.set(key, {
+        key,
+        label: s.short_name ?? s.course_name ?? s.title,
+        sub: [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
+        color: FALLBACK_COURSE_COLOR,
+        count: 1,
+      });
+    }
+    return [...m.values()].sort((a, b) => a.label.localeCompare(b.label));
+  }, [courses, sessions]);
 
-  const colorOf = (s: ClassSession) =>
-    (s.course_code && colorMap.get(s.course_code.toLowerCase())) ||
-    (s.short_name && colorMap.get(s.short_name.toLowerCase())) ||
-    null;
+  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+
+  const colorOf = (s: ClassSession) => sessionColor(s, colorMap);
+
 
   return (
     <section className="mt-4">
