@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/public/sync-timetable")({
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { syncBatch } = await import("@/lib/registro.server");
+        const { syncBatch } = await import("@/lib/ics-sync.server");
 
         const { data: creds } = await supabaseAdmin
           .from("batch_registro_credentials")
