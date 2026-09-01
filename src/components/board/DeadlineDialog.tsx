@@ -43,6 +43,7 @@ const labelClass = "font-mono text-[10px] uppercase tracking-[0.18em] text-dim";
 export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
   const [form, setForm] = useState(emptyForm);
   const queryClient = useQueryClient();
+  const { batchId } = useBatch();
 
   useEffect(() => {
     if (!open) return;
