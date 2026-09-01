@@ -35,7 +35,7 @@ export function TimetablePanel() {
   const { data: syncState } = useQuery(syncStateQuery(batchId, canManage));
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [course, setCourse] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
 
@@ -59,16 +59,18 @@ export function TimetablePanel() {
   const grouped = useMemo(() => {
     const map = new Map<string, ClassSession[]>();
     for (const s of sessions) {
+      if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
       if (start < weekStart || start >= weekEnd) continue;
-      if (course !== "all" && s.course_code !== course) continue;
+      if (selected.length > 0 && !selected.includes((s.course_code ?? "").toLowerCase())) continue;
       const k = start.toDateString();
       map.set(k, [...(map.get(k) ?? []), s]);
     }
     return [...map.entries()].sort(
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
-  }, [sessions, weekStart, weekEnd, course]);
+  }, [sessions, weekStart, weekEnd, selected]);
+
 
   const colorMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -182,7 +184,17 @@ export function TimetablePanel() {
         )}
       </AnimatePresence>
 
-      <CourseCatalogue courses={courses} />
+      <CourseCatalogue
+        courses={courses}
+        selected={selected}
+        onToggle={(code) =>
+          setSelected((prev) =>
+            prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+          )
+        }
+        onClear={() => setSelected([])}
+      />
+
 
       {isLoading ? (
         <p className="mt-6 text-center font-mono text-xs text-faint">Loading timetable…</p>
