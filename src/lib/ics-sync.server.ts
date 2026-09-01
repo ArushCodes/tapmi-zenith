@@ -159,8 +159,8 @@ export async function syncBatch(batchId: string, force = false): Promise<string>
     const url = batch?.ics_url;
     if (!url) throw new Error("No calendar (.ics) link configured for this batch");
 
-    const res = await fetch(url, { headers: { Accept: "text/calendar, text/plain, */*" } });
-    if (!res.ok) throw new Error(`Calendar fetch failed (${res.status})`);
+    const res = await fetchPublicFeed(url);
+    if (!res.ok) throw new Error("Could not download the calendar from that link");
     const text = await res.text();
     if (!text.includes("BEGIN:VCALENDAR")) throw new Error("That link did not return a calendar");
 
