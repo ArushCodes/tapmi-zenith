@@ -10,6 +10,8 @@ export const DEADLINE_TYPES: { value: DeadlineType; label: string }[] = [
   { value: "presentation", label: "Presentation" },
   { value: "midterm", label: "Midterm" },
   { value: "endterm", label: "Endterm" },
+  { value: "guest_lecture", label: "Guest Lecture" },
+  { value: "other", label: "Other" },
 ];
 
 export const FILTERS = [
@@ -18,9 +20,46 @@ export const FILTERS = [
   { key: "assignment", label: "Assignments", types: ["assignment"] },
   { key: "presentation", label: "Presentations", types: ["presentation"] },
   { key: "exam", label: "Midterms / Endterms", types: ["midterm", "endterm"] },
+  { key: "lecture", label: "Lectures / Other", types: ["guest_lecture", "other"] },
 ] as const;
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
+
+/** Visual identity per event type — colours come from the design tokens. */
+export type EventMeta = {
+  label: string;
+  /** tailwind colour name registered in styles.css */
+  color: "evt-exam" | "evt-quiz" | "evt-assign" | "evt-present" | "evt-lecture";
+  dot: string;
+  text: string;
+  chip: string;
+  ring: string;
+  bar: string;
+};
+
+const meta = (label: string, color: EventMeta["color"]): EventMeta => ({
+  label,
+  color,
+  dot: `bg-${color}`,
+  text: `text-${color}`,
+  chip: `bg-${color}/12 text-${color} ring-1 ring-${color}/30`,
+  ring: `ring-${color}/40`,
+  bar: `bg-${color}`,
+});
+
+export const EVENT_META: Record<DeadlineType, EventMeta> = {
+  midterm: meta("Midterm", "evt-exam"),
+  endterm: meta("Endterm", "evt-exam"),
+  quiz: meta("Quiz", "evt-quiz"),
+  assignment: meta("Assignment", "evt-assign"),
+  presentation: meta("Presentation", "evt-present"),
+  guest_lecture: meta("Guest Lecture", "evt-lecture"),
+  other: meta("Other", "evt-lecture"),
+};
+
+export function eventMeta(type: DeadlineType): EventMeta {
+  return EVENT_META[type] ?? EVENT_META.other;
+}
 
 export const deadlinesQuery = {
   queryKey: ["deadlines"],
@@ -35,7 +74,7 @@ export const deadlinesQuery = {
 };
 
 export function typeLabel(type: DeadlineType) {
-  return DEADLINE_TYPES.find((t) => t.value === type)?.label ?? type;
+  return eventMeta(type).label;
 }
 
 export type Urgency = "past" | "critical" | "soon" | "later";
@@ -88,4 +127,79 @@ export function formatWeek(iso: string) {
   end.setDate(start.getDate() + 6);
   const f = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" });
   return `${f.format(start)} — ${f.format(end)}`;
+}
+
+export function dayKey(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function matchesSearch(d: Deadline, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [d.title, d.subject, d.subject_code, d.location, d.notes]
+    .filter(Boolean)
+    .some((v) => v!.toLowerCase().includes(q));
+}
+
+export function filterByKey(list: Deadline[], key: FilterKey, search: string) {
+  const active = FILTERS.find((f) => f.key === key);
+  return list.filter((d) => {
+    if (active?.types && !(active.types as readonly string[]).includes(d.type)) return false;
+    return matchesSearch(d, search);
+  });
+}
+
+/* ---------- calendar export helpers ---------- */
+
+function toUtcStamp(date: Date) {
+  return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
+}
+
+export function eventEnd(d: Deadline) {
+  return new Date(new Date(d.due_at).getTime() + 60 * 60_000);
+}
+
+export function eventTitle(d: Deadline) {
+  return `${d.subject_code ? `${d.subject_code} · ` : ""}${d.title}`;
+}
+
+export function googleCalendarUrl(d: Deadline) {
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: eventTitle(d),
+    dates: `${toUtcStamp(new Date(d.due_at))}/${toUtcStamp(eventEnd(d))}`,
+    details: [d.subject, typeLabel(d.type), d.notes, d.submission_link].filter(Boolean).join("\n"),
+    location: d.location ?? "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+export function icsFor(d: Deadline) {
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TAPMI IPM Deadline Board//EN",
+    "BEGIN:VEVENT",
+    `UID:${d.id}@tapmi-ipm`,
+    `DTSTAMP:${toUtcStamp(new Date())}`,
+    `DTSTART:${toUtcStamp(new Date(d.due_at))}`,
+    `DTEND:${toUtcStamp(eventEnd(d))}`,
+    `SUMMARY:${eventTitle(d)}`,
+    `DESCRIPTION:${[d.subject, typeLabel(d.type), d.notes].filter(Boolean).join(" — ")}`,
+    `LOCATION:${d.location ?? ""}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+export function downloadIcs(d: Deadline) {
+  const blob = new Blob([icsFor(d)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${eventTitle(d).replace(/[^\w\- ]+/g, "")}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
