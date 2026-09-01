@@ -126,7 +126,7 @@ export const Route = createFileRoute("/api/public/email-intake")({
           sender: input.sender,
           received_at: input.receivedAt ?? new Date().toISOString(),
           body: input.body.slice(0, 20000),
-          extracted,
+          extracted: extracted as never,
           confidence,
           error,
           status: "pending",
