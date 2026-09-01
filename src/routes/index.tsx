@@ -25,6 +25,7 @@ import { TimetablePanel } from "@/components/timetable/TimetablePanel";
 import { AttendancePanel } from "@/components/attendance/AttendancePanel";
 import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
 import { MembersPanel } from "@/components/board/MembersPanel";
+import { coursesQuery, sessionsQuery } from "@/lib/batches";
 import {
   FILTERS,
   deadlinesQueryFor,
@@ -74,6 +75,8 @@ function Board() {
   const isMod = canManage || isModerator;
   const queryClient = useQueryClient();
   const { data: deadlines = [], isLoading } = useQuery(deadlinesQueryFor(batchId));
+  const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
+  const { data: courses = [] } = useQuery(coursesQuery(batchId));
 
 
   const [tab, setTab] = useState<TabKey>("feed");
@@ -405,7 +408,13 @@ function Board() {
             )}
 
             {tab === "calendar" && (
-              <CalendarPanel deadlines={filtered} now={now} onSelect={setSelected} />
+              <CalendarPanel
+                deadlines={filtered}
+                sessions={sessions}
+                courses={courses}
+                now={now}
+                onSelect={setSelected}
+              />
             )}
 
             {tab === "timetable" && <TimetablePanel />}
