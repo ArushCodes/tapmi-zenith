@@ -188,11 +188,13 @@ export function TimetablePanel() {
         )}
       </AnimatePresence>
 
+      <CourseCatalogue courses={courses} />
+
       {isLoading ? (
         <p className="mt-6 text-center font-mono text-xs text-faint">Loading timetable…</p>
       ) : grouped.length === 0 ? (
         <p className="mt-8 text-center font-mono text-xs text-faint">
-          No classes this week. {canManage ? "Sync Registro or add a custom class." : ""}
+          No classes this week. {canManage ? "Paste a calendar link and sync, or add a custom class." : ""}
         </p>
       ) : (
         <div className="flex flex-col gap-5">
@@ -202,32 +204,44 @@ export function TimetablePanel() {
                 {dayFmt.format(new Date(day))}
               </p>
               <div className="flex flex-col gap-2">
-                {list.map((s) => (
-                  <motion.div
-                    key={s.id}
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className={`flex items-center gap-3 rounded-xl bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
-                      s.is_holiday ? "ring-evt-present/30" : "ring-border"
-                    }`}
-                  >
-                    <span className="font-mono text-[11px] text-dim">
-                      {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-display text-sm font-semibold">
-                        {s.title}
+                {list.map((s) => {
+                  const color = colorOf(s);
+                  return (
+                    <motion.div
+                      key={s.id}
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      style={color ? { borderLeftColor: color } : undefined}
+                      className={`flex items-center gap-3 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
+                        s.is_holiday ? "border-l-evt-present ring-evt-present/30" : "ring-border"
+                      }`}
+                    >
+                      <span className="font-mono text-[11px] text-dim">
+                        {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
                       </span>
-                      <span className="block truncate font-mono text-[11px] text-dim">
-                        {[s.course_name, s.faculty_name, s.classroom, s.section]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-sm font-semibold">
+                          {s.title}
+                        </span>
+                        <span className="block truncate font-mono text-[11px] text-dim">
+                          {[s.course_name, s.faculty_name, s.classroom, s.section]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 rounded-md bg-surface2 px-2 py-1 font-mono text-[10px] text-faint">
-                      {s.source}
-                    </span>
-                  </motion.div>
-                ))}
+                      {s.course_code && (
+                        <span
+                          className="shrink-0 rounded-md px-2 py-1 font-mono text-[10px]"
+                          style={{
+                            color: color ?? undefined,
+                            backgroundColor: color ? `${color}1a` : undefined,
+                          }}
+                        >
+                          {s.course_code}
+                        </span>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           ))}
