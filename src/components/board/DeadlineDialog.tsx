@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DEADLINE_TYPES, type Deadline, type DeadlineType } from "@/lib/deadlines";
+import { useBatch } from "@/hooks/use-batch";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ const labelClass = "font-mono text-[10px] uppercase tracking-[0.18em] text-dim";
 export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
   const [form, setForm] = useState(emptyForm);
   const queryClient = useQueryClient();
+  const { batchId } = useBatch();
 
   useEffect(() => {
     if (!open) return;
@@ -84,9 +86,10 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
         if (error) throw error;
       } else {
         const { data: userData } = await supabase.auth.getUser();
+        if (!batchId) throw new Error("Select a batch first");
         const { error } = await supabase
           .from("deadlines")
-          .insert({ ...payload, created_by: userData.user?.id ?? null });
+          .insert({ ...payload, batch_id: batchId, created_by: userData.user?.id ?? null });
         if (error) throw error;
       }
     },

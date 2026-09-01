@@ -2,19 +2,32 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarRange, ListFilter, ShieldCheck } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarRange,
+  ListFilter,
+  Mail,
+  ShieldCheck,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useBatch } from "@/hooks/use-batch";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
 import { EventDrawer } from "@/components/board/EventDrawer";
 import { ApprovalsPanel } from "@/components/board/ApprovalsPanel";
 import { CalendarPanel } from "@/components/calendar/CalendarPanel";
+import { TimetablePanel } from "@/components/timetable/TimetablePanel";
+import { AttendancePanel } from "@/components/attendance/AttendancePanel";
+import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
+import { MembersPanel } from "@/components/board/MembersPanel";
 import {
   FILTERS,
-  deadlinesQuery,
+  deadlinesQueryFor,
   filterByKey,
   formatWeek,
   weekKey,
@@ -46,12 +59,22 @@ export const Route = createFileRoute("/")({
   component: Board,
 });
 
-type TabKey = "feed" | "calendar" | "approvals";
+type TabKey =
+  | "feed"
+  | "calendar"
+  | "timetable"
+  | "attendance"
+  | "approvals"
+  | "inbox"
+  | "members";
 
 function Board() {
   const { isModerator } = useAuth();
+  const { batchId, batch, canManage } = useBatch();
+  const isMod = canManage || isModerator;
   const queryClient = useQueryClient();
-  const { data: deadlines = [], isLoading } = useQuery(deadlinesQuery);
+  const { data: deadlines = [], isLoading } = useQuery(deadlinesQueryFor(batchId));
+
 
   const [tab, setTab] = useState<TabKey>("feed");
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -67,22 +90,27 @@ function Board() {
     return () => clearInterval(id);
   }, []);
 
-  // Real-time sync with the deadlines table
+  // Real-time sync with the deadlines table for the selected batch
   useEffect(() => {
+    if (!batchId) return;
     const channel = supabase
-      .channel("deadlines-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "deadlines" }, () => {
-        queryClient.invalidateQueries({ queryKey: ["deadlines"] });
-      })
+      .channel(`deadlines-realtime-${batchId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "deadlines", filter: `batch_id=eq.${batchId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["deadlines", batchId] });
+        },
+      )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, batchId]);
 
   useEffect(() => {
-    if (!isModerator && tab === "approvals") setTab("feed");
-  }, [isModerator, tab]);
+    if (!isMod && (tab === "approvals" || tab === "inbox" || tab === "members")) setTab("feed");
+  }, [isMod, tab]);
 
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
@@ -90,7 +118,7 @@ function Board() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deadlines"] });
+      queryClient.invalidateQueries({ queryKey: ["deadlines", batchId] });
       setSelected(null);
       toast.success("Deadline removed");
     },
@@ -127,15 +155,19 @@ function Board() {
   }
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "feed", label: "List / Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "calendar", label: "Interactive Calendar", icon: <CalendarRange className="size-3.5" /> },
-    ...(isModerator
+    { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
+    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
+    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+    ...(isMod
       ? [
           {
             key: "approvals" as TabKey,
-            label: `Moderator Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
+            label: `Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
             icon: <ShieldCheck className="size-3.5" />,
           },
+          { key: "inbox" as TabKey, label: "Email Inbox", icon: <Mail className="size-3.5" /> },
+          { key: "members" as TabKey, label: "Members", icon: <Users className="size-3.5" /> },
         ]
       : []),
   ];
@@ -154,10 +186,10 @@ function Board() {
         <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
-              Next up on the board · sorted by time remaining
+              {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
-              TAPMI IPM Deadline Board — Batch 2026–2031
+              {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
             </h1>
           </div>
           <p className="font-mono text-xs text-faint">
@@ -198,7 +230,7 @@ function Board() {
           ))}
         </div>
 
-        {tab !== "approvals" && (
+        {(tab === "feed" || tab === "calendar") && (
           <div className="sticky top-0 z-20 -mx-5 mb-5 bg-ground/80 px-5 py-3 backdrop-blur-md">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-wrap gap-1.5">
@@ -249,7 +281,7 @@ function Board() {
                   </div>
                 )}
 
-                {isModerator && (
+                {isMod && (
                   <button
                     onClick={() => {
                       setEditing(null);
@@ -295,7 +327,7 @@ function Board() {
                         key={d.id}
                         deadline={d}
                         now={now}
-                        canManage={isModerator}
+                        canManage={isMod}
                         onEdit={openEdit}
                         onDelete={(x) => remove.mutate(x)}
                         onOpen={setSelected}
@@ -319,7 +351,7 @@ function Board() {
                               key={d.id}
                               deadline={d}
                               now={now}
-                              canManage={isModerator}
+                              canManage={isMod}
                               onEdit={openEdit}
                               onDelete={(x) => remove.mutate(x)}
                               onOpen={setSelected}
@@ -337,9 +369,17 @@ function Board() {
               <CalendarPanel deadlines={filtered} now={now} onSelect={setSelected} />
             )}
 
-            {tab === "approvals" && isModerator && (
+            {tab === "timetable" && <TimetablePanel />}
+
+            {tab === "attendance" && <AttendancePanel now={now} />}
+
+            {tab === "approvals" && isMod && (
               <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
             )}
+
+            {tab === "inbox" && isMod && <EmailInboxPanel />}
+
+            {tab === "members" && isMod && <MembersPanel />}
           </motion.div>
         </AnimatePresence>
 
@@ -351,13 +391,13 @@ function Board() {
       <EventDrawer
         deadline={selected}
         now={now}
-        canManage={isModerator}
+        canManage={isMod}
         onClose={() => setSelected(null)}
         onEdit={openEdit}
         onDelete={(d) => remove.mutate(d)}
       />
 
-      {isModerator && (
+      {isMod && (
         <DeadlineDialog open={dialogOpen} onOpenChange={setDialogOpen} deadline={editing} />
       )}
     </div>

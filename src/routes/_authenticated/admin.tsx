@@ -4,9 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useBatch } from "@/hooks/use-batch";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
-import { deadlinesQuery, formatDue, typeLabel, type Deadline } from "@/lib/deadlines";
+import { deadlinesQueryFor, formatDue, typeLabel, type Deadline } from "@/lib/deadlines";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -30,7 +31,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
 function AdminPage() {
   const { isModerator, loading } = useAuth();
   const queryClient = useQueryClient();
-  const { data: deadlines = [] } = useQuery(deadlinesQuery);
+  const { batchId } = useBatch();
+  const { data: deadlines = [] } = useQuery(deadlinesQueryFor(batchId));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
 
