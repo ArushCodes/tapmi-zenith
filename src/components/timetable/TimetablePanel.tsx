@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarClock, Copy, Link2, Plus, RefreshCw, Settings2 } from "lucide-react";
+import { Plus, RefreshCw, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatch } from "@/hooks/use-batch";
@@ -35,7 +35,7 @@ export function TimetablePanel() {
   const { data: syncState } = useQuery(syncStateQuery(batchId, canManage));
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [course, setCourse] = useState("all");
+  const [selected, setSelected] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
 
@@ -59,16 +59,18 @@ export function TimetablePanel() {
   const grouped = useMemo(() => {
     const map = new Map<string, ClassSession[]>();
     for (const s of sessions) {
+      if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
       if (start < weekStart || start >= weekEnd) continue;
-      if (course !== "all" && s.course_code !== course) continue;
+      if (selected.length > 0 && !selected.includes((s.course_code ?? "").toLowerCase())) continue;
       const k = start.toDateString();
       map.set(k, [...(map.get(k) ?? []), s]);
     }
     return [...map.entries()].sort(
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
-  }, [sessions, weekStart, weekEnd, course]);
+  }, [sessions, weekStart, weekEnd, selected]);
+
 
   const colorMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -84,10 +86,6 @@ export function TimetablePanel() {
     (s.course_code && colorMap.get(s.course_code.toLowerCase())) ||
     (s.short_name && colorMap.get(s.short_name.toLowerCase())) ||
     null;
-
-  const feedUrl = batch
-    ? `${typeof window === "undefined" ? "" : window.location.origin}/api/public/ics/${batch.feed_token}.ics`
-    : "";
 
   return (
     <section className="mt-4">
@@ -119,29 +117,8 @@ export function TimetablePanel() {
           Next →
         </button>
 
-        <select
-          value={course}
-          onChange={(e) => setCourse(e.target.value)}
-          className="rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border outline-none"
-        >
-          <option value="all">All courses</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.code}>
-              {c.short_name}
-            </option>
-          ))}
-        </select>
-
         <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => {
-              void navigator.clipboard.writeText(feedUrl);
-              toast.success("Calendar feed link copied");
-            }}
-            className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
-          >
-            <Copy className="size-3.5" /> Subscribe link
-          </button>
+
           {canManage && (
             <>
               <button
@@ -183,7 +160,6 @@ export function TimetablePanel() {
         {showSettings && canManage && (
           <IcsSettings
             current={batch?.ics_url ?? ""}
-            feedUrl={feedUrl}
             onSave={async (icsUrl) => {
               await saveFeed({ data: { batchId: batchId!, icsUrl } });
               toast.success("Calendar link saved — syncing now");
@@ -203,7 +179,17 @@ export function TimetablePanel() {
         )}
       </AnimatePresence>
 
-      <CourseCatalogue courses={courses} />
+      <CourseCatalogue
+        courses={courses}
+        selected={selected}
+        onToggle={(code) =>
+          setSelected((prev) =>
+            prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+          )
+        }
+        onClear={() => setSelected([])}
+      />
+
 
       {isLoading ? (
         <p className="mt-6 text-center font-mono text-xs text-faint">Loading timetable…</p>
@@ -263,44 +249,68 @@ export function TimetablePanel() {
         </div>
       )}
 
-      <p className="mt-8 flex items-center justify-center gap-2 font-mono text-[10px] text-faint">
-        <Link2 className="size-3" /> Subscribe in Google/Apple Calendar with the feed link above
-        <CalendarClock className="size-3" />
-      </p>
     </section>
   );
 }
 
-function CourseCatalogue({ courses }: { courses: Course[] }) {
+function CourseCatalogue({
+  courses,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  courses: Course[];
+  selected: string[];
+  onToggle: (code: string) => void;
+  onClear: () => void;
+}) {
   const [open, setOpen] = useState(false);
   if (courses.length === 0) return null;
   return (
     <div className="mb-5 rounded-xl bg-surface p-3 ring-1 ring-border">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-cyan"
-      >
+      <div className="flex w-full items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
         <span>Courses · {courses.length}</span>
-        <span className="text-faint">{open ? "Hide" : "Show all"}</span>
-      </button>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {courses.map((c) => (
-          <span
-            key={c.id}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px]"
-            style={{
-              color: c.color ?? undefined,
-              backgroundColor: c.color ? `${c.color}1a` : undefined,
-            }}
-          >
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: c.color ?? "currentColor" }}
-            />
-            {c.short_name}
-          </span>
-        ))}
+        <span className="h-px flex-1 bg-border" />
+        {selected.length > 0 && (
+          <button onClick={onClear} className="text-faint normal-case hover:text-ink">
+            Clear filter
+          </button>
+        )}
+        <button onClick={() => setOpen((v) => !v)} className="text-faint hover:text-ink">
+          {open ? "Hide" : "Details"}
+        </button>
       </div>
+      <p className="mt-2 font-mono text-[10px] normal-case text-faint">
+        Tap subjects to filter — pick as many as you like.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {courses.map((c) => {
+          const code = c.code.toLowerCase();
+          const on = selected.length === 0 || selected.includes(code);
+          const color = c.color ?? "#64748B";
+          return (
+            <motion.button
+              key={c.id}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => onToggle(code)}
+              title={[c.name, c.faculty_name].filter(Boolean).join(" · ")}
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] transition-opacity ${
+                on ? "opacity-100" : "opacity-40"
+              }`}
+              style={{
+                color,
+                backgroundColor: `${color}1a`,
+                boxShadow: selected.includes(code) ? `0 0 0 1px ${color}` : undefined,
+              }}
+            >
+              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+              {c.short_name}
+            </motion.button>
+          );
+        })}
+      </div>
+
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -332,11 +342,9 @@ function CourseCatalogue({ courses }: { courses: Course[] }) {
 
 function IcsSettings({
   onSave,
-  feedUrl,
   current,
 }: {
   onSave: (icsUrl: string) => Promise<void>;
-  feedUrl: string;
   current: string;
 }) {
   const [url, setUrl] = useState(current);
@@ -375,7 +383,6 @@ function IcsSettings({
         Any public .ics feed works — classes, faculty, rooms and holidays are imported automatically
         and each course gets its own colour.
       </p>
-      <p className="mt-2 break-all font-mono text-[10px] text-faint">Your feed: {feedUrl}</p>
       <button
         type="submit"
         disabled={busy}
