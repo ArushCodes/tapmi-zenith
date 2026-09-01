@@ -40,7 +40,7 @@ export function TimetablePanel() {
   const [showCustom, setShowCustom] = useState(false);
 
   const runSync = useServerFn(syncTimetableNow);
-  const saveCreds = useServerFn(saveRegistroCredentials);
+  const saveFeed = useServerFn(saveIcsUrl);
 
   const sync = useMutation({
     mutationFn: async () => runSync({ data: { batchId: batchId! } }),
