@@ -208,7 +208,7 @@ export function AttendancePanel({ now }: { now: number }) {
         <div className="flex flex-col gap-5">
           <div>
             <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-              Happening now
+              Happening now{me.name ? ` · ${me.name}` : ""}
             </p>
             {current.length === 0 ? (
               <p className="font-mono text-[11px] text-faint">No class in progress.</p>
