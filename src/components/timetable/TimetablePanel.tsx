@@ -6,8 +6,8 @@ import { CalendarClock, Copy, Link2, Plus, RefreshCw, Settings2 } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatch } from "@/hooks/use-batch";
-import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
-import { saveRegistroCredentials, syncTimetableNow } from "@/lib/registro.functions";
+import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession, type Course } from "@/lib/batches";
+import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "long",
@@ -40,7 +40,7 @@ export function TimetablePanel() {
   const [showCustom, setShowCustom] = useState(false);
 
   const runSync = useServerFn(syncTimetableNow);
-  const saveCreds = useServerFn(saveRegistroCredentials);
+  const saveFeed = useServerFn(saveIcsUrl);
 
   const sync = useMutation({
     mutationFn: async () => runSync({ data: { batchId: batchId! } }),
@@ -69,6 +69,21 @@ export function TimetablePanel() {
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
   }, [sessions, weekStart, weekEnd, course]);
+
+  const colorMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of courses) {
+      if (!c.color) continue;
+      m.set(c.code.toLowerCase(), c.color);
+      m.set(c.short_name.toLowerCase(), c.color);
+    }
+    return m;
+  }, [courses]);
+
+  const colorOf = (s: ClassSession) =>
+    (s.course_code && colorMap.get(s.course_code.toLowerCase())) ||
+    (s.short_name && colorMap.get(s.short_name.toLowerCase())) ||
+    null;
 
   const feedUrl = batch
     ? `${typeof window === "undefined" ? "" : window.location.origin}/api/public/ics/${batch.feed_token}.ics`
@@ -139,7 +154,7 @@ export function TimetablePanel() {
                 onClick={() => setShowSettings((v) => !v)}
                 className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
               >
-                <Settings2 className="size-3.5" /> Registro
+                <Settings2 className="size-3.5" /> Calendar link
               </button>
               <button
                 onClick={() => sync.mutate()}
@@ -166,13 +181,15 @@ export function TimetablePanel() {
 
       <AnimatePresence initial={false}>
         {showSettings && canManage && (
-          <RegistroSettings
-            onSave={async (v) => {
-              await saveCreds({ data: { batchId: batchId!, ...v } });
-              toast.success("Registro credentials saved");
-              setShowSettings(false);
-            }}
+          <IcsSettings
+            current={batch?.ics_url ?? ""}
             feedUrl={feedUrl}
+            onSave={async (icsUrl) => {
+              await saveFeed({ data: { batchId: batchId!, icsUrl } });
+              toast.success("Calendar link saved — syncing now");
+              setShowSettings(false);
+              sync.mutate();
+            }}
           />
         )}
         {showCustom && canManage && (
@@ -186,11 +203,13 @@ export function TimetablePanel() {
         )}
       </AnimatePresence>
 
+      <CourseCatalogue courses={courses} />
+
       {isLoading ? (
         <p className="mt-6 text-center font-mono text-xs text-faint">Loading timetable…</p>
       ) : grouped.length === 0 ? (
         <p className="mt-8 text-center font-mono text-xs text-faint">
-          No classes this week. {canManage ? "Sync Registro or add a custom class." : ""}
+          No classes this week. {canManage ? "Paste a calendar link and sync, or add a custom class." : ""}
         </p>
       ) : (
         <div className="flex flex-col gap-5">
@@ -200,32 +219,44 @@ export function TimetablePanel() {
                 {dayFmt.format(new Date(day))}
               </p>
               <div className="flex flex-col gap-2">
-                {list.map((s) => (
-                  <motion.div
-                    key={s.id}
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className={`flex items-center gap-3 rounded-xl bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
-                      s.is_holiday ? "ring-evt-present/30" : "ring-border"
-                    }`}
-                  >
-                    <span className="font-mono text-[11px] text-dim">
-                      {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-display text-sm font-semibold">
-                        {s.title}
+                {list.map((s) => {
+                  const color = colorOf(s);
+                  return (
+                    <motion.div
+                      key={s.id}
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      style={{ borderLeftColor: color ?? "transparent" }}
+                      className={`flex items-center gap-3 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
+                        s.is_holiday ? "border-l-evt-present ring-evt-present/30" : "ring-border"
+                      }`}
+                    >
+                      <span className="font-mono text-[11px] text-dim">
+                        {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
                       </span>
-                      <span className="block truncate font-mono text-[11px] text-dim">
-                        {[s.course_name, s.faculty_name, s.classroom, s.section]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-display text-sm font-semibold">
+                          {s.title}
+                        </span>
+                        <span className="block truncate font-mono text-[11px] text-dim">
+                          {[s.course_name, s.faculty_name, s.classroom, s.section]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </span>
                       </span>
-                    </span>
-                    <span className="shrink-0 rounded-md bg-surface2 px-2 py-1 font-mono text-[10px] text-faint">
-                      {s.source}
-                    </span>
-                  </motion.div>
-                ))}
+                      {s.course_code && (
+                        <span
+                          className="shrink-0 rounded-md px-2 py-1 font-mono text-[10px]"
+                          style={{
+                            color: color ?? undefined,
+                            backgroundColor: color ? `${color}1a` : undefined,
+                          }}
+                        >
+                          {s.course_code}
+                        </span>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -240,16 +271,75 @@ export function TimetablePanel() {
   );
 }
 
-function RegistroSettings({
+function CourseCatalogue({ courses }: { courses: Course[] }) {
+  const [open, setOpen] = useState(false);
+  if (courses.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-xl bg-surface p-3 ring-1 ring-border">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-cyan"
+      >
+        <span>Courses · {courses.length}</span>
+        <span className="text-faint">{open ? "Hide" : "Show all"}</span>
+      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {courses.map((c) => (
+          <span
+            key={c.id}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px]"
+            style={{
+              color: c.color ?? undefined,
+              backgroundColor: c.color ? `${c.color}1a` : undefined,
+            }}
+          >
+            <span
+              className="size-2 rounded-full"
+              style={{ backgroundColor: c.color ?? "currentColor" }}
+            />
+            {c.short_name}
+          </span>
+        ))}
+      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {courses.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border-l-[3px] bg-surface2 px-3 py-2"
+                  style={{ borderLeftColor: c.color ?? "transparent" }}
+                >
+                  <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                  <p className="truncate font-mono text-[11px] text-dim">
+                    {[c.code, c.faculty_name].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function IcsSettings({
   onSave,
   feedUrl,
+  current,
 }: {
-  onSave: (v: { username: string; password: string; termId: string }) => Promise<void>;
+  onSave: (icsUrl: string) => Promise<void>;
   feedUrl: string;
+  current: string;
 }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [termId, setTermId] = useState("");
+  const [url, setUrl] = useState(current);
   const [busy, setBusy] = useState(false);
 
   return (
@@ -261,8 +351,7 @@ function RegistroSettings({
         e.preventDefault();
         setBusy(true);
         try {
-          await onSave({ username, password, termId });
-          setPassword("");
+          await onSave(url.trim());
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Could not save");
         } finally {
@@ -272,39 +361,27 @@ function RegistroSettings({
       className="mb-5 overflow-hidden rounded-xl bg-surface p-4 ring-1 ring-border"
     >
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-        Shared Registro login for this batch
+        Timetable calendar link (.ics)
       </p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Registro username"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Registro password"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-        <input
-          value={termId}
-          onChange={(e) => setTermId(e.target.value)}
-          placeholder="Term session id"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-      </div>
-      <p className="mt-3 break-all font-mono text-[10px] text-faint">Feed: {feedUrl}</p>
+      <input
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="https://example.github.io/tt-sync/timetable.ics"
+        required
+        type="url"
+        className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
+      />
+      <p className="mt-2 font-mono text-[10px] text-faint">
+        Any public .ics feed works — classes, faculty, rooms and holidays are imported automatically
+        and each course gets its own colour.
+      </p>
+      <p className="mt-2 break-all font-mono text-[10px] text-faint">Your feed: {feedUrl}</p>
       <button
         type="submit"
         disabled={busy}
         className="mt-3 rounded-lg bg-cyan px-3 py-1.5 text-sm font-semibold text-ground disabled:opacity-60"
       >
-        Save credentials
+        Save & sync
       </button>
     </motion.form>
   );
@@ -343,7 +420,7 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
       className="mb-5 overflow-hidden rounded-xl bg-surface p-4 ring-1 ring-border"
     >
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-        Add a class Registro does not have
+        Add a class the calendar feed does not have
       </p>
       <div className="grid gap-3 sm:grid-cols-4">
         <input

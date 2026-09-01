@@ -17,20 +17,21 @@ export const Route = createFileRoute("/api/public/sync-timetable")({
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { syncBatch } = await import("@/lib/registro.server");
+        const { syncBatch } = await import("@/lib/ics-sync.server");
 
-        const { data: creds } = await supabaseAdmin
-          .from("batch_registro_credentials")
-          .select("batch_id")
-          .limit(10);
+        const { data: feeds } = await supabaseAdmin
+          .from("batches")
+          .select("id")
+          .not("ics_url", "is", null)
+          .limit(50);
 
         const results: { batch_id: string; result: string }[] = [];
-        for (const row of creds ?? []) {
+        for (const row of feeds ?? []) {
           try {
-            results.push({ batch_id: row.batch_id, result: await syncBatch(row.batch_id) });
+            results.push({ batch_id: row.id, result: await syncBatch(row.id) });
           } catch (err) {
             results.push({
-              batch_id: row.batch_id,
+              batch_id: row.id,
               result: `error: ${err instanceof Error ? err.message : String(err)}`,
             });
           }
