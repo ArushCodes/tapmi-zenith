@@ -70,6 +70,21 @@ export function TimetablePanel() {
     );
   }, [sessions, weekStart, weekEnd, course]);
 
+  const colorMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of courses) {
+      if (!c.color) continue;
+      m.set(c.code.toLowerCase(), c.color);
+      m.set(c.short_name.toLowerCase(), c.color);
+    }
+    return m;
+  }, [courses]);
+
+  const colorOf = (s: ClassSession) =>
+    (s.course_code && colorMap.get(s.course_code.toLowerCase())) ||
+    (s.short_name && colorMap.get(s.short_name.toLowerCase())) ||
+    null;
+
   const feedUrl = batch
     ? `${typeof window === "undefined" ? "" : window.location.origin}/api/public/ics/${batch.feed_token}.ics`
     : "";
