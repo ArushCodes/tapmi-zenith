@@ -87,10 +87,6 @@ export function TimetablePanel() {
     (s.short_name && colorMap.get(s.short_name.toLowerCase())) ||
     null;
 
-  const feedUrl = batch
-    ? `${typeof window === "undefined" ? "" : window.location.origin}/api/public/ics/${batch.feed_token}.ics`
-    : "";
-
   return (
     <section className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -164,7 +160,6 @@ export function TimetablePanel() {
         {showSettings && canManage && (
           <IcsSettings
             current={batch?.ics_url ?? ""}
-            feedUrl={feedUrl}
             onSave={async (icsUrl) => {
               await saveFeed({ data: { batchId: batchId!, icsUrl } });
               toast.success("Calendar link saved — syncing now");
@@ -347,11 +342,9 @@ function CourseCatalogue({
 
 function IcsSettings({
   onSave,
-  feedUrl,
   current,
 }: {
   onSave: (icsUrl: string) => Promise<void>;
-  feedUrl: string;
   current: string;
 }) {
   const [url, setUrl] = useState(current);
@@ -390,7 +383,6 @@ function IcsSettings({
         Any public .ics feed works — classes, faculty, rooms and holidays are imported automatically
         and each course gets its own colour.
       </p>
-      <p className="mt-2 break-all font-mono text-[10px] text-faint">Your feed: {feedUrl}</p>
       <button
         type="submit"
         disabled={busy}
