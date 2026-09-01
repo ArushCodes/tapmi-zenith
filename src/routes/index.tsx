@@ -155,15 +155,19 @@ function Board() {
   }
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-    { key: "feed", label: "List / Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "calendar", label: "Interactive Calendar", icon: <CalendarRange className="size-3.5" /> },
-    ...(isModerator
+    { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
+    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
+    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+    ...(isMod
       ? [
           {
             key: "approvals" as TabKey,
-            label: `Moderator Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
+            label: `Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
             icon: <ShieldCheck className="size-3.5" />,
           },
+          { key: "inbox" as TabKey, label: "Email Inbox", icon: <Mail className="size-3.5" /> },
+          { key: "members" as TabKey, label: "Members", icon: <Users className="size-3.5" /> },
         ]
       : []),
   ];
