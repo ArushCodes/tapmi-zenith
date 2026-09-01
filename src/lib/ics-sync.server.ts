@@ -15,6 +15,8 @@ export const COURSE_PALETTE = [
   "#FCA5A5",
 ];
 
+import { FeedError, fetchPublicFeed } from "./safe-url";
+
 export type IcsEvent = Record<string, string>;
 
 /** Unfold RFC5545 continuation lines and split into VEVENT property maps. */
@@ -157,12 +159,12 @@ export async function syncBatch(batchId: string, force = false): Promise<string>
       .eq("id", batchId)
       .maybeSingle();
     const url = batch?.ics_url;
-    if (!url) throw new Error("No calendar (.ics) link configured for this batch");
+    if (!url) throw new FeedError("No calendar (.ics) link configured for this batch");
 
-    const res = await fetch(url, { headers: { Accept: "text/calendar, text/plain, */*" } });
-    if (!res.ok) throw new Error(`Calendar fetch failed (${res.status})`);
+    const res = await fetchPublicFeed(url);
+    if (!res.ok) throw new FeedError("Could not download the calendar from that link");
     const text = await res.text();
-    if (!text.includes("BEGIN:VCALENDAR")) throw new Error("That link did not return a calendar");
+    if (!text.includes("BEGIN:VCALENDAR")) throw new FeedError("That link did not return a calendar");
 
     const rows = normaliseIcs(parseIcs(text), batchId).slice(0, 5000);
 
@@ -191,7 +193,7 @@ export async function syncBatch(batchId: string, force = false): Promise<string>
       batch_id: batchId,
       lease_until: null,
       consecutive_failures: failures,
-      last_error: err instanceof Error ? err.message : String(err),
+      last_error: err instanceof FeedError ? err.message : "Calendar sync failed",
       paused: failures >= MAX_FAILURES,
     });
     throw err;
