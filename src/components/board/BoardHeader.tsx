@@ -29,11 +29,11 @@ export function BoardHeader() {
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-5 py-4">
         <Link to="/" className="flex items-center gap-3">
           <div className="grid size-9 place-items-center rounded-lg bg-surface2 ring-1 ring-border">
-            <span className="font-display text-sm font-semibold tracking-tight text-cyan">TD</span>
+            <span className="font-display text-sm font-semibold tracking-tight text-cyan">MA</span>
           </div>
           <div className="leading-tight">
-            <p className="font-display text-base font-semibold tracking-tight">TAPMI IPM</p>
-            <p className="font-mono text-[11px] text-dim">Deadline Board · Batch 2026–2031</p>
+            <p className="font-display text-base font-semibold tracking-tight">MAHE Portal</p>
+            <p className="font-mono text-[11px] text-dim">Deadlines · Timetable · Attendance</p>
           </div>
         </Link>
 
