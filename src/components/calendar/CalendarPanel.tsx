@@ -2,6 +2,15 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
 import { dayKey, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
+import type { ClassSession, Course } from "@/lib/batches";
+import {
+  FALLBACK_COURSE_COLOR,
+  buildColorMap,
+  courseKey,
+  isAcademicEvent,
+  sessionColor,
+  sessionKey,
+} from "@/lib/courses";
 
 type SubView = "month" | "week" | "agenda";
 
@@ -37,14 +46,32 @@ const agendaFmt = new Intl.DateTimeFormat("en-GB", {
 
 type Props = {
   deadlines: Deadline[];
+  sessions?: ClassSession[];
+  courses?: Course[];
   now: number;
   onSelect: (d: Deadline) => void;
 };
 
-export function CalendarPanel({ deadlines, now, onSelect }: Props) {
+export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onSelect }: Props) {
   const [subView, setSubView] = useState<SubView>("month");
   const [cursor, setCursor] = useState(() => new Date());
   const [direction, setDirection] = useState(1);
+  const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
+  const [showClasses, setShowClasses] = useState(true);
+
+  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+
+  const classSessions = useMemo(
+    () => sessions.filter((s) => !isAcademicEvent(s)),
+    [sessions],
+  );
+  const academic = useMemo(() => sessions.filter(isAcademicEvent), [sessions]);
+
+  const visibleClasses = useMemo(() => {
+    if (!showClasses) return [];
+    if (activeSubjects.length === 0) return classSessions;
+    return classSessions.filter((s) => activeSubjects.includes(sessionKey(s)));
+  }, [classSessions, activeSubjects, showClasses]);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Deadline[]>();
@@ -56,6 +83,33 @@ export function CalendarPanel({ deadlines, now, onSelect }: Props) {
       list.sort((a, b) => a.due_at.localeCompare(b.due_at));
     return map;
   }, [deadlines]);
+
+  const classesByDay = useMemo(() => {
+    const map = new Map<string, ClassSession[]>();
+    for (const s of visibleClasses) {
+      const k = dayKey(s.start_at);
+      map.set(k, [...(map.get(k) ?? []), s]);
+    }
+    for (const list of map.values())
+      list.sort((a, b) => a.start_at.localeCompare(b.start_at));
+    return map;
+  }, [visibleClasses]);
+
+  /** Academic entries can span several days — expand across their range. */
+  const academicByDay = useMemo(() => {
+    const map = new Map<string, ClassSession[]>();
+    for (const e of academic) {
+      let d = new Date(e.start_at);
+      d.setHours(12, 0, 0, 0);
+      const end = new Date(e.end_at);
+      for (let i = 0; i < 60 && d <= end; i++) {
+        const k = dayKey(d);
+        map.set(k, [...(map.get(k) ?? []), e]);
+        d = addDays(d, 1);
+      }
+    }
+    return map;
+  }, [academic]);
 
   function shift(delta: number) {
     setDirection(delta);
@@ -77,6 +131,19 @@ export function CalendarPanel({ deadlines, now, onSelect }: Props) {
 
   return (
     <section className="mt-4">
+      <SubjectLegend
+        courses={courses}
+        active={activeSubjects}
+        onToggle={(key) =>
+          setActiveSubjects((prev) =>
+            prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+          )
+        }
+        onClear={() => setActiveSubjects([])}
+        showClasses={showClasses}
+        onToggleClasses={() => setShowClasses((v) => !v)}
+      />
+
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1">
           <NavButton label="Previous" onClick={() => shift(-1)}>
@@ -126,13 +193,37 @@ export function CalendarPanel({ deadlines, now, onSelect }: Props) {
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
             {subView === "month" && (
-              <MonthGrid cursor={cursor} byDay={byDay} now={now} onSelect={onSelect} />
+              <MonthGrid
+                cursor={cursor}
+                byDay={byDay}
+                classesByDay={classesByDay}
+                academicByDay={academicByDay}
+                colorMap={colorMap}
+                now={now}
+                onSelect={onSelect}
+              />
             )}
             {subView === "week" && (
-              <WeekTimeline weekStart={weekStart} byDay={byDay} now={now} onSelect={onSelect} />
+              <WeekTimeline
+                weekStart={weekStart}
+                byDay={byDay}
+                classesByDay={classesByDay}
+                academicByDay={academicByDay}
+                colorMap={colorMap}
+                now={now}
+                onSelect={onSelect}
+              />
             )}
             {subView === "agenda" && (
-              <Agenda cursor={cursor} deadlines={deadlines} now={now} onSelect={onSelect} />
+              <Agenda
+                cursor={cursor}
+                deadlines={deadlines}
+                classes={visibleClasses}
+                academic={academic}
+                colorMap={colorMap}
+                now={now}
+                onSelect={onSelect}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -140,6 +231,76 @@ export function CalendarPanel({ deadlines, now, onSelect }: Props) {
 
       <Legend />
     </section>
+  );
+}
+
+function SubjectLegend({
+  courses,
+  active,
+  onToggle,
+  onClear,
+  showClasses,
+  onToggleClasses,
+}: {
+  courses: Course[];
+  active: string[];
+  onToggle: (key: string) => void;
+  onClear: () => void;
+  showClasses: boolean;
+  onToggleClasses: () => void;
+}) {
+  if (courses.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-2xl bg-surface/60 p-4 ring-1 ring-border">
+      <div className="mb-3 flex items-center gap-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Subjects</p>
+        <span className="h-px flex-1 bg-border" />
+        <button
+          onClick={onToggleClasses}
+          className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 transition-colors ${
+            showClasses ? "text-cyan ring-cyan/30" : "text-faint ring-border"
+          }`}
+        >
+          {showClasses ? "Classes on" : "Classes off"}
+        </button>
+        {active.length > 0 && (
+          <button
+            onClick={onClear}
+            className="rounded-lg px-2.5 py-1 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink"
+          >
+            Clear filter
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {courses.map((c) => {
+          const key = courseKey(c);
+          const on = active.length === 0 || active.includes(key);
+          const color = c.color ?? FALLBACK_COURSE_COLOR;
+          return (
+            <motion.button
+              key={c.id}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => onToggle(key)}
+              title={[c.name, c.faculty_name].filter(Boolean).join(" · ")}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] ring-1 transition-opacity ${
+                on ? "opacity-100" : "opacity-40"
+              }`}
+              style={{
+                color,
+                backgroundColor: `${color}14`,
+                borderColor: color,
+                boxShadow: active.includes(key) ? `0 0 0 1px ${color}` : undefined,
+              }}
+            >
+              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+              {c.short_name}
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -192,14 +353,57 @@ function EventPill({
   );
 }
 
+function ClassDots({
+  list,
+  colorMap,
+}: {
+  list: ClassSession[];
+  colorMap: Map<string, string>;
+}) {
+  if (list.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1">
+      {list.slice(0, 8).map((s) => (
+        <span
+          key={s.id}
+          title={`${timeFmt.format(new Date(s.start_at))} · ${s.short_name ?? s.title}${s.faculty_name ? ` · ${s.faculty_name}` : ""}${s.classroom ? ` · ${s.classroom}` : ""}`}
+          className="size-2 rounded-full ring-1 ring-black/30"
+          style={{ backgroundColor: sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function AcademicChip({ entry, dense = false }: { entry: ClassSession; dense?: boolean }) {
+  return (
+    <span
+      title={entry.title}
+      className={`block truncate rounded-md px-1.5 py-0.5 font-mono ${dense ? "text-[9px]" : "text-[10px]"} ${
+        entry.is_holiday
+          ? "bg-evt-present/15 text-evt-present"
+          : "bg-cyan/12 text-cyan"
+      }`}
+    >
+      {entry.title}
+    </span>
+  );
+}
+
 function MonthGrid({
   cursor,
   byDay,
+  classesByDay,
+  academicByDay,
+  colorMap,
   now,
   onSelect,
 }: {
   cursor: Date;
   byDay: Map<string, Deadline[]>;
+  classesByDay: Map<string, ClassSession[]>;
+  academicByDay: Map<string, ClassSession[]>;
+  colorMap: Map<string, string>;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
@@ -225,6 +429,8 @@ function MonthGrid({
         {cells.map((date) => {
           const k = dayKey(date);
           const events = byDay.get(k) ?? [];
+          const classes = classesByDay.get(k) ?? [];
+          const acad = academicByDay.get(k) ?? [];
           const inMonth = date.getMonth() === cursor.getMonth();
           const isToday = k === todayKey;
           return (
@@ -232,7 +438,7 @@ function MonthGrid({
               key={k}
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className={`min-h-[74px] rounded-lg p-1.5 ring-1 transition-shadow sm:min-h-[110px] ${
+              className={`min-h-[74px] rounded-lg p-1.5 ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} hover:shadow-lg hover:shadow-black/30`}
             >
@@ -244,17 +450,28 @@ function MonthGrid({
                 >
                   {date.getDate()}
                 </span>
-                {events.length > 0 && (
-                  <span className="font-mono text-[9px] text-faint">{events.length}</span>
+                {classes.length > 0 && (
+                  <span className="font-mono text-[9px] text-faint">{classes.length}c</span>
                 )}
               </div>
+
+              {acad.length > 0 && (
+                <div className="mt-1 flex flex-col gap-0.5">
+                  {acad.slice(0, 2).map((e) => (
+                    <AcademicChip key={e.id} entry={e} dense />
+                  ))}
+                </div>
+              )}
+
+              <ClassDots list={classes} colorMap={colorMap} />
+
               <div className="mt-1 flex flex-col gap-1">
-                {events.slice(0, 3).map((d) => (
+                {events.slice(0, 2).map((d) => (
                   <EventPill key={d.id} deadline={d} now={now} onSelect={onSelect} />
                 ))}
-                {events.length > 3 && (
+                {events.length > 2 && (
                   <span className="pl-1 font-mono text-[9px] text-faint">
-                    +{events.length - 3} more
+                    +{events.length - 2} more
                   </span>
                 )}
               </div>
@@ -271,11 +488,17 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 08:00 → 22:00
 function WeekTimeline({
   weekStart,
   byDay,
+  classesByDay,
+  academicByDay,
+  colorMap,
   now,
   onSelect,
 }: {
   weekStart: Date;
   byDay: Map<string, Deadline[]>;
+  classesByDay: Map<string, ClassSession[]>;
+  academicByDay: Map<string, ClassSession[]>;
+  colorMap: Map<string, string>;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
@@ -298,6 +521,18 @@ function WeekTimeline({
             </span>
           ))}
         </div>
+
+        <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
+          <span />
+          {days.map((d) => (
+            <div key={`acad-${dayKey(d)}`} className="flex flex-col gap-0.5">
+              {(academicByDay.get(dayKey(d)) ?? []).map((e) => (
+                <AcademicChip key={e.id} entry={e} dense />
+              ))}
+            </div>
+          ))}
+        </div>
+
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1">
           {HOURS.map((hour) => (
             <div key={hour} className="contents">
@@ -308,12 +543,34 @@ function WeekTimeline({
                 const events = (byDay.get(dayKey(d)) ?? []).filter(
                   (e) => new Date(e.due_at).getHours() === hour,
                 );
+                const classes = (classesByDay.get(dayKey(d)) ?? []).filter(
+                  (s) => new Date(s.start_at).getHours() === hour,
+                );
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
                     className="min-h-[36px] rounded-md bg-surface/60 p-1 ring-1 ring-border/60"
                   >
                     <div className="flex flex-col gap-1">
+                      {classes.map((s) => {
+                        const color = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
+                        return (
+                          <span
+                            key={s.id}
+                            title={[s.course_name ?? s.title, s.faculty_name, s.classroom]
+                              .filter(Boolean)
+                              .join(" · ")}
+                            className="flex items-center gap-1 truncate rounded-md px-1.5 py-1 font-mono text-[10px]"
+                            style={{ color, backgroundColor: `${color}1a` }}
+                          >
+                            <span
+                              className="size-1.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: color }}
+                            />
+                            <span className="truncate">{s.short_name ?? s.title}</span>
+                          </span>
+                        );
+                      })}
                       {events.map((e) => (
                         <EventPill key={e.id} deadline={e} now={now} onSelect={onSelect} showTime />
                       ))}
@@ -332,28 +589,45 @@ function WeekTimeline({
 function Agenda({
   cursor,
   deadlines,
+  classes,
+  academic,
+  colorMap,
   now,
   onSelect,
 }: {
   cursor: Date;
   deadlines: Deadline[];
+  classes: ClassSession[];
+  academic: ClassSession[];
+  colorMap: Map<string, string>;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
-  const items = deadlines
-    .filter((d) => {
-      const due = new Date(d.due_at);
-      return due.getMonth() === cursor.getMonth() && due.getFullYear() === cursor.getFullYear();
-    })
-    .sort((a, b) => a.due_at.localeCompare(b.due_at));
+  const inMonth = (iso: string) => {
+    const d = new Date(iso);
+    return d.getMonth() === cursor.getMonth() && d.getFullYear() === cursor.getFullYear();
+  };
 
-  const groups = new Map<string, Deadline[]>();
-  for (const d of items) {
-    const k = dayKey(d.due_at);
-    groups.set(k, [...(groups.get(k) ?? []), d]);
+  type Row =
+    | { kind: "deadline"; at: string; deadline: Deadline }
+    | { kind: "class"; at: string; session: ClassSession }
+    | { kind: "academic"; at: string; session: ClassSession };
+
+  const rows: Row[] = [
+    ...deadlines.filter((d) => inMonth(d.due_at)).map((d) => ({ kind: "deadline" as const, at: d.due_at, deadline: d })),
+    ...classes.filter((s) => inMonth(s.start_at)).map((s) => ({ kind: "class" as const, at: s.start_at, session: s })),
+    ...academic
+      .filter((s) => inMonth(s.start_at) || inMonth(s.end_at))
+      .map((s) => ({ kind: "academic" as const, at: s.start_at, session: s })),
+  ].sort((a, b) => a.at.localeCompare(b.at));
+
+  const groups = new Map<string, Row[]>();
+  for (const r of rows) {
+    const k = dayKey(r.at);
+    groups.set(k, [...(groups.get(k) ?? []), r]);
   }
 
-  if (items.length === 0)
+  if (rows.length === 0)
     return (
       <p className="py-10 text-center font-mono text-xs text-faint">
         Nothing scheduled this month.
@@ -365,38 +639,77 @@ function Agenda({
       {[...groups.entries()].map(([key, list]) => (
         <div key={key}>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-            {agendaFmt.format(new Date(list[0]!.due_at))}
+            {agendaFmt.format(new Date(list[0]!.at))}
           </p>
           <div className="flex flex-col gap-2">
-            {list.map((d) => {
-              const m = eventMeta(d.type);
-              const critical = urgencyOf(d.due_at, now) === "critical";
+            {list.map((row) => {
+              if (row.kind === "deadline") {
+                const d = row.deadline;
+                const m = eventMeta(d.type);
+                const critical = urgencyOf(d.due_at, now) === "critical";
+                return (
+                  <motion.button
+                    key={d.id}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    onClick={() => onSelect(d)}
+                    className="flex items-center gap-3 rounded-xl bg-surface px-3 py-3 text-left ring-1 ring-border transition-shadow hover:shadow-lg hover:shadow-black/30"
+                  >
+                    <span className={`h-8 w-0.5 shrink-0 rounded-full ${m.bar}`} />
+                    <span className="font-mono text-[11px] text-dim">
+                      {timeFmt.format(new Date(d.due_at))}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-display text-sm font-semibold">
+                        {d.title}
+                      </span>
+                      <span className="block truncate font-mono text-[11px] text-dim">
+                        {[d.subject_code, d.subject].filter(Boolean).join(" · ")}
+                      </span>
+                    </span>
+                    <span className={`shrink-0 rounded-md px-2 py-1 font-mono text-[10px] ${m.chip}`}>
+                      {m.label}
+                    </span>
+                    {critical && <span className={`size-2 shrink-0 rounded-full ${m.dot} pulse-dot`} />}
+                  </motion.button>
+                );
+              }
+
+              const s = row.session;
+              if (row.kind === "academic")
+                return (
+                  <div
+                    key={`${s.id}-acad`}
+                    className={`rounded-xl px-3 py-2.5 ring-1 ${
+                      s.is_holiday
+                        ? "bg-evt-present/10 ring-evt-present/30"
+                        : "bg-cyan/10 ring-cyan/30"
+                    }`}
+                  >
+                    <p className="font-display text-sm font-semibold">{s.title}</p>
+                    <p className="font-mono text-[10px] text-dim">
+                      Academic calendar ·{" "}
+                      {rangeFmt.format(new Date(s.start_at))} — {rangeFmt.format(new Date(s.end_at))}
+                    </p>
+                  </div>
+                );
+
+              const color = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
               return (
-                <motion.button
-                  key={d.id}
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  onClick={() => onSelect(d)}
-                  className="flex items-center gap-3 rounded-xl bg-surface px-3 py-3 text-left ring-1 ring-border transition-shadow hover:shadow-lg hover:shadow-black/30"
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 rounded-xl bg-surface/70 px-3 py-2.5 ring-1 ring-border"
                 >
-                  <span className={`h-8 w-0.5 shrink-0 rounded-full ${m.bar}`} />
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
                   <span className="font-mono text-[11px] text-dim">
-                    {timeFmt.format(new Date(d.due_at))}
+                    {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-sm font-semibold">
-                      {d.title}
-                    </span>
-                    <span className="block truncate font-mono text-[11px] text-dim">
-                      {[d.subject_code, d.subject].filter(Boolean).join(" · ")}
-                    </span>
+                  <span className="min-w-0 flex-1 truncate font-display text-sm">
+                    {s.course_name ?? s.short_name ?? s.title}
                   </span>
-                  <span className={`shrink-0 rounded-md px-2 py-1 font-mono text-[10px] ${m.chip}`}>
-                    {m.label}
+                  <span className="hidden shrink-0 truncate font-mono text-[10px] text-faint sm:block">
+                    {[s.faculty_name, s.classroom].filter(Boolean).join(" · ")}
                   </span>
-                  {critical && (
-                    <span className={`size-2 shrink-0 rounded-full ${m.dot} pulse-dot`} />
-                  )}
-                </motion.button>
+                </div>
               );
             })}
           </div>
@@ -416,6 +729,7 @@ function Legend() {
   ];
   return (
     <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-4">
+      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Deadlines</span>
       {entries.map((e) => (
         <span key={e.label} className="flex items-center gap-1.5 font-mono text-[10px] text-dim">
           <span className={`size-2 rounded-full ${e.cls}`} /> {e.label}
