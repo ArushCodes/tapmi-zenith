@@ -237,27 +237,30 @@ function Board() {
         </div>
 
         {(tab === "feed" || tab === "calendar") && (
-          <div className="sticky top-0 z-20 -mx-5 mb-5 bg-ground/80 px-5 py-3 backdrop-blur-md">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-wrap gap-1.5">
+          <div className="sticky top-0 z-20 -mx-6 mb-7 bg-ground/80 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap gap-2">
                 {FILTERS.map((f) => (
-                  <button
+                  <motion.button
                     key={f.key}
                     onClick={() => setFilter(f.key)}
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ y: -2 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
                     className={
                       filter === f.key
-                        ? "rounded-lg bg-cyan/15 px-3 py-1.5 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
-                        : "rounded-lg px-3 py-1.5 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
+                        ? "rounded-xl bg-cyan/15 px-3.5 py-2 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
+                        : "rounded-xl px-3.5 py-2 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
                     }
                   >
                     {f.label}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex flex-wrap items-center gap-2.5">
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
                     ⌕
                   </span>
                   <input
@@ -265,38 +268,46 @@ function Board() {
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search course or code…"
                     aria-label="Search deadlines"
-                    className="w-44 rounded-lg bg-surface2/70 py-1.5 pl-8 pr-3 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/40 sm:w-56"
+                    className="w-44 rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:w-52 focus:ring-2 focus:ring-cyan/40 sm:w-60 sm:focus:w-72"
                   />
                 </div>
 
                 {tab === "feed" && (
-                  <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
+                  <div className="flex rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
                     {(["list", "timeline"] as const).map((v) => (
                       <button
                         key={v}
                         onClick={() => setView(v)}
-                        className={
-                          view === v
-                            ? "rounded-md bg-surface px-2.5 py-1 font-mono text-[11px] text-ink"
-                            : "rounded-md px-2.5 py-1 font-mono text-[11px] text-dim"
-                        }
+                        className={`relative rounded-lg px-3 py-1.5 font-mono text-[11px] transition-colors ${
+                          view === v ? "text-ink" : "text-dim hover:text-ink"
+                        }`}
                       >
-                        {v === "list" ? "List" : "Weeks"}
+                        {view === v && (
+                          <motion.span
+                            layoutId="view-pill"
+                            className="absolute inset-0 rounded-lg bg-surface"
+                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative">{v === "list" ? "List" : "Weeks"}</span>
                       </button>
                     ))}
                   </div>
                 )}
 
                 {isMod && (
-                  <button
+                  <motion.button
                     onClick={() => {
                       setEditing(null);
                       setDialogOpen(true);
                     }}
-                    className="flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_24px_-6px_var(--cyan)]"
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                    className="flex items-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_28px_-6px_var(--cyan)]"
                   >
                     <span className="text-base leading-none">+</span> Add
-                  </button>
+                  </motion.button>
                 )}
               </div>
             </div>
@@ -306,10 +317,10 @@ function Board() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={tab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.22 }}
+            initial={{ opacity: 0, y: 12, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            exit={{ opacity: 0, y: -12, filter: "blur(6px)" }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === "feed" && (
               <>
