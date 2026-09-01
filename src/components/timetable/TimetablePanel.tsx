@@ -2,12 +2,21 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, RefreshCw, Settings2 } from "lucide-react";
+import { Check, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatch } from "@/hooks/use-batch";
-import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession, type Course } from "@/lib/batches";
+import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
+import {
+  FALLBACK_COURSE_COLOR,
+  buildColorMap,
+  courseKey,
+  isAcademicEvent,
+  sessionColor,
+  sessionKey,
+} from "@/lib/courses";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
+
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "long",
