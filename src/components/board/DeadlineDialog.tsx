@@ -77,6 +77,7 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
         work_mode: form.work_mode,
         group_size: form.work_mode === "group" && form.group_size ? Number(form.group_size) : null,
         notes: form.notes.trim() || null,
+        is_major: form.type === "midterm" || form.type === "endterm",
       };
       if (deadline) {
         const { error } = await supabase.from("deadlines").update(payload).eq("id", deadline.id);

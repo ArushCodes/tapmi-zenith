@@ -10,6 +10,8 @@ export const DEADLINE_TYPES: { value: DeadlineType; label: string }[] = [
   { value: "presentation", label: "Presentation" },
   { value: "midterm", label: "Midterm" },
   { value: "endterm", label: "Endterm" },
+  { value: "guest_lecture", label: "Guest Lecture" },
+  { value: "other", label: "Other" },
 ];
 
 export const FILTERS = [
@@ -18,9 +20,77 @@ export const FILTERS = [
   { key: "assignment", label: "Assignments", types: ["assignment"] },
   { key: "presentation", label: "Presentations", types: ["presentation"] },
   { key: "exam", label: "Midterms / Endterms", types: ["midterm", "endterm"] },
+  { key: "lecture", label: "Lectures / Other", types: ["guest_lecture", "other"] },
 ] as const;
 
 export type FilterKey = (typeof FILTERS)[number]["key"];
+
+/** Visual identity per event type — colours come from the design tokens.
+ *  Class strings are written literally so Tailwind can see them. */
+export type EventMeta = {
+  label: string;
+  dot: string;
+  text: string;
+  chip: string;
+  ring: string;
+  bar: string;
+  glow: string;
+};
+
+const EXAM: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-exam",
+  text: "text-evt-exam",
+  chip: "bg-evt-exam/12 text-evt-exam ring-1 ring-evt-exam/30",
+  ring: "ring-evt-exam/40",
+  bar: "bg-evt-exam",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-exam)]",
+};
+const QUIZ: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-quiz",
+  text: "text-evt-quiz",
+  chip: "bg-evt-quiz/12 text-evt-quiz ring-1 ring-evt-quiz/30",
+  ring: "ring-evt-quiz/40",
+  bar: "bg-evt-quiz",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-quiz)]",
+};
+const ASSIGN: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-assign",
+  text: "text-evt-assign",
+  chip: "bg-evt-assign/12 text-evt-assign ring-1 ring-evt-assign/30",
+  ring: "ring-evt-assign/40",
+  bar: "bg-evt-assign",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-assign)]",
+};
+const PRESENT: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-present",
+  text: "text-evt-present",
+  chip: "bg-evt-present/12 text-evt-present ring-1 ring-evt-present/30",
+  ring: "ring-evt-present/40",
+  bar: "bg-evt-present",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-present)]",
+};
+const LECTURE: Omit<EventMeta, "label"> = {
+  dot: "bg-evt-lecture",
+  text: "text-evt-lecture",
+  chip: "bg-evt-lecture/12 text-evt-lecture ring-1 ring-evt-lecture/30",
+  ring: "ring-evt-lecture/40",
+  bar: "bg-evt-lecture",
+  glow: "shadow-[0_0_18px_-6px_var(--evt-lecture)]",
+};
+
+export const EVENT_META: Record<DeadlineType, EventMeta> = {
+  midterm: { label: "Midterm", ...EXAM },
+  endterm: { label: "Endterm", ...EXAM },
+  quiz: { label: "Quiz", ...QUIZ },
+  assignment: { label: "Assignment", ...ASSIGN },
+  presentation: { label: "Presentation", ...PRESENT },
+  guest_lecture: { label: "Guest Lecture", ...LECTURE },
+  other: { label: "Other", ...LECTURE },
+};
+
+export function eventMeta(type: DeadlineType): EventMeta {
+  return EVENT_META[type] ?? EVENT_META.other;
+}
 
 export const deadlinesQuery = {
   queryKey: ["deadlines"],
@@ -35,7 +105,7 @@ export const deadlinesQuery = {
 };
 
 export function typeLabel(type: DeadlineType) {
-  return DEADLINE_TYPES.find((t) => t.value === type)?.label ?? type;
+  return eventMeta(type).label;
 }
 
 export type Urgency = "past" | "critical" | "soon" | "later";
@@ -88,4 +158,79 @@ export function formatWeek(iso: string) {
   end.setDate(start.getDate() + 6);
   const f = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short" });
   return `${f.format(start)} — ${f.format(end)}`;
+}
+
+export function dayKey(date: Date | string) {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export function matchesSearch(d: Deadline, query: string) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [d.title, d.subject, d.subject_code, d.location, d.notes]
+    .filter(Boolean)
+    .some((v) => v!.toLowerCase().includes(q));
+}
+
+export function filterByKey(list: Deadline[], key: FilterKey, search: string) {
+  const active = FILTERS.find((f) => f.key === key);
+  return list.filter((d) => {
+    if (active?.types && !(active.types as readonly string[]).includes(d.type)) return false;
+    return matchesSearch(d, search);
+  });
+}
+
+/* ---------- calendar export helpers ---------- */
+
+function toUtcStamp(date: Date) {
+  return `${date.toISOString().replace(/[-:]/g, "").split(".")[0]}Z`;
+}
+
+export function eventEnd(d: Deadline) {
+  return new Date(new Date(d.due_at).getTime() + 60 * 60_000);
+}
+
+export function eventTitle(d: Deadline) {
+  return `${d.subject_code ? `${d.subject_code} · ` : ""}${d.title}`;
+}
+
+export function googleCalendarUrl(d: Deadline) {
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: eventTitle(d),
+    dates: `${toUtcStamp(new Date(d.due_at))}/${toUtcStamp(eventEnd(d))}`,
+    details: [d.subject, typeLabel(d.type), d.notes, d.submission_link].filter(Boolean).join("\n"),
+    location: d.location ?? "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+export function icsFor(d: Deadline) {
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//TAPMI IPM Deadline Board//EN",
+    "BEGIN:VEVENT",
+    `UID:${d.id}@tapmi-ipm`,
+    `DTSTAMP:${toUtcStamp(new Date())}`,
+    `DTSTART:${toUtcStamp(new Date(d.due_at))}`,
+    `DTEND:${toUtcStamp(eventEnd(d))}`,
+    `SUMMARY:${eventTitle(d)}`,
+    `DESCRIPTION:${[d.subject, typeLabel(d.type), d.notes].filter(Boolean).join(" — ")}`,
+    `LOCATION:${d.location ?? ""}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+export function downloadIcs(d: Deadline) {
+  const blob = new Blob([icsFor(d)], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${eventTitle(d).replace(/[^\w\- ]+/g, "")}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

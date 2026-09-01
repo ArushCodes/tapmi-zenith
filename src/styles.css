@@ -62,6 +62,13 @@
   --color-amber: var(--amber);
   --color-rose: var(--rose);
   --color-hairline: var(--hairline);
+
+  /* Event type palette */
+  --color-evt-exam: var(--evt-exam);
+  --color-evt-quiz: var(--evt-quiz);
+  --color-evt-assign: var(--evt-assign);
+  --color-evt-present: var(--evt-present);
+  --color-evt-lecture: var(--evt-lecture);
 }
 
 :root {
@@ -83,6 +90,13 @@
   --amber: oklch(0.816 0.135 71);
   --rose: oklch(0.673 0.196 20);
   --hairline: oklch(1 0 0 / 8%);
+
+  /* Event type palette (#EF4444 / #F59E0B / #6366F1 / #10B981 / #8B5CF6) */
+  --evt-exam: oklch(0.6368 0.2078 25.33);
+  --evt-quiz: oklch(0.7686 0.1647 70.08);
+  --evt-assign: oklch(0.5854 0.2041 277.12);
+  --evt-present: oklch(0.6959 0.1491 162.48);
+  --evt-lecture: oklch(0.6056 0.2189 292.72);
 
   --background: var(--ground);
   --foreground: var(--ink);
@@ -134,3 +148,11 @@
 @utility aurora-c { animation: aurora 26s ease-in-out infinite; }
 @utility blink { animation: board-blink 1.4s ease-in-out infinite; }
 
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 currentColor; opacity: 0.9; }
+  70% { box-shadow: 0 0 0 7px transparent; opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 0.9; }
+}
+
+@utility pulse-dot { animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }

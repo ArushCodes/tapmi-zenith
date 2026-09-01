@@ -21,8 +21,10 @@ export type Database = {
           due_at: string
           group_size: number | null
           id: string
+          is_major: boolean
           location: string | null
           notes: string | null
+          status: string
           subject: string
           subject_code: string | null
           submission_link: string | null
@@ -37,8 +39,10 @@ export type Database = {
           due_at: string
           group_size?: number | null
           id?: string
+          is_major?: boolean
           location?: string | null
           notes?: string | null
+          status?: string
           subject: string
           subject_code?: string | null
           submission_link?: string | null
@@ -53,8 +57,10 @@ export type Database = {
           due_at?: string
           group_size?: number | null
           id?: string
+          is_major?: boolean
           location?: string | null
           notes?: string | null
+          status?: string
           subject?: string
           subject_code?: string | null
           submission_link?: string | null
@@ -129,6 +135,8 @@ export type Database = {
         | "presentation"
         | "midterm"
         | "endterm"
+        | "guest_lecture"
+        | "other"
       work_mode: "individual" | "group"
     }
     CompositeTypes: {
@@ -264,6 +272,8 @@ export const Constants = {
         "presentation",
         "midterm",
         "endterm",
+        "guest_lecture",
+        "other",
       ],
       work_mode: ["individual", "group"],
     },

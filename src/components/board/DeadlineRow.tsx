@@ -1,4 +1,5 @@
 import {
+  eventMeta,
   formatDue,
   timeLeft,
   typeLabel,
@@ -33,17 +34,23 @@ type Props = {
   canManage: boolean;
   onEdit: (d: Deadline) => void;
   onDelete: (d: Deadline) => void;
+  onOpen?: (d: Deadline) => void;
 };
 
-export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete }: Props) {
+export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen }: Props) {
   const u = urgencyOf(deadline.due_at, now);
+  const meta = eventMeta(deadline.type);
 
   return (
     <div
       className={`group relative grid grid-cols-[1fr_auto] items-center gap-4 rounded-xl bg-surface px-4 py-3.5 ring-1 ring-border transition-transform duration-200 hover:-translate-y-0.5 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] ${hoverRing[u]}`}
     >
       <span className={`absolute left-0 top-3 bottom-3 w-0.5 rounded-full ${accent[u]}`} />
-      <div className="min-w-0 pl-2">
+      <button
+        type="button"
+        onClick={() => onOpen?.(deadline)}
+        className="min-w-0 pl-2 text-left"
+      >
         <p className="truncate font-display text-[15px] font-semibold tracking-tight">
           {deadline.subject} — {deadline.title}
         </p>
@@ -52,9 +59,9 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete }: Prop
             .filter(Boolean)
             .join(" · ")}
         </p>
-      </div>
+      </button>
 
-      <span className="hidden rounded-md bg-surface2 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-dim ring-1 ring-border sm:block">
+      <span className={`hidden rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wide sm:block ${meta.chip}`}>
         {typeLabel(deadline.type)}
       </span>
 
