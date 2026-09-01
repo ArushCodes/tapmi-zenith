@@ -369,10 +369,11 @@ function SessionCard({
   members: { user_id: string; status: string; profiles: { full_name: string | null; email: string | null } | null }[];
   marks: AttendanceMark[];
   onMark: (
-    status: AttendanceMark["status"],
+    status: AttendanceMark["status"] | null,
     userId: string,
     source: AttendanceMark["mark_source"],
   ) => void;
+
   meId: string;
 }) {
   const [roster, setRoster] = useState(false);
