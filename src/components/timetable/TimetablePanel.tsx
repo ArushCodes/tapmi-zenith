@@ -271,16 +271,75 @@ export function TimetablePanel() {
   );
 }
 
-function RegistroSettings({
+function CourseCatalogue({ courses }: { courses: Course[] }) {
+  const [open, setOpen] = useState(false);
+  if (courses.length === 0) return null;
+  return (
+    <div className="mb-5 rounded-xl bg-surface p-3 ring-1 ring-border">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-cyan"
+      >
+        <span>Courses · {courses.length}</span>
+        <span className="text-faint">{open ? "Hide" : "Show all"}</span>
+      </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {courses.map((c) => (
+          <span
+            key={c.id}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px]"
+            style={{
+              color: c.color ?? undefined,
+              backgroundColor: c.color ? `${c.color}1a` : undefined,
+            }}
+          >
+            <span
+              className="size-2 rounded-full"
+              style={{ backgroundColor: c.color ?? "currentColor" }}
+            />
+            {c.short_name}
+          </span>
+        ))}
+      </div>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {courses.map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-lg border-l-[3px] bg-surface2 px-3 py-2"
+                  style={{ borderLeftColor: c.color ?? "transparent" }}
+                >
+                  <p className="truncate font-display text-sm font-semibold">{c.name}</p>
+                  <p className="truncate font-mono text-[11px] text-dim">
+                    {[c.code, c.faculty_name].filter(Boolean).join(" · ")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function IcsSettings({
   onSave,
   feedUrl,
+  current,
 }: {
-  onSave: (v: { username: string; password: string; termId: string }) => Promise<void>;
+  onSave: (icsUrl: string) => Promise<void>;
   feedUrl: string;
+  current: string;
 }) {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [termId, setTermId] = useState("");
+  const [url, setUrl] = useState(current);
   const [busy, setBusy] = useState(false);
 
   return (
@@ -292,8 +351,7 @@ function RegistroSettings({
         e.preventDefault();
         setBusy(true);
         try {
-          await onSave({ username, password, termId });
-          setPassword("");
+          await onSave(url.trim());
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Could not save");
         } finally {
@@ -303,39 +361,27 @@ function RegistroSettings({
       className="mb-5 overflow-hidden rounded-xl bg-surface p-4 ring-1 ring-border"
     >
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-        Shared Registro login for this batch
+        Timetable calendar link (.ics)
       </p>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <input
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Registro username"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Registro password"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-        <input
-          value={termId}
-          onChange={(e) => setTermId(e.target.value)}
-          placeholder="Term session id"
-          required
-          className="rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-      </div>
-      <p className="mt-3 break-all font-mono text-[10px] text-faint">Feed: {feedUrl}</p>
+      <input
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="https://example.github.io/tt-sync/timetable.ics"
+        required
+        type="url"
+        className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
+      />
+      <p className="mt-2 font-mono text-[10px] text-faint">
+        Any public .ics feed works — classes, faculty, rooms and holidays are imported automatically
+        and each course gets its own colour.
+      </p>
+      <p className="mt-2 break-all font-mono text-[10px] text-faint">Your feed: {feedUrl}</p>
       <button
         type="submit"
         disabled={busy}
         className="mt-3 rounded-lg bg-cyan px-3 py-1.5 text-sm font-semibold text-ground disabled:opacity-60"
       >
-        Save credentials
+        Save & sync
       </button>
     </motion.form>
   );
