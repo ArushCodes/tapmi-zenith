@@ -6,7 +6,7 @@ import { CalendarClock, Copy, Link2, Plus, RefreshCw, Settings2 } from "lucide-r
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatch } from "@/hooks/use-batch";
-import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
+import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession, type Course } from "@/lib/batches";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 
 const dayFmt = new Intl.DateTimeFormat("en-GB", {
@@ -420,7 +420,7 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
       className="mb-5 overflow-hidden rounded-xl bg-surface p-4 ring-1 ring-border"
     >
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-        Add a class Registro does not have
+        Add a class the calendar feed does not have
       </p>
       <div className="grid gap-3 sm:grid-cols-4">
         <input
