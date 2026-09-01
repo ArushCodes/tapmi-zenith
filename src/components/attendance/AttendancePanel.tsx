@@ -41,9 +41,20 @@ export function AttendancePanel({ now }: { now: number }) {
     mutationFn: async (input: {
       session: ClassSession;
       userId: string;
-      status: AttendanceMark["status"];
+      /** null clears an existing mark (tap the active button again). */
+      status: AttendanceMark["status"] | null;
       source: AttendanceMark["mark_source"];
     }) => {
+      if (input.status === null) {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", input.session.id)
+          .eq("user_id", input.userId)
+          .eq("mark_source", input.source);
+        if (error) throw error;
+        return "cleared" as const;
+      }
       const { error } = await supabase.from("attendance_marks").upsert(
         {
           session_id: input.session.id,
@@ -56,13 +67,15 @@ export function AttendancePanel({ now }: { now: number }) {
         { onConflict: "session_id,user_id,mark_source" },
       );
       if (error) throw error;
+      return "saved" as const;
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
-      toast.success("Attendance recorded");
+      toast.success(res === "cleared" ? "Attendance cleared" : "Attendance recorded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const classes = useMemo(
     () => sessions.filter((s) => !s.is_holiday),
