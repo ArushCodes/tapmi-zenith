@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { BatchSelector } from "@/components/board/BatchSelector";
 
 export function BoardHeader() {
   const { user, isModerator } = useAuth();
