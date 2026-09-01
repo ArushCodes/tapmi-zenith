@@ -39,6 +39,8 @@ export function AttendancePanel({ now }: { now: number }) {
   const { batchId, batch, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
   const [subTab, setSubTab] = useState<SubTab>("live");
+  const [browse, setBrowse] = useState(false);
+  const [q, setQ] = useState("");
 
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
@@ -114,6 +116,21 @@ export function AttendancePanel({ now }: { now: number }) {
       .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
       .slice(0, 12);
   }, [classes, now]);
+
+  /** Any class from the timetable, newest first, searchable. */
+  const browsable = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return classes
+      .filter((s) =>
+        !needle
+          ? true
+          : [s.title, s.course_name, s.short_name, s.faculty_name, s.classroom]
+              .filter(Boolean)
+              .some((v) => String(v).toLowerCase().includes(needle)),
+      )
+      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
+      .slice(0, 60);
+  }, [classes, q]);
 
   const myMarks = useMemo(() => {
     const map = new Map<string, AttendanceMark>();
@@ -320,6 +337,46 @@ export function AttendancePanel({ now }: { now: number }) {
               )}
             </div>
           </div>
+
+          <div>
+            <button
+              onClick={() => setBrowse((v) => !v)}
+              className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
+            >
+              {browse ? "− Hide" : "+ Mark any class from the timetable"}
+            </button>
+            {browse && (
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center gap-2 rounded-lg bg-surface2 px-3 py-2 ring-1 ring-border">
+                  <Search className="size-3.5 text-faint" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search subject, faculty or room"
+                    className="w-full bg-transparent font-mono text-[11px] text-ink outline-none placeholder:text-faint"
+                  />
+                </label>
+                {browsable.map((s) => (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    tone="past"
+                    myMark={myMarks.get(`${s.id}-self`) ?? null}
+                    canManage={canManage}
+                    members={members}
+                    marks={marks}
+                    onMark={(status, userId, source) =>
+                      mark.mutate({ session: s, userId, status, source })
+                    }
+                    meId={user?.id ?? ""}
+                  />
+                ))}
+                {browsable.length === 0 && (
+                  <p className="font-mono text-[11px] text-faint">No classes match that search.</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -418,17 +475,25 @@ function SessionCard({
         tone === "live" ? "ring-cyan/30" : "ring-border"
       }`}
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-display text-sm font-semibold">{session.title}</span>
-          <span className="block font-mono text-[11px] text-dim">
-            {timeFmt.format(new Date(session.start_at))} · {session.classroom ?? "—"}
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <span className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+          <span className="block truncate font-display text-sm font-semibold leading-tight">
+            {shortSubject(session.title, 40)}
+          </span>
+          <span className="block truncate font-mono text-[10px] leading-relaxed text-dim sm:text-[11px]">
+            {[
+              timeFmt.format(new Date(session.start_at)),
+              session.faculty_name,
+              session.classroom,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </span>
         <button
           onClick={() => onMark(myMark?.status === "present" ? null : "present", meId, "self")}
           title={myMark?.status === "present" ? "Tap again to clear" : "Mark present"}
-          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
             myMark?.status === "present"
               ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
               : "text-dim ring-border hover:text-ink"
@@ -439,7 +504,7 @@ function SessionCard({
         <button
           onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
           title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
-          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
             myMark?.status === "absent"
               ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
               : "text-dim ring-border hover:text-ink"
