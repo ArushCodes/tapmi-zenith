@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { DEADLINE_TYPES, type Deadline, type DeadlineType } from "@/lib/deadlines";
+import { useBatch } from "@/hooks/use-batch";
 import {
   Dialog,
   DialogContent,
