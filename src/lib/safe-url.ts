@@ -1,5 +1,8 @@
 /** SSRF guards for user-supplied calendar feed URLs. Safe to import anywhere. */
 
+/** Error whose message is safe to show to end users. */
+export class FeedError extends Error {}
+
 const BLOCKED_HOST_SUFFIXES = [
   "localhost",
   ".localhost",
@@ -46,16 +49,16 @@ export function assertSafeFeedUrl(raw: string): URL {
   try {
     url = new URL(raw);
   } catch {
-    throw new Error("Enter a valid calendar link");
+    throw new FeedError("Enter a valid calendar link");
   }
   if (url.protocol !== "https:") {
-    throw new Error("Calendar link must start with https://");
+    throw new FeedError("Calendar link must start with https://");
   }
   if (url.username || url.password) {
-    throw new Error("Calendar link must not contain credentials");
+    throw new FeedError("Calendar link must not contain credentials");
   }
   if (url.port && url.port !== "443") {
-    throw new Error("Calendar link must use the standard https port");
+    throw new FeedError("Calendar link must use the standard https port");
   }
   const host = url.hostname.toLowerCase().replace(/\.$/, "");
   if (
@@ -65,7 +68,7 @@ export function assertSafeFeedUrl(raw: string): URL {
     isPrivateIpv4(host) ||
     isPrivateIpv6(host)
   ) {
-    throw new Error("Calendar link must point to a public website");
+    throw new FeedError("Calendar link must point to a public website");
   }
   return url;
 }
@@ -80,11 +83,11 @@ export async function fetchPublicFeed(raw: string, maxRedirects = 3): Promise<Re
     });
     if (res.status >= 300 && res.status < 400) {
       const loc = res.headers.get("location");
-      if (!loc) throw new Error("Calendar link redirected to an invalid location");
+      if (!loc) throw new FeedError("Calendar link redirected to an invalid location");
       target = assertSafeFeedUrl(new URL(loc, target).toString()).toString();
       continue;
     }
     return res;
   }
-  throw new Error("Calendar link redirected too many times");
+  throw new FeedError("Calendar link redirected too many times");
 }
