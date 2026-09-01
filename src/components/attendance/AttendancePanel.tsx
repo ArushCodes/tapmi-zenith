@@ -444,7 +444,9 @@ function SessionCard({
                     {m.profiles?.full_name ?? m.profiles?.email ?? m.user_id}
                   </span>
                   <button
-                    onClick={() => onMark("present", m.user_id, "rep")}
+                    onClick={() =>
+                      onMark(mk?.status === "present" ? null : "present", m.user_id, "rep")
+                    }
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "present"
                         ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
@@ -454,7 +456,10 @@ function SessionCard({
                     P
                   </button>
                   <button
-                    onClick={() => onMark("absent", m.user_id, "rep")}
+                    onClick={() =>
+                      onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
+                    }
+
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "absent"
                         ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
