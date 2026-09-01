@@ -254,44 +254,68 @@ export function TimetablePanel() {
         </div>
       )}
 
-      <p className="mt-8 flex items-center justify-center gap-2 font-mono text-[10px] text-faint">
-        <Link2 className="size-3" /> Subscribe in Google/Apple Calendar with the feed link above
-        <CalendarClock className="size-3" />
-      </p>
     </section>
   );
 }
 
-function CourseCatalogue({ courses }: { courses: Course[] }) {
+function CourseCatalogue({
+  courses,
+  selected,
+  onToggle,
+  onClear,
+}: {
+  courses: Course[];
+  selected: string[];
+  onToggle: (code: string) => void;
+  onClear: () => void;
+}) {
   const [open, setOpen] = useState(false);
   if (courses.length === 0) return null;
   return (
     <div className="mb-5 rounded-xl bg-surface p-3 ring-1 ring-border">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-cyan"
-      >
+      <div className="flex w-full items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
         <span>Courses · {courses.length}</span>
-        <span className="text-faint">{open ? "Hide" : "Show all"}</span>
-      </button>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {courses.map((c) => (
-          <span
-            key={c.id}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px]"
-            style={{
-              color: c.color ?? undefined,
-              backgroundColor: c.color ? `${c.color}1a` : undefined,
-            }}
-          >
-            <span
-              className="size-2 rounded-full"
-              style={{ backgroundColor: c.color ?? "currentColor" }}
-            />
-            {c.short_name}
-          </span>
-        ))}
+        <span className="h-px flex-1 bg-border" />
+        {selected.length > 0 && (
+          <button onClick={onClear} className="text-faint normal-case hover:text-ink">
+            Clear filter
+          </button>
+        )}
+        <button onClick={() => setOpen((v) => !v)} className="text-faint hover:text-ink">
+          {open ? "Hide" : "Details"}
+        </button>
       </div>
+      <p className="mt-2 font-mono text-[10px] normal-case text-faint">
+        Tap subjects to filter — pick as many as you like.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {courses.map((c) => {
+          const code = c.code.toLowerCase();
+          const on = selected.length === 0 || selected.includes(code);
+          const color = c.color ?? "#64748B";
+          return (
+            <motion.button
+              key={c.id}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => onToggle(code)}
+              title={[c.name, c.faculty_name].filter(Boolean).join(" · ")}
+              className={`flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-[10px] transition-opacity ${
+                on ? "opacity-100" : "opacity-40"
+              }`}
+              style={{
+                color,
+                backgroundColor: `${color}1a`,
+                boxShadow: selected.includes(code) ? `0 0 0 1px ${color}` : undefined,
+              }}
+            >
+              <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+              {c.short_name}
+            </motion.button>
+          );
+        })}
+      </div>
+
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
