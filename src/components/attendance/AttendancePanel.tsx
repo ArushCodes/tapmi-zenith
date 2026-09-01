@@ -41,9 +41,20 @@ export function AttendancePanel({ now }: { now: number }) {
     mutationFn: async (input: {
       session: ClassSession;
       userId: string;
-      status: AttendanceMark["status"];
+      /** null clears an existing mark (tap the active button again). */
+      status: AttendanceMark["status"] | null;
       source: AttendanceMark["mark_source"];
     }) => {
+      if (input.status === null) {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", input.session.id)
+          .eq("user_id", input.userId)
+          .eq("mark_source", input.source);
+        if (error) throw error;
+        return "cleared" as const;
+      }
       const { error } = await supabase.from("attendance_marks").upsert(
         {
           session_id: input.session.id,
@@ -56,13 +67,15 @@ export function AttendancePanel({ now }: { now: number }) {
         { onConflict: "session_id,user_id,mark_source" },
       );
       if (error) throw error;
+      return "saved" as const;
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
-      toast.success("Attendance recorded");
+      toast.success(res === "cleared" ? "Attendance cleared" : "Attendance recorded");
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const classes = useMemo(
     () => sessions.filter((s) => !s.is_holiday),
@@ -356,10 +369,11 @@ function SessionCard({
   members: { user_id: string; status: string; profiles: { full_name: string | null; email: string | null } | null }[];
   marks: AttendanceMark[];
   onMark: (
-    status: AttendanceMark["status"],
+    status: AttendanceMark["status"] | null,
     userId: string,
     source: AttendanceMark["mark_source"],
   ) => void;
+
   meId: string;
 }) {
   const [roster, setRoster] = useState(false);
@@ -386,7 +400,8 @@ function SessionCard({
           </span>
         </span>
         <button
-          onClick={() => onMark("present", meId, "self")}
+          onClick={() => onMark(myMark?.status === "present" ? null : "present", meId, "self")}
+          title={myMark?.status === "present" ? "Tap again to clear" : "Mark present"}
           className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 ${
             myMark?.status === "present"
               ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
@@ -396,7 +411,8 @@ function SessionCard({
           <CheckCircle2 className="size-3.5" /> Present
         </button>
         <button
-          onClick={() => onMark("absent", meId, "self")}
+          onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
+          title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
           className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 ${
             myMark?.status === "absent"
               ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
@@ -405,6 +421,7 @@ function SessionCard({
         >
           <CircleSlash className="size-3.5" /> Absent
         </button>
+
         {canManage && (
           <button
             onClick={() => setRoster((v) => !v)}
@@ -427,7 +444,9 @@ function SessionCard({
                     {m.profiles?.full_name ?? m.profiles?.email ?? m.user_id}
                   </span>
                   <button
-                    onClick={() => onMark("present", m.user_id, "rep")}
+                    onClick={() =>
+                      onMark(mk?.status === "present" ? null : "present", m.user_id, "rep")
+                    }
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "present"
                         ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
@@ -437,7 +456,10 @@ function SessionCard({
                     P
                   </button>
                   <button
-                    onClick={() => onMark("absent", m.user_id, "rep")}
+                    onClick={() =>
+                      onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
+                    }
+
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "absent"
                         ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"

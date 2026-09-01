@@ -74,22 +74,23 @@
 :root {
   --radius: 0.75rem;
 
-  --font-display-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-body-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-body-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
   --font-mono-family: "IBM Plex Mono", ui-monospace, monospace;
 
-  --ground: oklch(0.13 0.019 268);
-  --surface: oklch(0.175 0.021 268);
-  --surface2: oklch(0.215 0.031 271);
-  --ink: oklch(0.936 0.014 267);
-  --dim: oklch(0.652 0.026 267);
-  --faint: oklch(0.472 0.028 268);
-  --cyan: oklch(0.826 0.126 179);
-  --magenta: oklch(0.702 0.191 356);
-  --violet: oklch(0.687 0.152 288);
-  --amber: oklch(0.816 0.135 71);
-  --rose: oklch(0.673 0.196 20);
-  --hairline: oklch(1 0 0 / 8%);
+  /* MAHE dark: deep Manipal navy ground, brand orange + gold accents */
+  --ground: oklch(0.185 0.038 264);
+  --surface: oklch(0.245 0.045 264);
+  --surface2: oklch(0.305 0.055 264);
+  --ink: oklch(0.962 0.006 264);
+  --dim: oklch(0.762 0.028 264);
+  --faint: oklch(0.575 0.038 264);
+  --cyan: oklch(0.724 0.168 52);
+  --magenta: oklch(0.826 0.156 84);
+  --violet: oklch(0.662 0.132 262);
+  --amber: oklch(0.845 0.132 82);
+  --rose: oklch(0.628 0.199 25);
+  --hairline: oklch(1 0 0 / 10%);
 
   /* Event type palette (#EF4444 / #F59E0B / #6366F1 / #10B981 / #8B5CF6) */
   --evt-exam: oklch(0.6368 0.2078 25.33);
