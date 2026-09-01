@@ -17,14 +17,31 @@ async function assertBatchMod(
 export const saveIcsUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ batchId: z.string().uuid(), icsUrl: z.string().url() }).parse(input),
+    z
+      .object({
+        batchId: z.string().uuid(),
+        icsUrl: z
+          .string()
+          .max(2048)
+          .transform((v) => v.trim())
+          .refine((v) => {
+            try {
+              assertSafeFeedUrl(v);
+              return true;
+            } catch {
+              return false;
+            }
+          }, "Enter a public https calendar (.ics) link"),
+      })
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertBatchMod(context.supabase as never, context.userId, data.batchId);
+    const safeUrl = assertSafeFeedUrl(data.icsUrl).toString();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("batches")
-      .update({ ics_url: data.icsUrl })
+      .update({ ics_url: safeUrl })
       .eq("id", data.batchId);
     if (error) throw new Error(error.message);
     await supabaseAdmin
