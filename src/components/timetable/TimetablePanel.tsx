@@ -166,13 +166,15 @@ export function TimetablePanel() {
 
       <AnimatePresence initial={false}>
         {showSettings && canManage && (
-          <RegistroSettings
-            onSave={async (v) => {
-              await saveCreds({ data: { batchId: batchId!, ...v } });
-              toast.success("Registro credentials saved");
-              setShowSettings(false);
-            }}
+          <IcsSettings
+            current={batch?.ics_url ?? ""}
             feedUrl={feedUrl}
+            onSave={async (icsUrl) => {
+              await saveFeed({ data: { batchId: batchId!, icsUrl } });
+              toast.success("Calendar link saved — syncing now");
+              setShowSettings(false);
+              sync.mutate();
+            }}
           />
         )}
         {showCustom && canManage && (
