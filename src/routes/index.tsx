@@ -186,10 +186,10 @@ function Board() {
         <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
-              Next up on the board · sorted by time remaining
+              {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
-              TAPMI IPM Deadline Board — Batch 2026–2031
+              {batch ? `${batch.name} — Deadlines, Timetable & Attendance` : "MAHE Student Portal"}
             </h1>
           </div>
           <p className="font-mono text-xs text-faint">
