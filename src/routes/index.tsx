@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
+import { useMe } from "@/hooks/use-me";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
@@ -71,6 +72,7 @@ type TabKey =
 
 function Board() {
   const { isModerator } = useAuth();
+  const me = useMe();
   const { batchId, batch, canManage } = useBatch();
   const isMod = canManage || isModerator;
   const queryClient = useQueryClient();
@@ -135,6 +137,15 @@ function Board() {
   const pendingCount = useMemo(
     () => deadlines.filter((d) => d.status === "pending").length,
     [deadlines],
+  );
+
+  const dueSoonCount = useMemo(
+    () =>
+      approved.filter((d) => {
+        const t = new Date(d.due_at).getTime();
+        return t >= now && t - now <= 48 * 3600_000;
+      }).length,
+    [approved, now],
   );
 
   const filtered = useMemo(
