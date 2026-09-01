@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
 import { BoardHeader } from "@/components/board/BoardHeader";
+import { Landing } from "@/components/landing/Landing";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
 import { EventDrawer } from "@/components/board/EventDrawer";
@@ -211,27 +212,22 @@ function Board() {
 
       <BoardHeader />
 
-      <main className="relative z-10 mx-auto max-w-[1180px] px-6 pb-24 sm:px-8">
+      <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-24 sm:px-8">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-end justify-between gap-5 pb-8 pt-2"
+          className="flex flex-wrap items-end justify-between gap-4 pb-7 pt-1"
         >
           <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
-              {batch ? `${batch.path} · ${batch.programme_name}` : "MAHE academic portal"}
+              {batch?.name ?? "TAPMI Manipal"}
             </p>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              {me.name
-                ? `${me.greeting} — here's what's ahead`
-                : batch
-                  ? `${batch.name} — Deadlines, Timetable & Attendance`
-                  : "MAHE Student Portal"}
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-4xl">
+              {me.name ? `${me.greeting} — here's what's ahead` : "Your board"}
             </h1>
             {me.name && (
               <p className="font-mono text-xs text-dim">
-                {batch ? `${batch.name} · ` : ""}
                 {dueSoonCount > 0
                   ? `${dueSoonCount} deadline${dueSoonCount === 1 ? "" : "s"} on ${me.name}'s plate in the next 48 hours.`
                   : "Nothing burning in the next 48 hours — nice work."}
@@ -253,13 +249,13 @@ function Board() {
         </motion.div>
 
         {/* Top-level tab switcher */}
-        <div className="mb-6 flex flex-wrap gap-1.5 rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border">
+        <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
           {tabs.map((t) => (
             <motion.button
               key={t.key}
               onClick={() => setTab(t.key)}
               whileTap={{ scale: 0.96 }}
-              className={`relative flex items-center gap-2 rounded-xl px-4 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
+              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
                 tab === t.key ? "text-ink" : "text-dim hover:text-ink"
               }`}
             >
@@ -279,7 +275,7 @@ function Board() {
         </div>
 
         {(tab === "feed" || tab === "calendar") && (
-          <div className="sticky top-0 z-20 -mx-6 mb-7 bg-ground/80 px-6 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
+          <div className="sticky top-0 z-20 -mx-5 mb-7 bg-ground/80 px-5 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-wrap gap-2">
                 {FILTERS.map((f) => (
