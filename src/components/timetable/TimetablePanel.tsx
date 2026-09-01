@@ -80,7 +80,8 @@ export function TimetablePanel() {
     );
   }, [sessions, weekStart, weekEnd, selected]);
 
-  /** Every class that appears anywhere in the feed, plus catalogued courses. */
+  /** Every class that appears anywhere in the feed, plus catalogued courses.
+   *  All holidays collapse into a single "Holidays" filter. */
   const options = useMemo(() => {
     const m = new Map<
       string,
@@ -105,14 +106,19 @@ export function TimetablePanel() {
       }
       m.set(key, {
         key,
-        label: s.short_name ?? s.course_name ?? s.title,
-        sub: [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
-        color: FALLBACK_COURSE_COLOR,
+        label: key === HOLIDAY_KEY ? "Holidays" : (s.short_name ?? s.course_name ?? s.title),
+        sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
+        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : FALLBACK_COURSE_COLOR,
         count: 1,
       });
     }
-    return [...m.values()].sort((a, b) => a.label.localeCompare(b.label));
+    return [...m.values()].sort((a, b) => {
+      if (a.key === HOLIDAY_KEY) return 1;
+      if (b.key === HOLIDAY_KEY) return -1;
+      return a.label.localeCompare(b.label);
+    });
   }, [courses, sessions]);
+
 
   const colorMap = useMemo(() => buildColorMap(courses), [courses]);
 
