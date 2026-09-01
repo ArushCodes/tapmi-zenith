@@ -205,7 +205,7 @@ async function syncCourses(batchId: string, rows: NormalisedSession[]) {
   const map = new Map<string, { name: string; short: string; faculty: string | null }>();
   for (const r of rows) {
     if (r.is_holiday) continue;
-    const code = r.course_code ?? r.short_name;
+    const code = r.course_code;
     if (!code) continue;
     if (!map.has(code))
       map.set(code, {
