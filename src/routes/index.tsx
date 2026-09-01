@@ -324,7 +324,7 @@ function Board() {
           >
             {tab === "feed" && (
               <>
-                <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+                <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
                   <span className="hidden text-right sm:block">Type</span>
                   <span className="hidden text-right sm:block">Work</span>
@@ -332,37 +332,59 @@ function Board() {
                 </div>
 
                 {isLoading ? (
-                  <p className="mt-6 text-center font-mono text-xs text-faint">Loading the board…</p>
+                  <div className="mt-5 flex flex-col gap-3">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface2/40" />
+                    ))}
+                  </div>
                 ) : filtered.length === 0 ? (
-                  <p className="mt-6 text-center font-mono text-xs text-faint">
-                    Nothing on the board for this filter.
-                  </p>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.97 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mt-10 rounded-2xl bg-surface/50 px-8 py-14 text-center ring-1 ring-border"
+                  >
+                    <p className="font-display text-lg font-semibold">Nothing on the board</p>
+                    <p className="mt-2 font-mono text-xs text-faint">
+                      No items match this filter{search ? ` and “${search}”` : ""}.
+                    </p>
+                  </motion.div>
                 ) : view === "list" ? (
-                  <div className="mt-2 flex flex-col gap-2">
-                    {filtered.map((d) => (
-                      <DeadlineRow
+                  <div className="mt-4 flex flex-col gap-3">
+                    {filtered.map((d, i) => (
+                      <motion.div
                         key={d.id}
-                        deadline={d}
-                        now={now}
-                        canManage={isMod}
-                        onEdit={openEdit}
-                        onDelete={(x) => remove.mutate(x)}
-                        onOpen={setSelected}
-                      />
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <DeadlineRow
+                          deadline={d}
+                          now={now}
+                          canManage={isMod}
+                          onEdit={openEdit}
+                          onDelete={(x) => remove.mutate(x)}
+                          onOpen={setSelected}
+                        />
+                      </motion.div>
                     ))}
                   </div>
                 ) : (
-                  <div className="mt-4 flex flex-col gap-6">
-                    {weeks.map(([week, items]) => (
-                      <section key={week}>
-                        <div className="mb-2 flex items-center gap-3">
+                  <div className="mt-6 flex flex-col gap-9">
+                    {weeks.map(([week, items], wi) => (
+                      <motion.section
+                        key={week}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(wi * 0.06, 0.3), duration: 0.35 }}
+                      >
+                        <div className="mb-3 flex items-center gap-3">
                           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
                             {formatWeek(week)}
                           </p>
                           <span className="h-px flex-1 bg-border" />
                           <p className="font-mono text-[10px] text-faint">{items.length} items</p>
                         </div>
-                        <div className="flex flex-col gap-2 border-l border-border pl-4">
+                        <div className="flex flex-col gap-3 border-l border-border pl-5">
                           {items.map((d) => (
                             <DeadlineRow
                               key={d.id}
@@ -375,7 +397,7 @@ function Board() {
                             />
                           ))}
                         </div>
-                      </section>
+                      </motion.section>
                     ))}
                   </div>
                 )}
