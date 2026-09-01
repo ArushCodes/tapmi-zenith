@@ -38,8 +38,10 @@ export const Route = createFileRoute("/")({
           "Every quiz, assignment, presentation and exam for the IPM 2026–2031 batch, in a feed and an interactive calendar.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://tapmi-zenith.lovable.app/" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
+    links: [{ rel: "canonical", href: "https://tapmi-zenith.lovable.app/" }],
   }),
   component: Board,
 });
@@ -152,10 +154,10 @@ function Board() {
         <div className="flex flex-wrap items-end justify-between gap-4 pb-5">
           <div>
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
-              Departures · sorted by time remaining
+              Next up on the board · sorted by time remaining
             </p>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
-              Next up on the board
+              TAPMI IPM Deadline Board — Batch 2026–2031
             </h1>
           </div>
           <p className="font-mono text-xs text-faint">
