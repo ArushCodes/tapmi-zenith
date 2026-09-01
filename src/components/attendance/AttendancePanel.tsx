@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, CircleSlash, Download, Users } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleSlash, Download, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -14,6 +14,13 @@ import {
   type AttendanceMark,
   type ClassSession,
 } from "@/lib/batches";
+import {
+  meterColor,
+  plannedFor,
+  resolveMarks,
+  sessionSubject,
+  shortSubject,
+} from "@/lib/attendance";
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -114,31 +121,50 @@ export function AttendancePanel({ now }: { now: number }) {
     return map;
   }, [marks, user?.id]);
 
-  /** Per-course stats for the signed-in user (rep mark wins, self mark as fallback). */
+  /** Per-course stats: attendance is measured against the planned trimester
+   *  session count, so every unexcused absence eats into the percentage. */
   const stats = useMemo(() => {
-    const byCourse = new Map<string, { held: number; present: number }>();
     const sessionById = new Map(classes.map((s) => [s.id, s]));
-    const resolved = new Map<string, AttendanceMark>();
-    for (const m of marks) {
-      if (m.user_id !== user?.id) continue;
-      const existing = resolved.get(m.session_id);
-      if (!existing || m.mark_source === "rep") resolved.set(m.session_id, m);
+    const resolved = resolveMarks(marks, user?.id);
+
+    const scheduled = new Map<string, number>();
+    for (const s of classes) {
+      const key = sessionSubject(s);
+      scheduled.set(key, (scheduled.get(key) ?? 0) + 1);
+    }
+
+    const rows = new Map<string, { held: number; absent: number; present: number }>();
+    for (const key of scheduled.keys()) rows.set(key, { held: 0, absent: 0, present: 0 });
+    for (const s of classes) {
+      if (new Date(s.end_at).getTime() > now) continue;
+      const row = rows.get(sessionSubject(s))!;
+      row.held += 1;
     }
     for (const [sessionId, m] of resolved) {
       const s = sessionById.get(sessionId);
       if (!s) continue;
-      const key = s.short_name ?? s.course_name ?? "Other";
-      const row = byCourse.get(key) ?? { held: 0, present: 0 };
-      row.held += 1;
-      if (m.status === "present" || m.status === "late" || m.status === "excused") row.present += 1;
-      byCourse.set(key, row);
+      const row = rows.get(sessionSubject(s));
+      if (!row) continue;
+      if (m.status === "absent") row.absent += 1;
+      else row.present += 1;
     }
-    return [...byCourse.entries()].map(([course, v]) => ({
-      course,
-      ...v,
-      pct: v.held ? Math.round((v.present / v.held) * 100) : 100,
-    }));
-  }, [marks, classes, user?.id]);
+
+    return [...rows.entries()]
+      .map(([course, v]) => {
+        const planned = plannedFor(course, scheduled.get(course) ?? v.held);
+        const attended = Math.max(0, planned - v.absent);
+        return {
+          course,
+          planned,
+          absent: v.absent,
+          present: v.present,
+          held: v.held,
+          attended,
+          pct: planned ? Math.round((attended / planned) * 100) : 100,
+        };
+      })
+      .sort((a, b) => a.pct - b.pct);
+  }, [marks, classes, user?.id, now]);
 
   const threshold = Number(batch?.attendance_threshold ?? 75);
 
@@ -305,41 +331,41 @@ export function AttendancePanel({ now }: { now: number }) {
           )}
           {stats.length === 0 ? (
             <p className="mt-6 text-center font-mono text-xs text-faint">
-              {me.name ? `${me.name}, no attendance recorded yet.` : "No attendance recorded yet."}
+              {me.name ? `${me.name}, no classes on record yet.` : "No classes on record yet."}
             </p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {stats.map((s) => {
-                const low = s.pct < threshold;
-                const near = !low && s.pct < threshold + 5;
+                const color = meterColor(s.pct);
                 return (
                   <motion.div
                     key={s.course}
-                    whileHover={{ scale: 1.01 }}
-                    className={`rounded-xl bg-surface p-3 ring-1 ${
-                      low ? "ring-evt-exam/40" : near ? "ring-evt-quiz/40" : "ring-border"
-                    }`}
+                    layout
+                    whileHover={{ scale: 1.01, y: -2 }}
+                    className="rounded-xl bg-surface p-3 ring-1"
+                    style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-display text-sm font-semibold">{s.course}</span>
-                      <span
-                        className={`font-mono text-sm ${
-                          low ? "text-evt-exam" : near ? "text-evt-quiz" : "text-evt-present"
-                        }`}
-                      >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate font-display text-sm font-semibold">
+                        {shortSubject(s.course, 22)}
+                      </span>
+                      <span className="shrink-0 font-mono text-sm" style={{ color }}>
                         {s.pct}%
                       </span>
                     </div>
                     <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
-                      <div
-                        className={`h-full rounded-full ${
-                          low ? "bg-evt-exam" : near ? "bg-evt-quiz" : "bg-evt-present"
-                        }`}
-                        style={{ width: `${Math.min(100, s.pct)}%` }}
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, s.pct)}%` }}
+                        transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                        className="h-full rounded-full"
+                        style={{ backgroundColor: color }}
                       />
                     </div>
-                    <p className="mt-1.5 font-mono text-[10px] text-faint">
-                      {s.present}/{s.held} attended · threshold {threshold}%
+                    <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
+                      {s.absent} missed of {s.planned} planned · {s.held} held so far
+                      <br className="sm:hidden" />
+                      <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
                     </p>
                   </motion.div>
                 );
