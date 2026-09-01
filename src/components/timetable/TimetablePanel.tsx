@@ -203,15 +203,17 @@ export function TimetablePanel() {
       </AnimatePresence>
 
       <CourseCatalogue
-        courses={courses}
+        options={options}
         selected={selected}
         onToggle={(code) =>
           setSelected((prev) =>
             prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
           )
         }
+        onSelectAll={() => setSelected(options.map((o) => o.key))}
         onClear={() => setSelected([])}
       />
+
 
 
       {isLoading ? (
