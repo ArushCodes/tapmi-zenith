@@ -52,6 +52,9 @@ export function TimetablePanel() {
   const [selected, setSelected] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
+  /** Day drill-down: clicking a date switches to that day's agenda. */
+  const [dayFocus, setDayFocus] = useState<string | null>(null);
+
 
   const runSync = useServerFn(syncTimetableNow);
   const saveFeed = useServerFn(saveIcsUrl);
