@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/sync-timetable")({
             results.push({ batch_id: row.id, result: await syncBatch(row.id) });
           } catch (err) {
             results.push({
-              batch_id: row.batch_id,
+              batch_id: row.id,
               result: `error: ${err instanceof Error ? err.message : String(err)}`,
             });
           }
