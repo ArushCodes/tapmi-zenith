@@ -92,35 +92,6 @@ export function AttendancePanel({ now }: { now: number }) {
     () => sessions.filter((s) => !s.is_holiday),
     [sessions],
   );
-
-  const current = useMemo(() => {
-    const window = 45 * 60_000;
-    return classes.filter((s) => {
-      const start = new Date(s.start_at).getTime();
-      const end = new Date(s.end_at).getTime();
-      return now >= start - window && now <= end + window;
-    });
-  }, [classes, now]);
-
-  const upcoming = useMemo(
-    () => classes.filter((s) => new Date(s.start_at).getTime() > now).slice(0, 6),
-    [classes, now],
-  );
-
-  /** Recently finished classes still open for marking (last 7 days). */
-  const recent = useMemo(() => {
-    const window = 7 * 24 * 3600_000;
-    return classes
-      .filter((s) => {
-        const end = new Date(s.end_at).getTime();
-        return end < now && now - end <= window;
-      })
-      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
-      .slice(0, 12);
-  }, [classes, now]);
-
-  /** Any class from the timetable, newest first, searchable. */
-  const browsable = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return classes
       .filter((s) =>
