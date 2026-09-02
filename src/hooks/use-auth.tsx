@@ -86,6 +86,9 @@ export function useAuth() {
     roles,
     isModerator,
     isAdmin: roles.includes("admin"),
-    loading: loading || (!!user && rolesLoading),
+    // Only the session gates the page shell; roles resolve in the background so
+    // the board can paint immediately instead of waiting on a second round-trip.
+    rolesLoading: !!user && rolesLoading,
+    loading,
   };
 }
