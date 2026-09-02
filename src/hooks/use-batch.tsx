@@ -43,10 +43,13 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
 
   const [batchId, setBatchIdState] = useState<string | null>(null);
 
+  // Restore the last batch before the batch tree arrives so batch-scoped
+  // queries can start in parallel instead of waiting on it.
   useEffect(() => {
+    if (batchId) return;
     const stored = window.localStorage.getItem(BATCH_STORAGE_KEY);
     if (stored) setBatchIdState(stored);
-  }, []);
+  }, [batchId]);
 
   useEffect(() => {
     if (batches.length === 0) return;
