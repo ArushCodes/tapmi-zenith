@@ -57,7 +57,10 @@ export function SessionEditDialog({ session, onClose }: Props) {
       })
       .eq("id", session.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Event updated");
     refresh();
     onClose();
@@ -68,7 +71,10 @@ export function SessionEditDialog({ session, onClose }: Props) {
     setBusy(true);
     const { error } = await supabase.from("class_sessions").delete().eq("id", session.id);
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Event removed");
     refresh();
     onClose();
