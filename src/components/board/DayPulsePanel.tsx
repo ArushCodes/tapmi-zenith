@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { CircleSlash, Sun } from "lucide-react";
+import { CheckCircle2, CircleSlash, Clock3, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -19,7 +19,6 @@ import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { Donut } from "@/components/ui/donut";
 import { dayKey } from "@/lib/deadlines";
-
 
 const clock = new Intl.DateTimeFormat("en-GB", {
   hour: "2-digit",
@@ -87,7 +86,6 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     onError: (e: Error) => toast.error(e.message),
   });
 
-
   const today = useMemo(() => {
     const key = dayKey(new Date(now));
     return sessions
@@ -111,7 +109,6 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     return {
       pct,
       remainingMin,
-      totalMin: Math.round(total / 60000),
       finished: classes.filter((s) => new Date(s.end_at).getTime() <= now).length,
     };
   }, [classes, now]);
@@ -120,20 +117,12 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     (s) => now >= new Date(s.start_at).getTime() && now <= new Date(s.end_at).getTime(),
   );
 
-  /** Gap between two classes — the moment worth celebrating. */
-  const breakInfo = useMemo(() => {
-    if (live || classes.length === 0) return null;
-    const prev = [...classes]
-      .reverse()
-      .find((s) => new Date(s.end_at).getTime() <= now);
-    const next = classes.find((s) => new Date(s.start_at).getTime() > now);
-    if (!next) return null;
-    const startsIn = Math.max(0, Math.round((new Date(next.start_at).getTime() - now) / 60000));
-    return { prev, next, startsIn, beforeFirst: !prev };
+  const nextClass = useMemo(() => {
+    if (live) return null;
+    return classes.find((s) => new Date(s.start_at).getTime() > now) ?? null;
   }, [classes, live, now]);
 
-  const color = stats.pct >= 100 ? "var(--evt-present)" : "var(--cyan)";
-
+  const donutColor = stats.pct >= 100 ? "var(--evt-present)" : "var(--cyan)";
 
   return (
     <section className={compact ? "" : "mt-4"}>
@@ -144,85 +133,89 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
         </p>
       </div>
 
-      <div className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+      <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
         {classes.length === 0 ? (
-          <p className="py-4 text-center font-mono text-[11px] text-faint">
+          <p className="py-8 text-center font-mono text-[11px] text-faint">
             {today.some((s) => s.is_holiday)
               ? "Holiday — no classes today."
               : "No classes scheduled today."}
           </p>
         ) : (
           <>
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
-            <div className="shrink-0">
+            {/* ── Header strip: donut + status timer ─────────────────── */}
+            <div className="relative flex items-center gap-5 border-b border-border/60 bg-surface2/40 px-5 py-4">
               <Donut
                 value={stats.pct}
-                color={color}
-                size={compact ? 116 : 140}
+                color={donutColor}
+                size={compact ? 92 : 108}
                 label={`${stats.pct}%`}
                 sub="day done"
               />
-              <p className="mt-2 text-center font-mono text-[10px] text-faint">
-                {stats.finished}/{classes.length} classes ·{" "}
-                {stats.remainingMin > 0 ? `${stats.remainingMin} min left` : "wrapped"}
-              </p>
-              <AnimatePresence mode="wait">
-                <NextUpTimer
-                  key={live ? `live-${live.id}` : breakInfo ? `next-${breakInfo.next.id}` : "wrapped"}
-                  live={live ?? null}
-                  next={breakInfo?.next ?? null}
-                  now={now}
-                  colorMap={colorMap}
-                />
-              </AnimatePresence>
+              <div className="min-w-0 flex-1">
+                <AnimatePresence mode="wait">
+                  <StatusBlock
+                    key={live ? `live-${live.id}` : nextClass ? `next-${nextClass.id}` : "wrapped"}
+                    live={live ?? null}
+                    next={nextClass}
+                    now={now}
+                    colorMap={colorMap}
+                  />
+                </AnimatePresence>
+                <div className="mt-3 flex items-center gap-4 font-mono text-[10px] text-faint">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3 text-evt-present" />
+                    {stats.finished}/{classes.length} classes done
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock3 className="size-3" />
+                    {stats.remainingMin > 0 ? `${stats.remainingMin} min left` : "wrapped"}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="min-w-0 flex-1 space-y-2">
-              <AnimatePresence initial={false}>
-                {classes.map((s, i) => {
-                  const p = pctOf(s, now);
-                  const c = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
-                  const isLive = live?.id === s.id;
-                  const absent = myMarks.get(s.id) === "absent";
-                  const meta = sessionMeta(s);
-                  return (
-                    <motion.div
-                      key={s.id}
-                      initial={{ opacity: 0, x: 12 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: Math.min(i * 0.05, 0.3) }}
-                      className={`rounded-xl px-3 py-2.5 ring-1 ${
-                        isLive ? "bg-surface2 ring-cyan/40" : "ring-border"
+            {/* ── Class timeline ─────────────────────────────────────── */}
+            <ol className="relative space-y-0 px-5 py-3">
+              {classes.map((s, i) => {
+                const p = pctOf(s, now);
+                const c = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
+                const isLive = live?.id === s.id;
+                const isDone = p === 100;
+                const absent = myMarks.get(s.id) === "absent";
+                const meta = sessionMeta(s);
+                return (
+                  <motion.li
+                    key={s.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(i * 0.06, 0.3) }}
+                    className="relative flex gap-4 pb-3 last:pb-0"
+                  >
+                    {/* timeline spine */}
+                    {i < classes.length - 1 && (
+                      <span className="absolute left-[7px] top-7 h-full w-px bg-border/70" />
+                    )}
+                    <span
+                      className={`relative z-10 mt-3 size-[15px] shrink-0 rounded-full ring-4 ring-surface ${
+                        isLive ? "pulse-dot" : ""
                       }`}
+                      style={{
+                        backgroundColor: c,
+                        opacity: isDone ? 0.45 : 1,
+                      }}
+                    />
+
+                    <div
+                      className={`min-w-0 flex-1 rounded-xl px-3.5 py-3 ring-1 transition-colors ${
+                        isLive ? "bg-surface2 ring-cyan/40" : "ring-border/70"
+                      } ${isDone && !isLive ? "opacity-70" : ""}`}
                     >
-                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5">
-                        <span
-                          className={`mt-1.5 size-2 shrink-0 rounded-full ${isLive ? "pulse-dot" : ""}`}
-                          style={{ backgroundColor: c }}
-                        />
-                        <div className="min-w-0">
-                          <p className="truncate font-display text-[13px] font-semibold leading-snug">
-                            {sessionFullName(s)}
-                          </p>
-                          {meta.length > 0 && (
-                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                              {meta.map((m) => (
-                                <span
-                                  key={m}
-                                  className="rounded-md px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide"
-                                  style={{
-                                    color: c,
-                                    backgroundColor: `color-mix(in oklab, ${c} 14%, transparent)`,
-                                    boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 28%, transparent)`,
-                                  }}
-                                >
-                                  {m}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex shrink-0 flex-col items-end gap-1.5">
+                      {/* row 1: name + time + absent */}
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 font-display text-[13.5px] font-semibold leading-snug">
+                          {sessionFullName(s)}
+                        </p>
+                        <div className="flex shrink-0 items-center gap-2">
                           <span className="font-mono text-[10px] tabular-nums text-faint">
                             {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
                           </span>
@@ -230,35 +223,58 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                             <motion.button
                               whileTap={{ scale: 0.94 }}
                               onClick={() => toggleAbsent.mutate(s)}
-                              className={`flex items-center gap-1 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 transition-colors ${
+                              title={absent ? "Clear absence" : "Mark absent"}
+                              className={`flex size-6 items-center justify-center rounded-lg ring-1 transition-colors ${
                                 absent
                                   ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
                                   : "text-dim ring-border hover:text-ink"
                               }`}
                             >
                               <CircleSlash className="size-3" />
-                              {absent ? "Absent" : "Mark absent"}
                             </motion.button>
                           )}
                         </div>
                       </div>
 
-                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${p}%` }}
-                          transition={{ type: "spring", stiffness: 90, damping: 20 }}
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: p === 100 ? "var(--evt-present)" : c }}
-                        />
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </div>
+                      {/* row 2: meta chips */}
+                      {meta.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1">
+                          {meta.map((m) => (
+                            <span
+                              key={m}
+                              className="rounded-md px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide"
+                              style={{
+                                color: c,
+                                backgroundColor: `color-mix(in oklab, ${c} 14%, transparent)`,
+                                boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 28%, transparent)`,
+                              }}
+                            >
+                              {m}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-          </div>
+                      {/* row 3: progress bar */}
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface2">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${p}%` }}
+                            transition={{ type: "spring", stiffness: 90, damping: 20 }}
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: isDone ? "var(--evt-present)" : c }}
+                          />
+                        </div>
+                        <span className="w-8 text-right font-mono text-[9px] tabular-nums text-faint">
+                          {p}%
+                        </span>
+                      </div>
+                    </div>
+                  </motion.li>
+                );
+              })}
+            </ol>
           </>
         )}
       </div>
@@ -273,8 +289,8 @@ function fmtLeft(ms: number) {
   return h > 0 ? `${h}h ${m}m` : `${m} min`;
 }
 
-/** Dynamic timer under the donut — current class, break, next class or wrapped. */
-function NextUpTimer({
+/** Status block beside the donut — live class, next class, or wrapped. */
+function StatusBlock({
   live,
   next,
   now,
@@ -292,7 +308,7 @@ function NextUpTimer({
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
-        className="mt-3 rounded-xl bg-surface2/70 px-3 py-2 text-center font-mono text-[10px] text-dim ring-1 ring-border"
+        className="font-display text-lg font-semibold"
       >
         Day wrapped 🎉
       </motion.p>
@@ -302,30 +318,37 @@ function NextUpTimer({
     ? new Date(target.end_at).getTime() - now
     : new Date(target.start_at).getTime() - now;
   const c = sessionColor(target, colorMap) ?? FALLBACK_COURSE_COLOR;
-  const mode = live ? "Now" : "Up next";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
       transition={{ type: "spring", stiffness: 160, damping: 20 }}
-      className="mt-3 overflow-hidden rounded-xl bg-surface2/70 px-3 py-2 text-center ring-1 ring-border"
+      className="min-w-0"
     >
       <p
-        className="flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
+        className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
         style={{ color: c }}
       >
-        {live && <span className="pulse-dot inline-block size-1.5 rounded-full" style={{ backgroundColor: c }} />}
-        {mode}
+        {live && (
+          <span
+            className="pulse-dot inline-block size-1.5 rounded-full"
+            style={{ backgroundColor: c }}
+          />
+        )}
+        {live ? "Now in class" : "Up next"}
       </p>
-      <p className="mt-0.5 truncate font-display text-[12px] font-semibold">{sessionFullName(target)}</p>
-      <p className="font-mono text-[10px] text-faint">
-        {live ? `${fmtLeft(msLeft)} left` : `in ${fmtLeft(msLeft)}`} ·{" "}
+      <p className="mt-1 truncate font-display text-base font-semibold leading-snug">
+        {sessionFullName(target)}
+      </p>
+      <p className="mt-0.5 font-mono text-[11px] tabular-nums text-dim">
+        {live ? `${fmtLeft(msLeft)} left` : `starts in ${fmtLeft(msLeft)}`} ·{" "}
         {clock.format(new Date(target.start_at))}–{clock.format(new Date(target.end_at))}
       </p>
-      <div className="mt-1.5 flex gap-0.5">
-        {Array.from({ length: 10 }).map((_, i) => (
+      {/* animated accent ticks */}
+      <div className="mt-2.5 flex max-w-[220px] gap-0.5">
+        {Array.from({ length: 14 }).map((_, i) => (
           <motion.span
             key={i}
             className="h-0.5 flex-1 rounded-full"
