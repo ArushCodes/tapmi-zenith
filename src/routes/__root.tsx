@@ -149,10 +149,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BatchProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-      </BatchProvider>
+      <SessionProvider>
+        <BatchProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </BatchProvider>
+      </SessionProvider>
       <Toaster position="top-right" />
     </QueryClientProvider>
   );
