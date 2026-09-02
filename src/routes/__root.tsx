@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { db as supabase, backendConfigured } from "@/lib/backend";
 import { Toaster } from "@/components/ui/sonner";
 import { BatchProvider } from "@/hooks/use-batch";
+import { SessionProvider } from "@/hooks/use-auth";
 
 
 function NotFoundComponent() {
