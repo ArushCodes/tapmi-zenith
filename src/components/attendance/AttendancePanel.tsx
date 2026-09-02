@@ -33,14 +33,11 @@ const timeFmt = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-type SubTab = "live" | "workbook";
-
 export function AttendancePanel({ now }: { now: number }) {
   const { user } = useAuth();
   const me = useMe();
   const { batchId, batch, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
-  const [subTab, setSubTab] = useState<SubTab>("live");
   const [browse, setBrowse] = useState(false);
   const [q, setQ] = useState("");
   /** null = overall donut, otherwise a single subject. */
