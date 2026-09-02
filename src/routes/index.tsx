@@ -8,6 +8,7 @@ import {
   ListFilter,
   Mail,
   Megaphone,
+  MessageSquare,
   ShieldCheck,
   Sun,
   UserCheck,
