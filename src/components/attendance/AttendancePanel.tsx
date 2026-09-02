@@ -527,29 +527,17 @@ function SessionCard({
                   </span>
                   <button
                     onClick={() =>
-                      onMark(mk?.status === "present" ? null : "present", m.user_id, "rep")
-                    }
-                    className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
-                      mk?.status === "present"
-                        ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
-                        : "text-dim ring-border"
-                    }`}
-                  >
-                    P
-                  </button>
-                  <button
-                    onClick={() =>
                       onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
                     }
-
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "absent"
                         ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
                         : "text-dim ring-border"
                     }`}
                   >
-                    A
+                    Absent
                   </button>
+
                 </div>
               );
             })}
