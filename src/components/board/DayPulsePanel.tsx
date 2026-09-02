@@ -195,13 +195,13 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           style={{ backgroundColor: c }}
                         />
                         <span className="min-w-0 flex-1 truncate font-display text-[13px] font-semibold">
-                          {shortSubject(sessionLabel(s), 26)}
+                          {sessionLabel(s)}
                         </span>
                         <span className="shrink-0 font-mono text-[10px] text-faint">
                           {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
                         </span>
                       </div>
-                      <SessionMeta session={s} max={4} />
+
 
                       <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface2">
                         <motion.div
