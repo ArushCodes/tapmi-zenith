@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          batch_id: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance_marks: {
         Row: {
           batch_id: string
@@ -374,10 +415,12 @@ export type Database = {
       }
       deadlines: {
         Row: {
+          all_day: boolean
           batch_id: string
           created_at: string
           created_by: string | null
           due_at: string
+          end_at: string | null
           group_size: number | null
           id: string
           is_major: boolean
@@ -394,10 +437,12 @@ export type Database = {
           work_mode: Database["public"]["Enums"]["work_mode"]
         }
         Insert: {
+          all_day?: boolean
           batch_id: string
           created_at?: string
           created_by?: string | null
           due_at: string
+          end_at?: string | null
           group_size?: number | null
           id?: string
           is_major?: boolean
@@ -414,10 +459,12 @@ export type Database = {
           work_mode?: Database["public"]["Enums"]["work_mode"]
         }
         Update: {
+          all_day?: boolean
           batch_id?: string
           created_at?: string
           created_by?: string | null
           due_at?: string
+          end_at?: string | null
           group_size?: number | null
           id?: string
           is_major?: boolean

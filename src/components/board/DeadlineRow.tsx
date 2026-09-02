@@ -1,11 +1,13 @@
 import {
   eventMeta,
-  formatDue,
+  formatDeadlineWhen,
+  phaseOf,
   timeLeft,
   typeLabel,
   urgencyOf,
   type Deadline,
 } from "@/lib/deadlines";
+
 
 const accent: Record<string, string> = {
   past: "bg-faint",
@@ -38,8 +40,10 @@ type Props = {
 };
 
 export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen }: Props) {
-  const u = urgencyOf(deadline.due_at, now);
+  const phase = phaseOf(deadline, now);
+  const u = phase === "completed" ? "past" : urgencyOf(deadline.due_at, now);
   const meta = eventMeta(deadline.type);
+
 
   return (
     <div
@@ -55,10 +59,9 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen
           {deadline.subject} — {deadline.title}
         </p>
         <p className="truncate font-mono text-[11px] text-dim">
-          {[deadline.subject_code, formatDue(deadline.due_at), deadline.location]
-            .filter(Boolean)
-            .join(" · ")}
+          {[formatDeadlineWhen(deadline), deadline.location].filter(Boolean).join(" · ")}
         </p>
+
       </button>
 
       <span className={`hidden rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wide sm:block ${meta.chip}`}>
@@ -78,9 +81,22 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen
       </span>
 
       <div className="flex items-center gap-3 justify-self-end">
-        <p className={`font-mono text-sm font-semibold ${countdownColor[u]}`}>
-          {timeLeft(deadline.due_at, now)}
+        <p
+          className={`font-mono text-sm font-semibold ${
+            phase === "completed"
+              ? "text-evt-present"
+              : phase === "ongoing"
+                ? "text-cyan blink"
+                : countdownColor[u]
+          }`}
+        >
+          {phase === "completed"
+            ? "Done"
+            : phase === "ongoing"
+              ? "Live"
+              : timeLeft(deadline.due_at, now)}
         </p>
+
         <div className="hidden items-center gap-1 sm:flex">
           {deadline.submission_link && (
             <a

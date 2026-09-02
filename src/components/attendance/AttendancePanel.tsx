@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, CircleSlash, Download, Search, Users } from "lucide-react";
+import { AlertTriangle, CircleSlash, Download, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,6 +21,8 @@ import {
   sessionSubject,
   shortSubject,
 } from "@/lib/attendance";
+import { Donut } from "@/components/ui/donut";
+
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -41,6 +43,9 @@ export function AttendancePanel({ now }: { now: number }) {
   const [subTab, setSubTab] = useState<SubTab>("live");
   const [browse, setBrowse] = useState(false);
   const [q, setQ] = useState("");
+  /** null = overall donut, otherwise a single subject. */
+  const [focus, setFocus] = useState<string | null>(null);
+
 
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
@@ -184,6 +189,16 @@ export function AttendancePanel({ now }: { now: number }) {
   }, [marks, classes, user?.id, now]);
 
   const threshold = Number(batch?.attendance_threshold ?? 75);
+
+  /** Donut source: one subject when focused, else the whole trimester. */
+  const overall = useMemo(() => {
+    const rows = focus ? stats.filter((s) => s.course === focus) : stats;
+    const planned = rows.reduce((a, s) => a + s.planned, 0);
+    const absent = rows.reduce((a, s) => a + s.absent, 0);
+    const attended = Math.max(0, planned - absent);
+    return { planned, absent, pct: planned ? Math.round((attended / planned) * 100) : 100 };
+  }, [stats, focus]);
+
 
   const conflicts = useMemo(() => {
     const bySession = new Map<string, AttendanceMark[]>();
@@ -391,44 +406,96 @@ export function AttendancePanel({ now }: { now: number }) {
               {me.name ? `${me.name}, no classes on record yet.` : "No classes on record yet."}
             </p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {stats.map((s) => {
-                const color = meterColor(s.pct);
-                return (
-                  <motion.div
-                    key={s.course}
-                    layout
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className="rounded-xl bg-surface p-3 ring-1"
-                    style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate font-display text-sm font-semibold">
-                        {shortSubject(s.course, 22)}
-                      </span>
-                      <span className="shrink-0 font-mono text-sm" style={{ color }}>
-                        {s.pct}%
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, s.pct)}%` }}
-                        transition={{ type: "spring", stiffness: 120, damping: 22 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    </div>
-                    <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                      {s.absent} missed of {s.planned} planned · {s.held} held so far
-                      <br className="sm:hidden" />
-                      <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
+            <>
+              <div className="flex flex-col items-center gap-5 rounded-2xl bg-surface p-4 ring-1 ring-border sm:flex-row sm:items-center">
+                <Donut
+                  value={overall.pct}
+                  color={meterColor(overall.pct)}
+                  size={150}
+                  label={`${overall.pct}%`}
+                  sub={focus ? shortSubject(focus, 16) : "overall"}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base font-semibold">
+                    {focus ? shortSubject(focus, 28) : "All subjects"}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
+                    {overall.absent} missed of {overall.planned} planned ·{" "}
+                    {overall.pct >= threshold
+                      ? `${overall.pct - threshold}% of headroom above the ${threshold}% line`
+                      : `${threshold - overall.pct}% below the ${threshold}% line`}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setFocus(null)}
+                      className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
+                        focus === null ? "bg-surface2 text-ink ring-cyan/40" : "text-dim ring-border"
+                      }`}
+                    >
+                      Overall
+                    </button>
+                    {stats.map((s) => (
+                      <button
+                        key={s.course}
+                        onClick={() => setFocus(focus === s.course ? null : s.course)}
+                        className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
+                          focus === s.course
+                            ? "bg-surface2 text-ink ring-cyan/40"
+                            : "text-dim ring-border hover:text-ink"
+                        }`}
+                      >
+                        {shortSubject(s.course, 14)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+
+                {stats.map((s) => {
+                  const color = meterColor(s.pct);
+                  return (
+                    <motion.button
+                      key={s.course}
+                      layout
+                      onClick={() => setFocus(focus === s.course ? null : s.course)}
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`rounded-xl bg-surface p-3 text-left ring-1 ${
+                        focus === s.course ? "ring-cyan/40" : "ring-border"
+                      }`}
+                      style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 truncate font-display text-sm font-semibold">
+                          {shortSubject(s.course, 22)}
+                        </span>
+                        <span className="shrink-0 font-mono text-sm" style={{ color }}>
+                          {s.pct}%
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, s.pct)}%` }}
+                          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
+                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
+                        {s.absent} missed of {s.planned} planned · {s.held} held so far
+                        <br className="sm:hidden" />
+                        <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
+                      </p>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </>
           )}
+
         </div>
       )}
     </section>
@@ -491,17 +558,6 @@ function SessionCard({
           </span>
         </span>
         <button
-          onClick={() => onMark(myMark?.status === "present" ? null : "present", meId, "self")}
-          title={myMark?.status === "present" ? "Tap again to clear" : "Mark present"}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
-            myMark?.status === "present"
-              ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
-              : "text-dim ring-border hover:text-ink"
-          }`}
-        >
-          <CheckCircle2 className="size-3.5" /> Present
-        </button>
-        <button
           onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
           title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
@@ -510,8 +566,10 @@ function SessionCard({
               : "text-dim ring-border hover:text-ink"
           }`}
         >
-          <CircleSlash className="size-3.5" /> Absent
+          <CircleSlash className="size-3.5" />{" "}
+          {myMark?.status === "absent" ? "Marked absent" : "Absent"}
         </button>
+
 
         {canManage && (
           <button
@@ -536,29 +594,17 @@ function SessionCard({
                   </span>
                   <button
                     onClick={() =>
-                      onMark(mk?.status === "present" ? null : "present", m.user_id, "rep")
-                    }
-                    className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
-                      mk?.status === "present"
-                        ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
-                        : "text-dim ring-border"
-                    }`}
-                  >
-                    P
-                  </button>
-                  <button
-                    onClick={() =>
                       onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
                     }
-
                     className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
                       mk?.status === "absent"
                         ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
                         : "text-dim ring-border"
                     }`}
                   >
-                    A
+                    Absent
                   </button>
+
                 </div>
               );
             })}

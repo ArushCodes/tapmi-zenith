@@ -13,7 +13,7 @@ import {
 import {
   downloadIcs,
   eventMeta,
-  formatDue,
+  formatDeadlineWhen,
   googleCalendarUrl,
   timeLeft,
   urgencyOf,
@@ -113,7 +113,7 @@ function Body({ deadline, now, canManage, onClose, onEdit, onDelete }: Props & {
       </div>
 
       <div className="grid gap-2 rounded-xl bg-surface2 p-4 ring-1 ring-border">
-        <Line icon={<Clock className="size-4" />} label={formatDue(deadline.due_at)} />
+        <Line icon={<Clock className="size-4" />} label={formatDeadlineWhen(deadline)} />
         <Line
           icon={<Users className="size-4" />}
           label={

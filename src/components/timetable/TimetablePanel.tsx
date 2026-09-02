@@ -2,11 +2,19 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Check, CircleSlash, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
-import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
+import {
+  attendanceQuery,
+  coursesQuery,
+  sessionsQuery,
+  syncStateQuery,
+  type ClassSession,
+} from "@/lib/batches";
+
 import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
@@ -42,11 +50,58 @@ function startOfWeek(d: Date) {
 }
 
 export function TimetablePanel() {
-  const { batchId, batch, canManage } = useBatch();
+  const { batchId, batch, canManage, isMember } = useBatch();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: sessions = [], isLoading } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
   const { data: syncState } = useQuery(syncStateQuery(batchId, canManage));
+  const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
+
+  /** Sessions this user has already self-marked absent. */
+  const absentIds = useMemo(
+    () =>
+      new Set(
+        marks
+          .filter((m) => m.user_id === user?.id && m.mark_source === "self" && m.status === "absent")
+          .map((m) => m.session_id),
+      ),
+    [marks, user?.id],
+  );
+
+  const markAbsent = useMutation({
+    mutationFn: async ({ session, clear }: { session: ClassSession; clear: boolean }) => {
+      if (clear) {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", session.id)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return "cleared" as const;
+      }
+      const { error } = await supabase.from("attendance_marks").upsert(
+        {
+          session_id: session.id,
+          batch_id: session.batch_id,
+          user_id: user!.id,
+          status: "absent",
+          mark_source: "self",
+          marked_by: user!.id,
+        },
+        { onConflict: "session_id,user_id,mark_source" },
+      );
+      if (error) throw error;
+      return "saved" as const;
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      toast.success(res === "cleared" ? "Attendance cleared" : "Marked absent");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
@@ -318,6 +373,29 @@ export function TimetablePanel() {
                             {s.course_code}
                           </span>
                         )}
+                        {!s.is_holiday && isMember && user && (
+                          <motion.button
+                            whileTap={{ scale: 0.94 }}
+                            onClick={() =>
+                              markAbsent.mutate({
+                                session: s,
+                                clear: absentIds.has(s.id),
+                              })
+                            }
+                            title={
+                              absentIds.has(s.id) ? "Tap again to clear" : "Mark yourself absent"
+                            }
+                            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] ring-1 transition-colors ${
+                              absentIds.has(s.id)
+                                ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                                : "text-dim ring-border hover:text-ink"
+                            }`}
+                          >
+                            <CircleSlash className="size-3.5" />
+                            {absentIds.has(s.id) ? "Absent" : "Mark absent"}
+                          </motion.button>
+                        )}
+
                       </motion.div>
                     );
                   })}

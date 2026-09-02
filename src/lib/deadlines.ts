@@ -147,6 +147,49 @@ export function formatDue(dueAt: string) {
   return dateFmt.format(new Date(dueAt));
 }
 
+const dayOnlyFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+});
+const clockFmt = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+/** Date column copy — the clock only shows when a time was actually set. */
+export function formatDeadlineWhen(d: Deadline) {
+  const start = new Date(d.due_at);
+  const day = dayOnlyFmt.format(start);
+  if (d.all_day) return day;
+  const from = clockFmt.format(start);
+  if (d.end_at) return `${day}, ${from}–${clockFmt.format(new Date(d.end_at))}`;
+  return `${day}, ${from}`;
+}
+
+export function deadlineEndMs(d: Deadline) {
+  if (d.end_at) return new Date(d.end_at).getTime();
+  if (d.all_day) {
+    const e = new Date(d.due_at);
+    e.setHours(23, 59, 59, 999);
+    return e.getTime();
+  }
+  return new Date(d.due_at).getTime();
+}
+
+export type Phase = "ongoing" | "upcoming" | "completed";
+
+/** Ongoing = started but its window hasn't closed. Completed = window closed. */
+export function phaseOf(d: Deadline, now: number): Phase {
+  const start = new Date(d.due_at).getTime();
+  const end = deadlineEndMs(d);
+  if (now > end) return "completed";
+  if (now >= start && end > start) return "ongoing";
+  return "upcoming";
+}
+
+
 export function weekKey(dueAt: string) {
   const d = new Date(dueAt);
   const day = (d.getDay() + 6) % 7;
