@@ -144,9 +144,121 @@ export function MembersPanel() {
 
   return (
     <div className="mt-4">
+      <GrantAccess />
       <Section title="Join requests" rows={pending} />
       <Section title="Members" rows={approved} />
       {others.length > 0 && <Section title="Declined / removed" rows={others} />}
     </div>
+  );
+}
+
+/** Moderator-side: add anyone by email and hand out elevated access. */
+function GrantAccess() {
+  const { batchId } = useBatch();
+  const { isAdmin } = useAuth();
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"student" | "mod" | "admin">("student");
+  const [siteAdmin, setSiteAdmin] = useState(false);
+
+  const grant = useMutation({
+    mutationFn: async () => {
+      if (!batchId) throw new Error("Pick a batch first");
+      const target = email.trim().toLowerCase();
+      if (!target) throw new Error("Enter an email");
+      const { data: profile, error: lookupError } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .ilike("email", target)
+        .maybeSingle();
+      if (lookupError) throw lookupError;
+      if (!profile) throw new Error("No account with that email — ask them to sign up first");
+
+      const { error } = await supabase.from("batch_memberships").upsert(
+        {
+          batch_id: batchId,
+          user_id: profile.id,
+          role,
+          status: "approved",
+          decided_at: new Date().toISOString(),
+        },
+        { onConflict: "batch_id,user_id" },
+      );
+      if (error) throw error;
+
+      if (siteAdmin && isAdmin) {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert({ user_id: profile.id, role: "admin" });
+        if (roleError && !roleError.message.includes("duplicate")) throw roleError;
+      }
+    },
+    onSuccess: () => {
+      setEmail("");
+      setSiteAdmin(false);
+      queryClient.invalidateQueries({ queryKey: ["batch-members", batchId] });
+      toast.success("Access granted");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="mb-6 rounded-2xl bg-surface p-4 ring-1 ring-border"
+    >
+      <div className="flex items-center gap-2">
+        <UserPlus className="size-4 text-cyan" />
+        <h3 className="font-display text-sm font-semibold">Grant access</h3>
+      </div>
+      <p className="mt-1 font-mono text-[11px] text-dim">
+        People can't request access themselves — add them here.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="someone@learner.manipal.edu"
+          className="min-w-[14rem] flex-1 rounded-lg bg-ground px-3 py-2 text-sm text-ink outline-none ring-1 ring-border placeholder:text-faint focus:ring-cyan/50"
+        />
+        <div className="flex gap-1.5">
+          {(["student", "mod", "admin"] as const).map((r) => (
+            <motion.button
+              key={r}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setRole(r)}
+              className={`rounded-lg px-2.5 py-2 font-mono text-[11px] uppercase tracking-wide ring-1 transition-colors ${
+                role === r ? "bg-cyan/15 text-cyan ring-cyan/40" : "text-dim ring-border"
+              }`}
+            >
+              {r}
+            </motion.button>
+          ))}
+        </div>
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          disabled={grant.isPending}
+          onClick={() => grant.mutate()}
+          className="rounded-lg bg-cyan px-4 py-2 font-mono text-[11px] uppercase tracking-wide text-ground disabled:opacity-60"
+        >
+          {grant.isPending ? "Adding…" : "Add"}
+        </motion.button>
+      </div>
+
+      {isAdmin && (
+        <label className="mt-3 flex items-center gap-2 font-mono text-[11px] text-dim">
+          <input
+            type="checkbox"
+            checked={siteAdmin}
+            onChange={(e) => setSiteAdmin(e.target.checked)}
+            className="size-3.5 accent-cyan"
+          />
+          Also make them a site-wide admin (every batch)
+        </label>
+      )}
+    </motion.section>
   );
 }
