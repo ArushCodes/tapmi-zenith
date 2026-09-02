@@ -1,4 +1,5 @@
 import type { AttendanceMark, ClassSession } from "@/lib/batches";
+import { sessionLabel } from "@/lib/courses";
 
 /** Planned number of sessions per subject for the trimester.
  *  Keyed by a normalised subject name so ICS short names match. */
@@ -24,8 +25,11 @@ export function shortSubject(name: string, max = 18) {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
+/** Planned total for a subject. The scheduled count always wins when it is
+ *  bigger, so batches with subjects outside the map still work correctly. */
 export function plannedFor(subject: string, fallback: number) {
-  return PLANNED_SESSIONS[subjectKeyOf(subject)] ?? fallback;
+  const planned = PLANNED_SESSIONS[subjectKeyOf(subject)];
+  return planned ? Math.max(planned, fallback) : fallback;
 }
 
 export type Band = "good" | "warn" | "risk";
@@ -55,7 +59,7 @@ export function meterColor(pct: number) {
 
 /** Course label used to group sessions for attendance. */
 export function sessionSubject(s: ClassSession) {
-  return s.short_name ?? s.course_name ?? s.title;
+  return sessionLabel(s);
 }
 
 /** Rep marks win over self marks for the same session. */
