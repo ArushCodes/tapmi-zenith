@@ -43,6 +43,9 @@ export function AttendancePanel({ now }: { now: number }) {
   const [subTab, setSubTab] = useState<SubTab>("live");
   const [browse, setBrowse] = useState(false);
   const [q, setQ] = useState("");
+  /** null = overall donut, otherwise a single subject. */
+  const [focus, setFocus] = useState<string | null>(null);
+
 
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
