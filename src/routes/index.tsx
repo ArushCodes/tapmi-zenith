@@ -389,11 +389,16 @@ function Board() {
           >
             {tab === "feed" && (
               <>
+                <div className="mb-8 grid gap-4 lg:grid-cols-2">
+                  <DayPulsePanel now={now} compact />
+                  <AnnouncementsPanel compact />
+                </div>
+
                 <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
                   <span className="hidden text-right sm:block">Type</span>
                   <span className="hidden text-right sm:block">Work</span>
-                  <span className="text-right">Time left</span>
+                  <span className="text-right">Status</span>
                 </div>
 
                 {isLoading ? (
@@ -414,24 +419,57 @@ function Board() {
                     </p>
                   </motion.div>
                 ) : view === "list" ? (
-                  <div className="mt-4 flex flex-col gap-3">
-                    {filtered.map((d, i) => (
-                      <motion.div
-                        key={d.id}
-                        initial={{ opacity: 0, y: 14 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                      >
-                        <DeadlineRow
-                          deadline={d}
-                          now={now}
-                          canManage={isMod}
-                          onEdit={openEdit}
-                          onDelete={(x) => remove.mutate(x)}
-                          onOpen={setSelected}
-                        />
-                      </motion.div>
-                    ))}
+                  <div className="mt-6 flex flex-col gap-9">
+                    {(
+                      [
+                        ["Happening now", columns.ongoing, "text-cyan"],
+                        ["Upcoming", columns.upcoming, "text-amber"],
+                        ["Completed", columns.completed, "text-evt-present"],
+                      ] as const
+                    ).map(([label, items, tone]) =>
+                      items.length === 0 ? null : (
+                        <motion.section
+                          key={label}
+                          layout
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          <div className="mb-3 flex items-center gap-3">
+                            <p
+                              className={`font-mono text-[10px] uppercase tracking-[0.2em] ${tone}`}
+                            >
+                              {label}
+                            </p>
+                            <span className="h-px flex-1 bg-border" />
+                            <p className="font-mono text-[10px] text-faint">{items.length}</p>
+                          </div>
+                          <div className="flex flex-col gap-3">
+                            {items.map((d, i) => (
+                              <motion.div
+                                key={d.id}
+                                initial={{ opacity: 0, y: 14 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{
+                                  delay: Math.min(i * 0.03, 0.3),
+                                  duration: 0.3,
+                                  ease: [0.22, 1, 0.36, 1],
+                                }}
+                                className={label === "Completed" ? "opacity-70" : ""}
+                              >
+                                <DeadlineRow
+                                  deadline={d}
+                                  now={now}
+                                  canManage={isMod}
+                                  onEdit={openEdit}
+                                  onDelete={(x) => remove.mutate(x)}
+                                  onOpen={setSelected}
+                                />
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.section>
+                      ),
+                    )}
                   </div>
                 ) : (
                   <div className="mt-6 flex flex-col gap-9">
@@ -468,6 +506,11 @@ function Board() {
                 )}
               </>
             )}
+
+            {tab === "today" && <DayPulsePanel now={now} />}
+
+            {tab === "announcements" && <AnnouncementsPanel />}
+
 
             {tab === "calendar" && (
               <CalendarPanel
