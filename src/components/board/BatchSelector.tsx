@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, GraduationCap } from "lucide-react";
+import { Check, ChevronDown, GraduationCap, Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
+import { NewBatchDialog } from "@/components/board/NewBatchDialog";
 
 export function BatchSelector() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { batches, batch, batchId, setBatchId, membership, isMember, isPending } = useBatch();
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
+
 
   const join = useMutation({
     mutationFn: async () => {
