@@ -287,7 +287,7 @@ export function TimetablePanel() {
   }, [courses, sessions]);
 
 
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   const colorOf = (s: ClassSession) => sessionColor(s, colorMap);
 

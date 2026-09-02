@@ -63,7 +63,7 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
 
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   const classSessions = useMemo(
     () => sessions.filter((s) => !isAcademicEvent(s)),

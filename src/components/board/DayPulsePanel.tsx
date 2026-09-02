@@ -39,7 +39,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
   const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   /** My own self-marks for today's classes, keyed by session. */
   const myMarks = useMemo(() => {
