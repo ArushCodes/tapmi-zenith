@@ -187,6 +187,21 @@ function Board() {
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [filtered]);
 
+  /** Feed columns: what's live right now, what's ahead, what's already closed. */
+  const columns = useMemo(() => {
+    const ongoing: Deadline[] = [];
+    const upcoming: Deadline[] = [];
+    const completed: Deadline[] = [];
+    for (const d of filtered) {
+      const p = phaseOf(d, now);
+      if (p === "ongoing") ongoing.push(d);
+      else if (p === "completed") completed.push(d);
+      else upcoming.push(d);
+    }
+    completed.sort((a, b) => new Date(b.due_at).getTime() - new Date(a.due_at).getTime());
+    return { ongoing, upcoming, completed };
+  }, [filtered, now]);
+
   function openEdit(d: Deadline) {
     setSelected(null);
     setEditing(d);
@@ -195,9 +210,12 @@ function Board() {
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
+    { key: "today", label: "Today", icon: <Sun className="size-3.5" /> },
+    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+
     ...(isMod
       ? [
           {
