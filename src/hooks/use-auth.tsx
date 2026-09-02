@@ -5,11 +5,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "student" | "mod" | "admin";
 
+const backendConfigured = Boolean(
+  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+);
+
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(backendConfigured);
 
   useEffect(() => {
+    if (!backendConfigured) {
+      setSession(null);
+      setLoading(false);
+      return undefined;
+    }
     try {
       const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
         setSession(next);
@@ -22,9 +31,8 @@ export function useSession() {
         .finally(() => setLoading(false));
       return () => sub.subscription.unsubscribe();
     } catch (error) {
-      // Keep public pages usable when a deployment is temporarily missing its
-      // backend binding. Protected data remains inaccessible without a session.
-      console.error("Authentication is unavailable in this deployment", error);
+      // Keep public pages usable if authentication initialization fails.
+      console.error("Authentication initialization failed", error);
       setSession(null);
       setLoading(false);
       return undefined;

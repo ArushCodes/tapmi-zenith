@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { BatchProvider } from "@/hooks/use-batch";
 
+const backendConfigured = Boolean(
+  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+);
 
 function NotFoundComponent() {
   return (
@@ -132,6 +135,7 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    if (!backendConfigured) return undefined;
     try {
       const { data: sub } = supabase.auth.onAuthStateChange((event) => {
         if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
@@ -140,9 +144,7 @@ function RootComponent() {
       });
       return () => sub.subscription.unsubscribe();
     } catch (error) {
-      // The public landing page must still render if a deployment temporarily
-      // lacks its backend environment binding.
-      console.error("Authentication listener is unavailable in this deployment", error);
+      console.error("Authentication listener initialization failed", error);
       return undefined;
     }
   }, [router, queryClient]);
