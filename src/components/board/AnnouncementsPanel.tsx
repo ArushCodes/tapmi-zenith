@@ -81,7 +81,10 @@ export function AnnouncementsPanel({ compact = false }: { compact?: boolean }) {
             className="mb-4 overflow-hidden"
             onSubmit={(e) => {
               e.preventDefault();
-              if (!title.trim()) return toast.error("Give it a title");
+              if (!title.trim()) {
+                toast.error("Give it a title");
+                return;
+              }
               create.mutate();
             }}
           >

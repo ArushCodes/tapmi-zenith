@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { eventMeta, formatDue, type Deadline } from "@/lib/deadlines";
+import { eventMeta, formatDeadlineWhen, type Deadline } from "@/lib/deadlines";
 
 type Props = {
   deadlines: Deadline[];
@@ -55,7 +55,7 @@ export function ApprovalsPanel({ deadlines, onSelect }: Props) {
                       {d.subject} — {d.title}
                     </span>
                     <span className="block truncate font-mono text-[11px] text-dim">
-                      {[d.subject_code, formatDue(d.due_at)].filter(Boolean).join(" · ")}
+                      {formatDeadlineWhen(d)}
                     </span>
                   </button>
                   <span className={`rounded-md px-2 py-1 font-mono text-[10px] ${m.chip}`}>
