@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/backend";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type Deadline = Tables<"deadlines">;
