@@ -207,7 +207,8 @@ async function syncCourses(batchId: string, rows: NormalisedSession[]) {
   const map = new Map<string, { name: string; short: string; faculty: string | null }>();
   for (const r of rows) {
     if (r.is_holiday) continue;
-    const code = r.course_code;
+    // Feeds without a slot code still get a catalogue entry keyed by subject name.
+    const code = r.course_code ?? r.short_name ?? r.course_name;
     if (!code) continue;
     if (!map.has(code))
       map.set(code, {
@@ -216,6 +217,7 @@ async function syncCourses(batchId: string, rows: NormalisedSession[]) {
         faculty: r.faculty_name,
       });
   }
+
   if (map.size === 0) return;
 
   const { data: existing } = await supabaseAdmin

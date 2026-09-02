@@ -18,13 +18,16 @@ import {
 import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
+  autoColor,
   buildColorMap,
   sessionLabel,
+  sessionNumberOf,
   courseKey,
   isAcademicEvent,
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
+
 import { Marker, shapeForDeadline } from "@/lib/shapes";
 import {
   DEADLINE_TYPES,
@@ -272,7 +275,7 @@ export function TimetablePanel() {
         key,
         label: key === HOLIDAY_KEY ? "Holidays" : sessionLabel(s),
         sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
-        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : FALLBACK_COURSE_COLOR,
+        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : autoColor(key),
         count: 1,
       });
     }
@@ -606,7 +609,13 @@ export function TimetablePanel() {
                             {sessionLabel(s)}
                           </span>
                           <span className="block truncate font-mono text-[11px] text-dim">
-                            {[s.course_name, s.faculty_name, s.classroom, s.section]
+                            {[
+                              s.course_name,
+                              s.faculty_name,
+                              s.classroom,
+                              sessionNumberOf(s) ? `S${sessionNumberOf(s)}` : null,
+                            ]
+
                               .filter(Boolean)
                               .join(" · ") || "—"}
                           </span>
