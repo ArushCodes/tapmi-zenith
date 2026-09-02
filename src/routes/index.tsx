@@ -214,7 +214,7 @@ function Board() {
     setDialogOpen(true);
   }
 
-  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number };
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number | undefined };
 
   const workTabs: TabDef[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
