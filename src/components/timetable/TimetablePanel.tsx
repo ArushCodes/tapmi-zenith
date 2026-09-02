@@ -24,7 +24,15 @@ import {
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
-import { Marker } from "@/lib/shapes";
+import { Marker, shapeForDeadline } from "@/lib/shapes";
+import {
+  DEADLINE_TYPES,
+  deadlinesQueryFor,
+  eventMeta,
+  formatDeadlineWhen,
+  type Deadline,
+  type DeadlineType,
+} from "@/lib/deadlines";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 
 const HOLIDAY_COLOR = "#10B981";
