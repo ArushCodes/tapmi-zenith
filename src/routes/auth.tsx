@@ -26,6 +26,10 @@ export const Route = createFileRoute("/auth")({
 const fieldClass =
   "w-full rounded-lg bg-ground px-3 py-2 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/50";
 
+const ALLOWED_DOMAIN = "learner.manipal.edu";
+const isAllowedEmail = (value: string) =>
+  value.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -49,8 +53,11 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/", replace: true });
       } else {
+        if (!isAllowedEmail(email)) {
+          throw new Error(`Sign-ups are limited to @${ALLOWED_DOMAIN} email addresses.`);
+        }
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
@@ -59,7 +66,10 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) navigate({ to: "/", replace: true });
-        else toast.success("Check your email to confirm your account.");
+        else
+          toast.success(
+            "Verification link sent — confirm it from your Manipal learner inbox to activate your account.",
+          );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
@@ -139,6 +149,12 @@ function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@learner.manipal.edu"
             />
+            {mode === "signup" && (
+              <p className="mt-1 font-mono text-[10px] text-faint">
+                Only @learner.manipal.edu addresses can register. We'll email you a
+                verification link.
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="password" className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
