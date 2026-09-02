@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CircleSlash, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Check, CheckSquare, CircleSlash, Plus, RefreshCw, Search, Settings2, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
