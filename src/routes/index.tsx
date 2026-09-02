@@ -89,7 +89,7 @@ function IndexPage() {
 
 type TabKey =
   | "feed"
-  | "today"
+  
   | "announcements"
   | "calendar"
   | "timetable"
@@ -216,7 +216,7 @@ function Board() {
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "today", label: "Today", icon: <Sun className="size-3.5" /> },
+    
     { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
@@ -516,7 +516,6 @@ function Board() {
               </>
             )}
 
-            {tab === "today" && <DayPulsePanel now={now} />}
 
             {tab === "announcements" && <AnnouncementsPanel />}
 
