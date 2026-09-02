@@ -28,6 +28,7 @@ function useSessionInternal(skip = false) {
   const [loading, setLoading] = useState(backendConfigured);
 
   useEffect(() => {
+    if (skip) return undefined;
     if (!backendConfigured) {
       setSession(null);
       setLoading(false);
