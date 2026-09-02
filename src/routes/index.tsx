@@ -85,12 +85,15 @@ function IndexPage() {
 
 type TabKey =
   | "feed"
+  | "today"
+  | "announcements"
   | "calendar"
   | "timetable"
   | "attendance"
   | "approvals"
   | "inbox"
   | "members";
+
 
 function Board() {
   const { isModerator } = useAuth();
