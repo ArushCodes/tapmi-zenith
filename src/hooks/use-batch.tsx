@@ -26,7 +26,10 @@ const BatchContext = createContext<BatchContextValue | null>(null);
 
 export function BatchProvider({ children }: { children: React.ReactNode }) {
   const { user, isAdmin } = useAuth();
-  const { data: allBatches = [], isLoading } = useQuery(batchTreeQuery);
+  const { data: allBatches = [], isLoading } = useQuery({
+    ...batchTreeQuery,
+    enabled: !!user,
+  });
   const { data: memberships = [] } = useQuery(myMembershipsQuery(user?.id));
 
   /** Students only ever see the batch(es) they belong to; global admins see everything. */
