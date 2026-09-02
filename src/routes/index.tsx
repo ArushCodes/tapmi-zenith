@@ -7,7 +7,9 @@ import {
   CalendarRange,
   ListFilter,
   Mail,
+  Megaphone,
   ShieldCheck,
+  Sun,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -22,6 +24,8 @@ import { DeadlineRow } from "@/components/board/DeadlineRow";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
 import { EventDrawer } from "@/components/board/EventDrawer";
 import { ApprovalsPanel } from "@/components/board/ApprovalsPanel";
+import { AnnouncementsPanel } from "@/components/board/AnnouncementsPanel";
+import { DayPulsePanel } from "@/components/board/DayPulsePanel";
 import { CalendarPanel } from "@/components/calendar/CalendarPanel";
 import { TimetablePanel } from "@/components/timetable/TimetablePanel";
 import { AttendancePanel } from "@/components/attendance/AttendancePanel";
@@ -33,10 +37,12 @@ import {
   deadlinesQueryFor,
   filterByKey,
   formatWeek,
+  phaseOf,
   weekKey,
   type Deadline,
   type FilterKey,
 } from "@/lib/deadlines";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
