@@ -42,11 +42,58 @@ function startOfWeek(d: Date) {
 }
 
 export function TimetablePanel() {
-  const { batchId, batch, canManage } = useBatch();
+  const { batchId, batch, canManage, isMember } = useBatch();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: sessions = [], isLoading } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
   const { data: syncState } = useQuery(syncStateQuery(batchId, canManage));
+  const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
+
+  /** Sessions this user has already self-marked absent. */
+  const absentIds = useMemo(
+    () =>
+      new Set(
+        marks
+          .filter((m) => m.user_id === user?.id && m.mark_source === "self" && m.status === "absent")
+          .map((m) => m.session_id),
+      ),
+    [marks, user?.id],
+  );
+
+  const markAbsent = useMutation({
+    mutationFn: async ({ session, clear }: { session: ClassSession; clear: boolean }) => {
+      if (clear) {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", session.id)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return "cleared" as const;
+      }
+      const { error } = await supabase.from("attendance_marks").upsert(
+        {
+          session_id: session.id,
+          batch_id: session.batch_id,
+          user_id: user!.id,
+          status: "absent",
+          mark_source: "self",
+          marked_by: user!.id,
+        },
+        { onConflict: "session_id,user_id,mark_source" },
+      );
+      if (error) throw error;
+      return "saved" as const;
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      toast.success(res === "cleared" ? "Attendance cleared" : "Marked absent");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
