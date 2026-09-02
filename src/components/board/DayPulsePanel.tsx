@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Coffee, CircleSlash, Sun } from "lucide-react";
+import { CircleSlash, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,10 +11,8 @@ import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches
 import { buildColorMap, isAcademicEvent, sessionColor, sessionLabel } from "@/lib/courses";
 import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
-import { shortSubject } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { dayKey } from "@/lib/deadlines";
-import { SessionMeta } from "@/components/common/SessionMeta";
 
 
 const clock = new Intl.DateTimeFormat("en-GB", {
