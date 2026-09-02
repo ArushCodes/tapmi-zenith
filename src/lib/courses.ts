@@ -111,6 +111,29 @@ export function sessionLabel(s: ClassSession) {
   );
 }
 
+/** Full subject name for titles — prefers the complete course name. */
+export function sessionFullName(s: ClassSession) {
+  const base = s.is_holiday ? s.title : (s.course_name ?? s.short_name ?? s.title);
+  return (
+    base
+      .replace(/^\s*S\d+\s*[-–·]\s*/i, "")
+      .replace(/\s*[-–·]\s*S\d+\b.*$/i, "")
+      .trim() || s.title
+  );
+}
+
+/** Small detail chips: session no., code, faculty, section, room. */
+export function sessionMeta(s: ClassSession) {
+  const out: string[] = [];
+  const n = sessionNumberOf(s);
+  if (n) out.push(`S${n}`);
+  if (s.course_code) out.push(s.course_code);
+  if (s.faculty_name) out.push(s.faculty_name);
+  if (s.section) out.push(s.section);
+  if (s.classroom) out.push(s.classroom);
+  return out;
+}
+
 /** Session number if the feed encoded one, e.g. "… - S10 - Pratik". */
 export function sessionNumberOf(s: ClassSession) {
   if (s.session_number) return s.session_number;
