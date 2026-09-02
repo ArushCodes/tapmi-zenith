@@ -81,9 +81,22 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen
       </span>
 
       <div className="flex items-center gap-3 justify-self-end">
-        <p className={`font-mono text-sm font-semibold ${countdownColor[u]}`}>
-          {timeLeft(deadline.due_at, now)}
+        <p
+          className={`font-mono text-sm font-semibold ${
+            phase === "completed"
+              ? "text-evt-present"
+              : phase === "ongoing"
+                ? "text-cyan blink"
+                : countdownColor[u]
+          }`}
+        >
+          {phase === "completed"
+            ? "Done"
+            : phase === "ongoing"
+              ? "Live"
+              : timeLeft(deadline.due_at, now)}
         </p>
+
         <div className="hidden items-center gap-1 sm:flex">
           {deadline.submission_link && (
             <a
