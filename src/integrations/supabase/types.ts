@@ -109,6 +109,32 @@ export type Database = {
           },
         ]
       }
+      batch_feed_tokens: {
+        Row: {
+          batch_id: string
+          created_at: string
+          token: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          token?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_feed_tokens_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_memberships: {
         Row: {
           batch_id: string
@@ -247,7 +273,6 @@ export type Database = {
           attendance_threshold: number
           created_at: string
           end_year: number | null
-          feed_token: string
           ics_url: string | null
           id: string
           is_public: boolean
@@ -262,7 +287,6 @@ export type Database = {
           attendance_threshold?: number
           created_at?: string
           end_year?: number | null
-          feed_token?: string
           ics_url?: string | null
           id?: string
           is_public?: boolean
@@ -277,7 +301,6 @@ export type Database = {
           attendance_threshold?: number
           created_at?: string
           end_year?: number | null
-          feed_token?: string
           ics_url?: string | null
           id?: string
           is_public?: boolean
@@ -809,22 +832,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_batch_member: {
-        Args: { _batch_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_batch_mod: {
-        Args: { _batch_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_moderator: { Args: { _user_id: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       app_role: "student" | "mod" | "admin"
