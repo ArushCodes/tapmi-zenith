@@ -26,8 +26,17 @@ const BatchContext = createContext<BatchContextValue | null>(null);
 
 export function BatchProvider({ children }: { children: React.ReactNode }) {
   const { user, isAdmin } = useAuth();
-  const { data: batches = [], isLoading } = useQuery(batchTreeQuery);
+  const { data: allBatches = [], isLoading } = useQuery(batchTreeQuery);
   const { data: memberships = [] } = useQuery(myMembershipsQuery(user?.id));
+
+  /** Students only ever see the batch(es) they belong to; global admins see everything. */
+  const batches = useMemo(() => {
+    if (isAdmin) return allBatches;
+    const mine = new Set(
+      memberships.filter((m) => m.status === "approved").map((m) => m.batch_id),
+    );
+    return allBatches.filter((b) => mine.has(b.id));
+  }, [allBatches, memberships, isAdmin]);
 
   const [batchId, setBatchIdState] = useState<string | null>(null);
 
@@ -37,9 +46,12 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (batchId || batches.length === 0) return;
+    if (batches.length === 0) return;
+    if (batchId && batches.some((b) => b.id === batchId)) return;
     const mine = memberships.find((m) => m.status === "approved");
-    setBatchIdState(mine?.batch_id ?? batches[0]!.id);
+    const next =
+      (mine && batches.find((b) => b.id === mine.batch_id)?.id) ?? batches[0]!.id;
+    setBatchIdState(next);
   }, [batchId, batches, memberships]);
 
   function setBatchId(id: string) {

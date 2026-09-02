@@ -1,35 +1,15 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, GraduationCap, Plus } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { NewBatchDialog } from "@/components/board/NewBatchDialog";
 
 export function BatchSelector() {
-  const { user, isAdmin } = useAuth();
-  const { batches, batch, batchId, setBatchId, membership, isMember, isPending } = useBatch();
+  const { isAdmin } = useAuth();
+  const { batches, batch, batchId, setBatchId } = useBatch();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const queryClient = useQueryClient();
-
-
-  const join = useMutation({
-    mutationFn: async () => {
-      if (!user || !batchId) throw new Error("Sign in to request access");
-      const { error } = await supabase
-        .from("batch_memberships")
-        .insert({ batch_id: batchId, user_id: user.id, status: "pending", role: "student" });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-memberships"] });
-      toast.success("Request sent — a moderator will review it");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   return (
     <div className="flex items-center gap-2">
@@ -100,20 +80,6 @@ export function BatchSelector() {
           )}
         </AnimatePresence>
       </div>
-
-      {user && !isMember && (
-        <button
-          onClick={() => join.mutate()}
-          disabled={isPending || join.isPending || membership?.status === "rejected"}
-          className="hidden rounded-lg bg-cyan/15 px-3 py-2 font-mono text-[11px] uppercase tracking-wide text-cyan ring-1 ring-cyan/30 disabled:opacity-60 sm:block"
-        >
-          {membership?.status === "rejected"
-            ? "Request declined"
-            : isPending
-              ? "Approval pending"
-              : "Request access"}
-        </button>
-      )}
 
       {creating && <NewBatchDialog onClose={() => setCreating(false)} />}
     </div>

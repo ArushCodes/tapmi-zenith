@@ -8,6 +8,7 @@ import {
   ListFilter,
   Mail,
   Megaphone,
+  MessageSquare,
   ShieldCheck,
   Sun,
   UserCheck,
@@ -31,6 +32,7 @@ import { TimetablePanel } from "@/components/timetable/TimetablePanel";
 import { AttendancePanel } from "@/components/attendance/AttendancePanel";
 import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
 import { MembersPanel } from "@/components/board/MembersPanel";
+import { FeedbackPanel } from "@/components/board/FeedbackPanel";
 import { coursesQuery, sessionsQuery } from "@/lib/batches";
 import {
   FILTERS,
@@ -92,7 +94,8 @@ type TabKey =
   | "attendance"
   | "approvals"
   | "inbox"
-  | "members";
+  | "members"
+  | "feedback";
 
 
 function Board() {
@@ -215,6 +218,8 @@ function Board() {
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+
+    { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-3.5" /> },
 
     ...(isMod
       ? [
@@ -533,6 +538,8 @@ function Board() {
             {tab === "inbox" && isMod && <EmailInboxPanel />}
 
             {tab === "members" && isMod && <MembersPanel />}
+
+            {tab === "feedback" && <FeedbackPanel />}
           </motion.div>
         </AnimatePresence>
 
