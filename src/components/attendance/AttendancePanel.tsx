@@ -23,6 +23,7 @@ import {
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { SessionMeta } from "@/components/common/SessionMeta";
+import { sessionLabel } from "@/lib/courses";
 
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
