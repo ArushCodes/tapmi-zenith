@@ -7,10 +7,10 @@ import {
   CalendarRange,
   ListFilter,
   Mail,
+  Plus,
+  Search,
   Bell,
-  ChevronDown,
   Megaphone,
-  MoreHorizontal,
   MessageSquare,
   ShieldCheck,
   UserCheck,
@@ -119,7 +119,6 @@ function Board() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -215,33 +214,62 @@ function Board() {
     setDialogOpen(true);
   }
 
-  type TabDef = { key: TabKey; label: string; icon: React.ReactNode };
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number | undefined };
 
-  const primaryTabs: TabDef[] = [
-    { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
-    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
-    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+  const workTabs: TabDef[] = [
+    { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
+    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
+    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
-  const moreTabs: TabDef[] = [
-    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
-    { key: "activity", label: "Notifications", icon: <Bell className="size-3.5" /> },
-    { key: "members", label: "Members", icon: <Users className="size-3.5" /> },
-    { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-3.5" /> },
+  const batchTabs: TabDef[] = [
+    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-4" /> },
+    { key: "activity", label: "Activity", icon: <Bell className="size-4" /> },
+    { key: "members", label: "Members", icon: <Users className="size-4" /> },
+    { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-4" /> },
     ...(isMod
       ? [
           {
             key: "approvals" as TabKey,
-            label: `Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
-            icon: <ShieldCheck className="size-3.5" />,
+            label: "Approvals",
+            icon: <ShieldCheck className="size-4" />,
+            badge: pendingCount || undefined,
           },
-          { key: "inbox" as TabKey, label: "Email Inbox", icon: <Mail className="size-3.5" /> },
+          { key: "inbox" as TabKey, label: "Inbox", icon: <Mail className="size-4" /> },
         ]
       : []),
   ];
 
-  const activeMore = moreTabs.find((t) => t.key === tab) ?? null;
+  const renderTab = (t: TabDef) => (
+    <motion.button
+      key={t.key}
+      onClick={() => setTab(t.key)}
+      whileTap={{ scale: 0.96 }}
+      aria-current={tab === t.key ? "page" : undefined}
+      className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors sm:px-3.5 ${
+        tab === t.key ? "text-ink" : "text-dim hover:text-ink"
+      }`}
+    >
+      {tab === t.key && (
+        <motion.span
+          layoutId="tab-pill"
+          className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
+          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+        />
+      )}
+      <span className="relative flex items-center gap-2">
+        {t.icon}
+        <span className="whitespace-nowrap">{t.label}</span>
+        {t.badge ? (
+          <span className="rounded-full bg-cyan/20 px-1.5 py-0.5 font-mono text-[10px] leading-none text-cyan">
+            {t.badge}
+          </span>
+        ) : null}
+      </span>
+    </motion.button>
+  );
+
 
 
   return (
@@ -290,132 +318,54 @@ function Board() {
           </p>
         </motion.div>
 
-        {/* Top-level tab switcher — four primary views, everything else under More */}
-        <div className="mb-6 flex items-center gap-1.5 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none]">
-          {primaryTabs.map((t) => (
-            <motion.button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              whileTap={{ scale: 0.96 }}
-              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                tab === t.key ? "text-ink" : "text-dim hover:text-ink"
-              }`}
-            >
-              {tab === t.key && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                />
-              )}
-              <span className="relative flex items-center gap-2">
-                {t.icon}
-                {t.label}
-              </span>
-            </motion.button>
-          ))}
+        {/* Primary navigation — one bar, two logical clusters, no hidden menus */}
+        <nav
+          aria-label="Board sections"
+          className="mb-7 flex items-center gap-1 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {workTabs.map(renderTab)}
+          <span aria-hidden className="mx-1.5 h-6 w-px shrink-0 bg-border" />
+          {batchTabs.map(renderTab)}
+        </nav>
 
-          <div className="relative ml-auto shrink-0">
-            <motion.button
-              onClick={() => setMoreOpen((v) => !v)}
-              whileTap={{ scale: 0.96 }}
-              className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                activeMore ? "text-ink" : "text-dim hover:text-ink"
-              }`}
-            >
-              {activeMore && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                />
-              )}
-              <span className="relative flex items-center gap-2">
-                {activeMore?.icon ?? <MoreHorizontal className="size-3.5" />}
-                {activeMore?.label ?? "More"}
-                <ChevronDown
-                  className={`size-3 transition-transform ${moreOpen ? "rotate-180" : ""}`}
-                />
-              </span>
-            </motion.button>
-
-            <AnimatePresence>
-              {moreOpen && (
-                <>
-                  <button
-                    aria-label="Close menu"
-                    className="fixed inset-0 z-30 cursor-default"
-                    onClick={() => setMoreOpen(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                    transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute right-0 top-[calc(100%+8px)] z-40 w-56 overflow-hidden rounded-2xl bg-surface p-1.5 ring-1 ring-border shadow-2xl"
-                  >
-                    {moreTabs.map((t) => (
-                      <button
-                        key={t.key}
-                        onClick={() => {
-                          setTab(t.key);
-                          setMoreOpen(false);
-                        }}
-                        className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                          tab === t.key
-                            ? "bg-surface2 text-cyan"
-                            : "text-dim hover:bg-surface2/70 hover:text-ink"
-                        }`}
-                      >
-                        {t.icon}
-                        {t.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
 
 
         {tab === "calendar" && (
-          <div className="sticky top-0 z-20 -mx-5 mb-7 bg-ground/80 px-5 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-wrap gap-2">
+          <div className="sticky top-0 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Segmented type filter */}
+              <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl bg-surface2/70 p-1 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {FILTERS.map((f) => (
-                  <motion.button
+                  <button
                     key={f.key}
                     onClick={() => setFilter(f.key)}
-                    whileTap={{ scale: 0.95 }}
-                    whileHover={{ y: -2 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className={
-                      filter === f.key
-                        ? "rounded-xl bg-cyan/15 px-3.5 py-2 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
-                        : "rounded-xl px-3.5 py-2 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
-                    }
+                    className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+                      filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
+                    }`}
                   >
-                    {f.label}
-                  </motion.button>
+                    {filter === f.key && (
+                      <motion.span
+                        layoutId="filter-pill"
+                        className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
+                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      />
+                    )}
+                    <span className="relative whitespace-nowrap">{f.label}</span>
+                  </button>
                 ))}
               </div>
 
-              <div className="ml-auto flex flex-wrap items-center gap-2.5">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
-                    ⌕
-                  </span>
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search course or code…"
                     aria-label="Search deadlines"
-                    className="w-44 rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:w-52 focus:ring-2 focus:ring-cyan/40 sm:w-60 sm:focus:w-72"
+                    className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
                   />
                 </div>
-
-
 
                 {isMod && (
                   <motion.button
@@ -423,18 +373,20 @@ function Board() {
                       setEditing(null);
                       setDialogOpen(true);
                     }}
-                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="flex items-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_28px_-6px_var(--cyan)]"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-ground shadow-[0_0_28px_-8px_var(--cyan)]"
                   >
-                    <span className="text-base leading-none">+</span> Add
+                    <Plus className="size-4" />
+                    <span className="hidden sm:inline">Add</span>
                   </motion.button>
                 )}
               </div>
             </div>
           </div>
         )}
+
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
