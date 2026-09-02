@@ -272,7 +272,7 @@ export function TimetablePanel() {
         key,
         label: key === HOLIDAY_KEY ? "Holidays" : sessionLabel(s),
         sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
-        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : FALLBACK_COURSE_COLOR,
+        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : autoColor(key),
         count: 1,
       });
     }
