@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
 import { dayKey, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
+import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
 import {
   FALLBACK_COURSE_COLOR,
@@ -51,10 +52,19 @@ type Props = {
   sessions?: ClassSession[];
   courses?: Course[];
   now: number;
+  canManage?: boolean;
   onSelect: (d: Deadline) => void;
 };
 
-export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onSelect }: Props) {
+export function CalendarPanel({
+  deadlines,
+  sessions = [],
+  courses = [],
+  now,
+  canManage = false,
+  onSelect,
+}: Props) {
+  const [editing, setEditing] = useState<ClassSession | null>(null);
   const [subView, setSubView] = useState<SubView>("month");
   /** Clicking a date drills into that single day's agenda. */
   const [focusDay, setFocusDay] = useState<string | null>(null);
@@ -245,11 +255,15 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
                 colorMap={colorMap}
                 now={now}
                 onSelect={onSelect}
+                canManage={canManage}
+                onEditSession={setEditing}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
+
+      <SessionEditDialog session={editing} onClose={() => setEditing(null)} />
 
       <Legend />
     </section>
@@ -639,6 +653,8 @@ function Agenda({
   colorMap,
   now,
   onSelect,
+  canManage,
+  onEditSession,
 }: {
   focusDay: string | null;
   onClearFocus: () => void;
@@ -649,6 +665,8 @@ function Agenda({
   colorMap: Map<string, string>;
   now: number;
   onSelect: (d: Deadline) => void;
+  canManage: boolean;
+  onEditSession: (s: ClassSession) => void;
 }) {
   const inMonth = (iso: string) => {
     if (focusDay) return dayKey(iso) === focusDay;
@@ -749,10 +767,14 @@ function Agenda({
                     }`}
                   >
                     <p className="font-display text-sm font-semibold">{sessionLabel(s)}</p>
-                    <p className="font-mono text-[10px] text-dim">
-                      Academic calendar ·{" "}
-                      {rangeFmt.format(new Date(s.start_at))} — {rangeFmt.format(new Date(s.end_at))}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 font-mono text-[10px] text-dim">
+                        Academic calendar ·{" "}
+                        {rangeFmt.format(new Date(s.start_at))} —{" "}
+                        {rangeFmt.format(new Date(s.end_at))}
+                      </p>
+                      {canManage && <EditSessionButton onClick={() => onEditSession(s)} />}
+                    </div>
                   </div>
                 );
 
@@ -772,6 +794,7 @@ function Agenda({
                   <span className="hidden shrink-0 truncate font-mono text-[10px] text-faint sm:block">
                     {[s.faculty_name, s.classroom].filter(Boolean).join(" · ")}
                   </span>
+                  {canManage && <EditSessionButton onClick={() => onEditSession(s)} />}
                 </div>
               );
             })}
@@ -779,6 +802,20 @@ function Agenda({
         </div>
       ))}
     </div>
+  );
+}
+
+function EditSessionButton({ onClick }: { onClick: () => void }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.94 }}
+      onClick={onClick}
+      aria-label="Edit event"
+      className="shrink-0 rounded-md px-2 py-1 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-amber hover:ring-amber/40"
+    >
+      Edit
+    </motion.button>
   );
 }
 
