@@ -21,6 +21,8 @@ import {
   sessionSubject,
   shortSubject,
 } from "@/lib/attendance";
+import { Donut } from "@/components/ui/donut";
+
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
