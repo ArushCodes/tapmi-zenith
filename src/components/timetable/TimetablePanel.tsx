@@ -19,6 +19,7 @@ import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
   buildColorMap,
+  sessionLabel,
   courseKey,
   isAcademicEvent,
   sessionColor,
