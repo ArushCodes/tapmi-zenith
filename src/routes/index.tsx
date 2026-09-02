@@ -415,23 +415,6 @@ function Board() {
                   />
                 </div>
 
-                {tab === "feed" && (
-                  <div className="flex rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
-                    {(["list", "timeline"] as const).map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => setView(v)}
-                        className={`relative rounded-lg px-3 py-1.5 font-mono text-[11px] transition-colors ${
-                          view === v ? "text-ink" : "text-dim hover:text-ink"
-                        }`}
-                      >
-                        {view === v && (
-                          <motion.span
-                            layoutId="view-pill"
-                            className="absolute inset-0 rounded-lg bg-surface"
-                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                          />
-                        )}
                         <span className="relative">{v === "list" ? "List" : "Weeks"}</span>
                       </button>
                     ))}
