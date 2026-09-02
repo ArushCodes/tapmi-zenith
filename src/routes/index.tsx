@@ -415,11 +415,7 @@ function Board() {
                   />
                 </div>
 
-                        <span className="relative">{v === "list" ? "List" : "Weeks"}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+
 
                 {isMod && (
                   <motion.button
