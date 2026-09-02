@@ -1,16 +1,34 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { db as supabase, backendConfigured } from "@/lib/backend";
 
 export type AppRole = "student" | "mod" | "admin";
 
+type SessionValue = { session: Session | null; user: User | null; loading: boolean };
 
-export function useSession() {
+const SessionContext = createContext<SessionValue | null>(null);
+
+/** Single auth listener for the whole app — without this every component that
+ *  calls useAuth() opens its own getSession() round-trip on mount. */
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const value = useSessionInternal();
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+export function useSession(): SessionValue {
+  const ctx = useContext(SessionContext);
+  // Fallback keeps standalone usage (tests, isolated trees) working.
+  const local = useSessionInternal(!!ctx);
+  return ctx ?? local;
+}
+
+function useSessionInternal(skip = false) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(backendConfigured);
 
   useEffect(() => {
+    if (skip) return undefined;
     if (!backendConfigured) {
       setSession(null);
       setLoading(false);
@@ -34,9 +52,12 @@ export function useSession() {
       setLoading(false);
       return undefined;
     }
-  }, []);
+  }, [skip]);
 
-  return { session, user: (session?.user ?? null) as User | null, loading };
+  return useMemo(
+    () => ({ session, user: (session?.user ?? null) as User | null, loading }),
+    [session, loading],
+  );
 }
 
 export function useAuth() {
@@ -45,6 +66,7 @@ export function useAuth() {
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ["roles", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
@@ -64,6 +86,9 @@ export function useAuth() {
     roles,
     isModerator,
     isAdmin: roles.includes("admin"),
-    loading: loading || (!!user && rolesLoading),
+    // Only the session gates the page shell; roles resolve in the background so
+    // the board can paint immediately instead of waiting on a second round-trip.
+    rolesLoading: !!user && rolesLoading,
+    loading,
   };
 }

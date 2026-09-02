@@ -14,6 +14,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { db as supabase, backendConfigured } from "@/lib/backend";
 import { Toaster } from "@/components/ui/sonner";
 import { BatchProvider } from "@/hooks/use-batch";
+import { SessionProvider } from "@/hooks/use-auth";
 
 
 function NotFoundComponent() {
@@ -148,10 +149,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BatchProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-      </BatchProvider>
+      <SessionProvider>
+        <BatchProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+        </BatchProvider>
+      </SessionProvider>
       <Toaster position="top-right" />
     </QueryClientProvider>
   );
