@@ -50,12 +50,11 @@ const timeFmt = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-function startOfWeek(d: Date) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
-  return x;
+function startOfMonth(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
 }
+
+const monthFmt = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" });
 
 export function TimetablePanel() {
   const { batchId, batch, canManage, isMember } = useBatch();
