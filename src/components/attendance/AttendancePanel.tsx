@@ -250,21 +250,9 @@ export function AttendancePanel({ now }: { now: number }) {
   return (
     <section className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
-          {(["live", "workbook"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setSubTab(v)}
-              className={
-                subTab === v
-                  ? "rounded-md bg-surface px-3 py-1 font-mono text-[11px] text-ink"
-                  : "rounded-md px-3 py-1 font-mono text-[11px] text-dim hover:text-ink"
-              }
-            >
-              {v === "live" ? "Live tracker" : "Absentee workbook"}
-            </button>
-          ))}
-        </div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+          {me.possessive ? `${me.possessive} attendance` : "Attendance"}
+        </p>
         {canManage && (
           <button
             onClick={exportCsv}
@@ -275,127 +263,10 @@ export function AttendancePanel({ now }: { now: number }) {
         )}
       </div>
 
-      {subTab === "live" ? (
-        <div className="flex flex-col gap-5">
-          <div>
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-              Happening now{me.name ? ` · ${me.name}` : ""}
-            </p>
-            {current.length === 0 ? (
-              <p className="font-mono text-[11px] text-faint">No class in progress.</p>
-            ) : (
-              current.map((s) => (
-                <SessionCard
-                  key={s.id}
-                  session={s}
-                  myMark={myMarks.get(`${s.id}-self`) ?? null}
-                  canManage={canManage}
-                  members={members}
-                  marks={marks}
-                  onMark={(status, userId, source) =>
-                    mark.mutate({ session: s, userId, status, source })
-                  }
-                  meId={user?.id ?? ""}
-                />
-              ))
-            )}
-          </div>
-
-          <div>
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-              Next up
-            </p>
-            <div className="flex flex-col gap-2">
-              {upcoming.map((s) => (
-                <SessionCard
-                  key={s.id}
-                  session={s}
-                  tone="upcoming"
-                  myMark={myMarks.get(`${s.id}-self`) ?? null}
-                  canManage={canManage}
-                  members={members}
-                  marks={marks}
-                  onMark={(status, userId, source) =>
-                    mark.mutate({ session: s, userId, status, source })
-                  }
-                  meId={user?.id ?? ""}
-                />
-              ))}
-              {upcoming.length === 0 && (
-                <p className="font-mono text-[11px] text-faint">Nothing scheduled ahead.</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-              Recent classes · mark if {me.name ? `${me.name} missed` : "you missed"} one
-            </p>
-            <div className="flex flex-col gap-2">
-              {recent.map((s) => (
-                <SessionCard
-                  key={s.id}
-                  session={s}
-                  tone="past"
-                  myMark={myMarks.get(`${s.id}-self`) ?? null}
-                  canManage={canManage}
-                  members={members}
-                  marks={marks}
-                  onMark={(status, userId, source) =>
-                    mark.mutate({ session: s, userId, status, source })
-                  }
-                  meId={user?.id ?? ""}
-                />
-              ))}
-              {recent.length === 0 && (
-                <p className="font-mono text-[11px] text-faint">No classes in the last 7 days.</p>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <button
-              onClick={() => setBrowse((v) => !v)}
-              className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
-            >
-              {browse ? "− Hide" : "+ Mark any class from the timetable"}
-            </button>
-            {browse && (
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 rounded-lg bg-surface2 px-3 py-2 ring-1 ring-border">
-                  <Search className="size-3.5 text-faint" />
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder="Search subject, faculty or room"
-                    className="w-full bg-transparent font-mono text-[11px] text-ink outline-none placeholder:text-faint"
-                  />
-                </label>
-                {browsable.map((s) => (
-                  <SessionCard
-                    key={s.id}
-                    session={s}
-                    tone="past"
-                    myMark={myMarks.get(`${s.id}-self`) ?? null}
-                    canManage={canManage}
-                    members={members}
-                    marks={marks}
-                    onMark={(status, userId, source) =>
-                      mark.mutate({ session: s, userId, status, source })
-                    }
-                    meId={user?.id ?? ""}
-                  />
-                ))}
-                {browsable.length === 0 && (
-                  <p className="font-mono text-[11px] text-faint">No classes match that search.</p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
+      {(
         <div className="flex flex-col gap-4">
           {conflicts.length > 0 && canManage && (
+
             <p className="flex items-center gap-2 rounded-lg bg-evt-quiz/10 px-3 py-2 font-mono text-[11px] text-evt-quiz ring-1 ring-evt-quiz/30">
               <AlertTriangle className="size-3.5" /> {conflicts.length} record(s) where a self-mark
               and a rep mark disagree.
