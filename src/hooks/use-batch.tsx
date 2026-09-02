@@ -46,9 +46,12 @@ export function BatchProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (batchId || batches.length === 0) return;
+    if (batches.length === 0) return;
+    if (batchId && batches.some((b) => b.id === batchId)) return;
     const mine = memberships.find((m) => m.status === "approved");
-    setBatchIdState(mine?.batch_id ?? batches[0]!.id);
+    const next =
+      (mine && batches.find((b) => b.id === mine.batch_id)?.id) ?? batches[0]!.id;
+    setBatchIdState(next);
   }, [batchId, batches, memberships]);
 
   function setBatchId(id: string) {
