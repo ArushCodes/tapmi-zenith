@@ -105,11 +105,14 @@ export function TimetablePanel() {
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
+  const [types, setTypes] = useState<DeadlineType[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   /** Day drill-down: clicking a date switches to that day's agenda. */
   const [dayFocus, setDayFocus] = useState<string | null>(null);
 
+  const { data: deadlines = [] } = useQuery(deadlinesQueryFor(batchId));
 
   const runSync = useServerFn(syncTimetableNow);
   const saveFeed = useServerFn(saveIcsUrl);
@@ -128,20 +131,108 @@ export function TimetablePanel() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
+  /** How many events of each type exist this week — drives greyed-out chips. */
+  const typeCounts = useMemo(() => {
+    const c = {} as Record<DeadlineType, number>;
+    for (const d of deadlines) {
+      const t = new Date(d.due_at);
+      if (t < weekStart || t >= weekEnd) continue;
+      c[d.type] = (c[d.type] ?? 0) + 1;
+    }
+    return c;
+  }, [deadlines, weekStart, weekEnd]);
+
   const grouped = useMemo(() => {
-    const map = new Map<string, ClassSession[]>();
+    const map = new Map<string, { sessions: ClassSession[]; events: Deadline[] }>();
+    const bucket = (k: string) => {
+      const cur = map.get(k) ?? { sessions: [], events: [] };
+      map.set(k, cur);
+      return cur;
+    };
     for (const s of sessions) {
       if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
       if (start < weekStart || start >= weekEnd) continue;
       if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
-      const k = start.toDateString();
-      map.set(k, [...(map.get(k) ?? []), s]);
+      bucket(start.toDateString()).sessions.push(s);
+    }
+    for (const d of deadlines) {
+      const start = new Date(d.due_at);
+      if (start < weekStart || start >= weekEnd) continue;
+      if (types.length > 0 && !types.includes(d.type)) continue;
+      bucket(start.toDateString()).events.push(d);
+    }
+    for (const v of map.values()) {
+      v.sessions.sort((a, b) => a.start_at.localeCompare(b.start_at));
+      v.events.sort((a, b) => a.due_at.localeCompare(b.due_at));
     }
     return [...map.entries()].sort(
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
-  }, [sessions, weekStart, weekEnd, selected]);
+  }, [sessions, deadlines, weekStart, weekEnd, selected, types]);
+
+  /** Every markable class currently on screen — the pool for mass actions. */
+  const visibleSessions = useMemo(
+    () => grouped.flatMap(([day, v]) => (!dayFocus || day === dayFocus ? v.sessions : [])).filter((s) => !s.is_holiday),
+    [grouped, dayFocus],
+  );
+  const pickedSet = useMemo(() => new Set(picked), [picked]);
+  const togglePick = (id: string) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const bulk = useMutation({
+    mutationFn: async (action: "absent" | "clear") => {
+      const ids = picked;
+      if (ids.length === 0) return 0;
+      if (action === "clear") {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .in("session_id", ids)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return ids.length;
+      }
+      const rows = visibleSessions
+        .filter((s) => pickedSet.has(s.id))
+        .map((s) => ({
+          session_id: s.id,
+          batch_id: s.batch_id,
+          user_id: user!.id,
+          status: "absent" as const,
+          mark_source: "self" as const,
+          marked_by: user!.id,
+        }));
+      const { error } = await supabase
+        .from("attendance_marks")
+        .upsert(rows, { onConflict: "session_id,user_id,mark_source" });
+      if (error) throw error;
+      return rows.length;
+    },
+    onSuccess: (n, action) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      setPicked([]);
+      toast.success(action === "clear" ? `Cleared ${n} classes` : `Marked ${n} classes absent`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkDelete = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("class_sessions").delete().in("id", picked);
+      if (error) throw error;
+      return picked.length;
+    },
+    onSuccess: (n) => {
+      queryClient.invalidateQueries({ queryKey: ["class-sessions", batchId] });
+      setPicked([]);
+      toast.success(`Deleted ${n} classes`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   /** Every class that appears anywhere in the feed, plus catalogued courses.
    *  All holidays collapse into a single "Holidays" filter. */
