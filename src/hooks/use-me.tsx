@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 
 /** Name + greeting helpers so copy across the app can address the user directly. */
