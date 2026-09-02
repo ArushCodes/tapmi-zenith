@@ -606,7 +606,13 @@ export function TimetablePanel() {
                             {sessionLabel(s)}
                           </span>
                           <span className="block truncate font-mono text-[11px] text-dim">
-                            {[s.course_name, s.faculty_name, s.classroom, s.section]
+                            {[
+                              s.course_name,
+                              s.faculty_name,
+                              s.classroom,
+                              sessionNumberOf(s) ? `S${sessionNumberOf(s)}` : null,
+                            ]
+
                               .filter(Boolean)
                               .join(" · ") || "—"}
                           </span>
