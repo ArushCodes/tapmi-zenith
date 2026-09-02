@@ -59,10 +59,9 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen
           {deadline.subject} — {deadline.title}
         </p>
         <p className="truncate font-mono text-[11px] text-dim">
-          {[deadline.subject_code, formatDue(deadline.due_at), deadline.location]
-            .filter(Boolean)
-            .join(" · ")}
+          {[formatDeadlineWhen(deadline), deadline.location].filter(Boolean).join(" · ")}
         </p>
+
       </button>
 
       <span className={`hidden rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wide sm:block ${meta.chip}`}>
