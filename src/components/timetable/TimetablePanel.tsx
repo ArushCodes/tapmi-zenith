@@ -391,6 +391,111 @@ export function TimetablePanel() {
         onClear={() => setSelected([])}
       />
 
+      <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+          <span>Events this week</span>
+          <span className="h-px flex-1 bg-border" />
+          <button
+            onClick={() => setTypes([])}
+            disabled={types.length === 0}
+            className="text-faint normal-case hover:text-ink disabled:opacity-40"
+          >
+            Reset
+          </button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {DEADLINE_TYPES.map((t) => {
+            const n = typeCounts[t.value] ?? 0;
+            const meta = eventMeta(t.value);
+            const on = types.includes(t.value);
+            return (
+              <motion.button
+                key={t.value}
+                whileHover={n ? { y: -2 } : undefined}
+                whileTap={n ? { scale: 0.96 } : undefined}
+                disabled={n === 0}
+                onClick={() =>
+                  setTypes((p) =>
+                    p.includes(t.value) ? p.filter((x) => x !== t.value) : [...p, t.value],
+                  )
+                }
+                title={n === 0 ? `No ${t.label.toLowerCase()} this week` : `${n} scheduled`}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-all ${
+                  n === 0
+                    ? "cursor-not-allowed bg-surface2 text-faint opacity-50 ring-1 ring-border"
+                    : `${meta.chip} ${on ? "ring-2" : ""}`
+                }`}
+              >
+                <Marker
+                  shape={shapeForDeadline(t.value)}
+                  color={n === 0 ? "#64748B" : "currentColor"}
+                  size={8}
+                />
+                {t.label}
+                <span className="opacity-70">{n}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {(isMember || canManage) && visibleSessions.length > 0 && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface2 px-3 py-2 ring-1 ring-border"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              {picked.length > 0 ? `${picked.length} selected` : "Multi-select"}
+            </span>
+            <button
+              onClick={() => setPicked(visibleSessions.map((s) => s.id))}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink"
+            >
+              <CheckSquare className="size-3.5" /> Select all ({visibleSessions.length})
+            </button>
+            <button
+              onClick={() => setPicked([])}
+              disabled={picked.length === 0}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+            >
+              <X className="size-3.5" /> Clear selection
+            </button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {isMember && user && (
+                <>
+                  <button
+                    onClick={() => bulk.mutate("absent")}
+                    disabled={picked.length === 0 || bulk.isPending}
+                    className="flex items-center gap-1.5 rounded-lg bg-evt-exam/15 px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/40 disabled:opacity-40"
+                  >
+                    <CircleSlash className="size-3.5" /> Mark absent
+                  </button>
+                  <button
+                    onClick={() => bulk.mutate("clear")}
+                    disabled={picked.length === 0 || bulk.isPending}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+                  >
+                    <Check className="size-3.5" /> Clear marks
+                  </button>
+                </>
+              )}
+              {canManage && (
+                <button
+                  onClick={() => bulkDelete.mutate()}
+                  disabled={picked.length === 0 || bulkDelete.isPending}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/30 hover:bg-evt-exam/10 disabled:opacity-40"
+                >
+                  <Trash2 className="size-3.5" /> Delete classes
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
       {isLoading ? (
