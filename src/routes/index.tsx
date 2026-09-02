@@ -215,33 +215,62 @@ function Board() {
     setDialogOpen(true);
   }
 
-  type TabDef = { key: TabKey; label: string; icon: React.ReactNode };
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number };
 
-  const primaryTabs: TabDef[] = [
-    { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
-    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
-    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+  const workTabs: TabDef[] = [
+    { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
+    { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
+    { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
-  const moreTabs: TabDef[] = [
-    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
-    { key: "activity", label: "Notifications", icon: <Bell className="size-3.5" /> },
-    { key: "members", label: "Members", icon: <Users className="size-3.5" /> },
-    { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-3.5" /> },
+  const batchTabs: TabDef[] = [
+    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-4" /> },
+    { key: "activity", label: "Activity", icon: <Bell className="size-4" /> },
+    { key: "members", label: "Members", icon: <Users className="size-4" /> },
+    { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-4" /> },
     ...(isMod
       ? [
           {
             key: "approvals" as TabKey,
-            label: `Approvals${pendingCount ? ` (${pendingCount})` : ""}`,
-            icon: <ShieldCheck className="size-3.5" />,
+            label: "Approvals",
+            icon: <ShieldCheck className="size-4" />,
+            badge: pendingCount || undefined,
           },
-          { key: "inbox" as TabKey, label: "Email Inbox", icon: <Mail className="size-3.5" /> },
+          { key: "inbox" as TabKey, label: "Inbox", icon: <Mail className="size-4" /> },
         ]
       : []),
   ];
 
-  const activeMore = moreTabs.find((t) => t.key === tab) ?? null;
+  const renderTab = (t: TabDef) => (
+    <motion.button
+      key={t.key}
+      onClick={() => setTab(t.key)}
+      whileTap={{ scale: 0.96 }}
+      aria-current={tab === t.key ? "page" : undefined}
+      className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors sm:px-3.5 ${
+        tab === t.key ? "text-ink" : "text-dim hover:text-ink"
+      }`}
+    >
+      {tab === t.key && (
+        <motion.span
+          layoutId="tab-pill"
+          className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
+          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+        />
+      )}
+      <span className="relative flex items-center gap-2">
+        {t.icon}
+        <span className="whitespace-nowrap">{t.label}</span>
+        {t.badge ? (
+          <span className="rounded-full bg-cyan/20 px-1.5 py-0.5 font-mono text-[10px] leading-none text-cyan">
+            {t.badge}
+          </span>
+        ) : null}
+      </span>
+    </motion.button>
+  );
+
 
 
   return (
