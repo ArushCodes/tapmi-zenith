@@ -11,7 +11,7 @@ import {
   Megaphone,
   MessageSquare,
   ShieldCheck,
-  
+  Sun,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -89,7 +89,7 @@ function IndexPage() {
 
 type TabKey =
   | "feed"
-  
+  | "today"
   | "announcements"
   | "calendar"
   | "timetable"
@@ -216,7 +216,7 @@ function Board() {
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
-    
+    { key: "today", label: "Today", icon: <Sun className="size-3.5" /> },
     { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
@@ -310,7 +310,7 @@ function Board() {
           ))}
         </div>
 
-        {tab === "calendar" && (
+        {(tab === "feed" || tab === "calendar") && (
           <div className="sticky top-0 z-20 -mx-5 mb-7 bg-ground/80 px-5 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-wrap gap-2">
@@ -346,8 +346,28 @@ function Board() {
                   />
                 </div>
 
-
-
+                {tab === "feed" && (
+                  <div className="flex rounded-xl bg-surface2/70 p-1 ring-1 ring-border">
+                    {(["list", "timeline"] as const).map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setView(v)}
+                        className={`relative rounded-lg px-3 py-1.5 font-mono text-[11px] transition-colors ${
+                          view === v ? "text-ink" : "text-dim hover:text-ink"
+                        }`}
+                      >
+                        {view === v && (
+                          <motion.span
+                            layoutId="view-pill"
+                            className="absolute inset-0 rounded-lg bg-surface"
+                            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                          />
+                        )}
+                        <span className="relative">{v === "list" ? "List" : "Weeks"}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {isMod && (
                   <motion.button
@@ -496,6 +516,7 @@ function Board() {
               </>
             )}
 
+            {tab === "today" && <DayPulsePanel now={now} />}
 
             {tab === "announcements" && <AnnouncementsPanel />}
 
