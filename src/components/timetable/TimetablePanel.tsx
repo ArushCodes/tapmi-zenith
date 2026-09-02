@@ -136,19 +136,21 @@ export function TimetablePanel() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  const monthEnd = useMemo(
+    () => new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1),
+    [monthStart],
+  );
 
-  /** How many events of each type exist this week — drives greyed-out chips. */
+  /** How many events of each type exist this month — drives greyed-out chips. */
   const typeCounts = useMemo(() => {
     const c = {} as Record<DeadlineType, number>;
     for (const d of deadlines) {
       const t = new Date(d.due_at);
-      if (t < weekStart || t >= weekEnd) continue;
+      if (t < monthStart || t >= monthEnd) continue;
       c[d.type] = (c[d.type] ?? 0) + 1;
     }
     return c;
-  }, [deadlines, weekStart, weekEnd]);
+  }, [deadlines, monthStart, monthEnd]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, { sessions: ClassSession[]; events: Deadline[] }>();
@@ -160,13 +162,13 @@ export function TimetablePanel() {
     for (const s of sessions) {
       if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
-      if (start < weekStart || start >= weekEnd) continue;
+      if (start < monthStart || start >= monthEnd) continue;
       if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
       bucket(start.toDateString()).sessions.push(s);
     }
     for (const d of deadlines) {
       const start = new Date(d.due_at);
-      if (start < weekStart || start >= weekEnd) continue;
+      if (start < monthStart || start >= monthEnd) continue;
       if (types.length > 0 && !types.includes(d.type)) continue;
       bucket(start.toDateString()).events.push(d);
     }
@@ -177,7 +179,7 @@ export function TimetablePanel() {
     return [...map.entries()].sort(
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
-  }, [sessions, deadlines, weekStart, weekEnd, selected, types]);
+  }, [sessions, deadlines, monthStart, monthEnd, selected, types]);
 
   /** Every markable class currently on screen — the pool for mass actions. */
   const visibleSessions = useMemo(
