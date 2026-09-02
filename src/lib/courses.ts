@@ -31,52 +31,50 @@ export function autoColor(key: string) {
 }
 
 /** Lookup of course code / short name / session key → colour.
- *  Every distinct subject in the batch is guaranteed a *unique* colour: the
- *  catalogue colour wins, collisions are pushed to the next free palette slot,
- *  and anything still unclaimed gets a generated hue that is not in use yet. */
+ *  Colours are spread evenly around the hue wheel across every distinct
+ *  subject in the batch, so no two subjects ever look alike — the more
+ *  subjects there are, the wider they are spaced apart. */
 export function buildColorMap(courses: Course[], sessions: ClassSession[] = []) {
   const m = new Map<string, string>();
-  const used = new Set<string>();
 
-  const claim = (preferred: string, seed: string) => {
-    if (!used.has(preferred)) return preferred;
-    const free = AUTO_PALETTE.find((c) => !used.has(c));
-    if (free) return free;
-    // Palette exhausted — walk the hue wheel deterministically until free.
-    let h = 0;
-    for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-    for (let i = 0; i < 360; i += 1) {
-      const c = `hsl(${(h + i * 37) % 360} 70% 62%)`;
-      if (!used.has(c)) return c;
+  /** Group aliases (code / short name / session key) per distinct subject. */
+  const groups = new Map<string, Set<string>>();
+  const aliasToGroup = new Map<string, string>();
+
+  const register = (keys: (string | null | undefined)[]) => {
+    const alias = keys.filter(Boolean).map((k) => k!.toLowerCase());
+    if (alias.length === 0) return;
+    const existing = alias.map((a) => aliasToGroup.get(a)).find(Boolean);
+    const id = existing ?? alias[0]!;
+    const set = groups.get(id) ?? new Set<string>();
+    for (const a of alias) {
+      set.add(a);
+      aliasToGroup.set(a, id);
     }
-    return preferred;
+    groups.set(id, set);
   };
 
-  const assign = (keys: (string | null | undefined)[], preferred: string, seed: string) => {
-    const known = keys.find((k) => k && m.has(k.toLowerCase()));
-    if (known) {
-      const color = m.get(known.toLowerCase())!;
-      for (const k of keys) if (k) m.set(k.toLowerCase(), color);
-      return;
-    }
-    const color = claim(preferred, seed);
-    used.add(color);
-    for (const k of keys) if (k) m.set(k.toLowerCase(), color);
-  };
-
-  for (const c of courses) {
-    if (!c.color) continue;
-    assign([c.code, c.short_name], c.color, c.code);
-  }
-
+  for (const c of courses) register([c.code, c.short_name]);
   for (const s of sessions) {
     if (s.is_holiday || isAcademicEvent(s)) continue;
-    const key = sessionKey(s);
-    assign([s.course_code, s.short_name, key], autoColor(key), key);
+    register([s.course_code, s.short_name, sessionKey(s)]);
   }
+
+  const ids = [...groups.keys()].sort();
+  const n = Math.max(ids.length, 1);
+  ids.forEach((id, i) => {
+    // Golden-ratio offset keeps neighbouring subjects far apart in hue, and
+    // alternating lightness separates hues that are close on large batches.
+    const hue = Math.round(((i * 360) / n + 18) % 360);
+    const light = i % 2 === 0 ? 62 : 52;
+    const sat = i % 3 === 0 ? 78 : 66;
+    const color = `hsl(${hue} ${sat}% ${light}%)`;
+    for (const alias of groups.get(id)!) m.set(alias, color);
+  });
 
   return m;
 }
+
 
 export function sessionColor(s: ClassSession, map: Map<string, string>) {
   if (s.is_holiday) return null;
