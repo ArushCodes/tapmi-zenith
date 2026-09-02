@@ -125,13 +125,13 @@ export function urgencyOf(dueAt: string, now: number): Urgency {
 export function timeLeft(dueAt: string, now: number) {
   const diff = new Date(dueAt).getTime() - now;
   if (diff <= 0) return "Closed";
-  const totalSec = Math.floor(diff / 1000);
-  const days = Math.floor(totalSec / 86400);
-  const hours = Math.floor((totalSec % 86400) / 3600);
-  const mins = Math.floor((totalSec % 3600) / 60);
-  const secs = totalSec % 60;
-  if (days >= 1) return `${days}d ${String(hours).padStart(2, "0")}h`;
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  const totalMin = Math.floor(diff / 60000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const mins = totalMin % 60;
+  if (days >= 1) return `${days}d ${hours}h ${mins}m`;
+  if (hours >= 1) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }
 
 const dateFmt = new Intl.DateTimeFormat("en-GB", {
