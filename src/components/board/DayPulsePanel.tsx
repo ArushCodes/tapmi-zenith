@@ -115,7 +115,20 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     (s) => now >= new Date(s.start_at).getTime() && now <= new Date(s.end_at).getTime(),
   );
 
+  /** Gap between two classes — the moment worth celebrating. */
+  const breakInfo = useMemo(() => {
+    if (live || classes.length === 0) return null;
+    const prev = [...classes]
+      .reverse()
+      .find((s) => new Date(s.end_at).getTime() <= now);
+    const next = classes.find((s) => new Date(s.start_at).getTime() > now);
+    if (!next) return null;
+    const startsIn = Math.max(0, Math.round((new Date(next.start_at).getTime() - now) / 60000));
+    return { prev, next, startsIn, beforeFirst: !prev };
+  }, [classes, live, now]);
+
   const color = stats.pct >= 100 ? "var(--evt-present)" : "var(--cyan)";
+
 
   return (
     <section className={compact ? "" : "mt-4"}>
