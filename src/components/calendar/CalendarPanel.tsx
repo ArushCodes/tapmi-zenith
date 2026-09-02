@@ -11,6 +11,7 @@ import {
   isAcademicEvent,
   sessionColor,
   sessionKey,
+  sessionLabel,
 } from "@/lib/courses";
 
 type SubView = "month" | "week" | "agenda";
