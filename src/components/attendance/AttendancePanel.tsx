@@ -491,17 +491,6 @@ function SessionCard({
           </span>
         </span>
         <button
-          onClick={() => onMark(myMark?.status === "present" ? null : "present", meId, "self")}
-          title={myMark?.status === "present" ? "Tap again to clear" : "Mark present"}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
-            myMark?.status === "present"
-              ? "bg-evt-present/20 text-evt-present ring-evt-present/40"
-              : "text-dim ring-border hover:text-ink"
-          }`}
-        >
-          <CheckCircle2 className="size-3.5" /> Present
-        </button>
-        <button
           onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
           title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
@@ -510,8 +499,10 @@ function SessionCard({
               : "text-dim ring-border hover:text-ink"
           }`}
         >
-          <CircleSlash className="size-3.5" /> Absent
+          <CircleSlash className="size-3.5" />{" "}
+          {myMark?.status === "absent" ? "Marked absent" : "Absent"}
         </button>
+
 
         {canManage && (
           <button
