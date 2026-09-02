@@ -1,12 +1,29 @@
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { db as supabase, backendConfigured } from "@/lib/backend";
 
 export type AppRole = "student" | "mod" | "admin";
 
+type SessionValue = { session: Session | null; user: User | null; loading: boolean };
 
-export function useSession() {
+const SessionContext = createContext<SessionValue | null>(null);
+
+/** Single auth listener for the whole app — without this every component that
+ *  calls useAuth() opens its own getSession() round-trip on mount. */
+export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const value = useSessionInternal();
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+}
+
+export function useSession(): SessionValue {
+  const ctx = useContext(SessionContext);
+  // Fallback keeps standalone usage (tests, isolated trees) working.
+  const local = useSessionInternal(!!ctx);
+  return ctx ?? local;
+}
+
+function useSessionInternal(skip = false) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(backendConfigured);
 
