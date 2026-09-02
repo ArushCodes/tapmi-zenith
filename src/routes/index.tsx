@@ -11,7 +11,7 @@ import {
   Megaphone,
   MessageSquare,
   ShieldCheck,
-  Sun,
+  
   UserCheck,
   Users,
 } from "lucide-react";
