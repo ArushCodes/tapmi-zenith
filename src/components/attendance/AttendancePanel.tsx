@@ -438,43 +438,49 @@ export function AttendancePanel({ now }: { now: number }) {
 
               <div className="grid gap-2 sm:grid-cols-2">
 
-              {stats.map((s) => {
-                const color = meterColor(s.pct);
-                return (
-                  <motion.div
-                    key={s.course}
-                    layout
-                    whileHover={{ scale: 1.01, y: -2 }}
-                    className="rounded-xl bg-surface p-3 ring-1"
-                    style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 truncate font-display text-sm font-semibold">
-                        {shortSubject(s.course, 22)}
-                      </span>
-                      <span className="shrink-0 font-mono text-sm" style={{ color }}>
-                        {s.pct}%
-                      </span>
-                    </div>
-                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(100, s.pct)}%` }}
-                        transition={{ type: "spring", stiffness: 120, damping: 22 }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    </div>
-                    <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                      {s.absent} missed of {s.planned} planned · {s.held} held so far
-                      <br className="sm:hidden" />
-                      <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
-                    </p>
-                  </motion.div>
-                );
-              })}
-            </div>
+                {stats.map((s) => {
+                  const color = meterColor(s.pct);
+                  return (
+                    <motion.button
+                      key={s.course}
+                      layout
+                      onClick={() => setFocus(focus === s.course ? null : s.course)}
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      whileTap={{ scale: 0.99 }}
+                      className={`rounded-xl bg-surface p-3 text-left ring-1 ${
+                        focus === s.course ? "ring-cyan/40" : "ring-border"
+                      }`}
+                      style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0 truncate font-display text-sm font-semibold">
+                          {shortSubject(s.course, 22)}
+                        </span>
+                        <span className="shrink-0 font-mono text-sm" style={{ color }}>
+                          {s.pct}%
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, s.pct)}%` }}
+                          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                          className="h-full rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      </div>
+                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
+                        {s.absent} missed of {s.planned} planned · {s.held} held so far
+                        <br className="sm:hidden" />
+                        <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
+                      </p>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </>
           )}
+
         </div>
       )}
     </section>
