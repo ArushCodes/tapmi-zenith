@@ -53,8 +53,11 @@ function AuthPage() {
         if (error) throw error;
         navigate({ to: "/", replace: true });
       } else {
+        if (!isAllowedEmail(email)) {
+          throw new Error(`Sign-ups are limited to @${ALLOWED_DOMAIN} email addresses.`);
+        }
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
@@ -63,7 +66,10 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) navigate({ to: "/", replace: true });
-        else toast.success("Check your email to confirm your account.");
+        else
+          toast.success(
+            "Verification link sent — confirm it from your Manipal learner inbox to activate your account.",
+          );
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Something went wrong");
