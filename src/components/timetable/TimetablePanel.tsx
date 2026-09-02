@@ -18,13 +18,16 @@ import {
 import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
+  autoColor,
   buildColorMap,
   sessionLabel,
+  sessionNumberOf,
   courseKey,
   isAcademicEvent,
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
+
 import { Marker, shapeForDeadline } from "@/lib/shapes";
 import {
   DEADLINE_TYPES,
