@@ -426,17 +426,13 @@ function SessionCard({
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <span className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
           <span className="block truncate font-display text-sm font-semibold leading-tight">
-            {shortSubject(session.title, 40)}
+            {shortSubject(sessionLabel(session), 40)}
           </span>
-          <span className="block truncate font-mono text-[10px] leading-relaxed text-dim sm:text-[11px]">
-            {[
-              timeFmt.format(new Date(session.start_at)),
-              session.faculty_name,
-              session.classroom,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+          <span className="block font-mono text-[10px] leading-relaxed text-dim sm:text-[11px]">
+            {timeFmt.format(new Date(session.start_at))}
           </span>
+          <SessionMeta session={session} />
+
         </span>
         <button
           onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
