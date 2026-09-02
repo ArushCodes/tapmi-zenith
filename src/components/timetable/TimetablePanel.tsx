@@ -2,11 +2,19 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Check, CircleSlash, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
-import { coursesQuery, sessionsQuery, syncStateQuery, type ClassSession } from "@/lib/batches";
+import {
+  attendanceQuery,
+  coursesQuery,
+  sessionsQuery,
+  syncStateQuery,
+  type ClassSession,
+} from "@/lib/batches";
+
 import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
