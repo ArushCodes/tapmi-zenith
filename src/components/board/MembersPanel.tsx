@@ -11,9 +11,9 @@ import { batchMembersQuery, type Membership } from "@/lib/batches";
 type Row = Membership & { profiles: { full_name: string | null; email: string | null } | null };
 
 export function MembersPanel() {
-  const { batchId, canManage } = useBatch();
+  const { batchId, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
-  const { data: members = [], isLoading } = useQuery(batchMembersQuery(batchId, canManage));
+  const { data: members = [], isLoading } = useQuery(batchMembersQuery(batchId, isMember));
 
   const update = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Membership> }) => {
@@ -42,18 +42,16 @@ export function MembersPanel() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const { pending, approved, others } = useMemo(() => {
-    const rows = members as Row[];
-    return {
-      pending: rows.filter((m) => m.status === "pending"),
-      approved: rows.filter((m) => m.status === "approved"),
-      others: rows.filter((m) => m.status === "rejected" || m.status === "removed"),
-    };
+  /** Everyone in the batch is a member — there is no approval queue any more. */
+  const rows = useMemo(() => {
+    const all = members as Row[];
+    return all.filter((m) => m.status !== "removed" && m.status !== "rejected");
   }, [members]);
 
-  if (!canManage) return null;
+  if (!isMember) return null;
   if (isLoading)
     return <p className="mt-6 text-center font-mono text-xs text-faint">Loading members…</p>;
+
 
   function Person({ m }: { m: Row }) {
     const name = m.profiles?.full_name ?? m.profiles?.email ?? "Unknown member";
