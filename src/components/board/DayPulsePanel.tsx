@@ -186,6 +186,20 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           style={{ backgroundColor: p === 100 ? "var(--evt-present)" : c }}
                         />
                       </div>
+                      {isMember && user && (
+                        <button
+                          onClick={() => toggleAbsent.mutate(s)}
+                          className={`mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+                            myMarks.get(s.id) === "absent"
+                              ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                              : "text-dim ring-border hover:text-ink"
+                          }`}
+                        >
+                          <CircleSlash className="size-3" />
+                          {myMarks.get(s.id) === "absent" ? "Marked absent" : "Absent"}
+                        </button>
+                      )}
+
                     </motion.div>
                   );
                 })}
