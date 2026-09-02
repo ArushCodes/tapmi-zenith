@@ -32,11 +32,56 @@ function pctOf(s: ClassSession, now: number) {
 
 /** "How much of today is done" — animated day pulse. */
 export function DayPulsePanel({ now, compact = false }: { now: number; compact?: boolean }) {
-  const { batchId } = useBatch();
+  const { batchId, isMember } = useBatch();
+  const { user } = useAuth();
   const me = useMe();
+  const queryClient = useQueryClient();
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
+  const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
   const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+
+  /** My own self-marks for today's classes, keyed by session. */
+  const myMarks = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of marks)
+      if (m.user_id === user?.id && m.mark_source === "self") map.set(m.session_id, m.status);
+    return map;
+  }, [marks, user?.id]);
+
+  const toggleAbsent = useMutation({
+    mutationFn: async (s: ClassSession) => {
+      if (myMarks.get(s.id) === "absent") {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", s.id)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return "cleared" as const;
+      }
+      const { error } = await supabase.from("attendance_marks").upsert(
+        {
+          session_id: s.id,
+          batch_id: s.batch_id,
+          user_id: user!.id,
+          status: "absent",
+          mark_source: "self",
+          marked_by: user!.id,
+        },
+        { onConflict: "session_id,user_id,mark_source" },
+      );
+      if (error) throw error;
+      return "saved" as const;
+    },
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      toast.success(r === "cleared" ? "Attendance cleared" : "Marked absent");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const today = useMemo(() => {
     const key = dayKey(new Date(now));
