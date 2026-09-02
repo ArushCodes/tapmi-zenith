@@ -367,8 +367,46 @@ export function AttendancePanel({ now }: { now: number }) {
             </>
           )}
 
+          <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
+            <button
+              onClick={() => setBrowse((v) => !v)}
+              className="flex w-full items-center gap-2 font-display text-sm font-semibold"
+            >
+              <Search className="size-4 text-cyan" />
+              Mark a past class absent
+              <span className="ml-auto font-mono text-[11px] text-faint">
+                {browse ? "Hide" : "Open"}
+              </span>
+            </button>
+
+            {browse && (
+              <div className="mt-3 flex flex-col gap-2">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search a class, faculty or room"
+                  className="rounded-lg bg-ground px-3 py-2 text-sm text-ink outline-none ring-1 ring-border placeholder:text-faint focus:ring-cyan/50"
+                />
+                {browsable.map((s) => (
+                  <SessionCard
+                    key={s.id}
+                    session={s}
+                    tone={new Date(s.end_at).getTime() < now ? "past" : "upcoming"}
+                    myMark={myMarks.get(`${s.id}-self`) ?? null}
+                    canManage={canManage}
+                    members={members}
+                    marks={marks}
+                    meId={user!.id}
+                    onMark={(status, userId, source) =>
+                      mark.mutate({ session: s, userId, status, source })
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </section>
         </div>
-      )}
+
     </section>
   );
 }
