@@ -52,9 +52,12 @@ function useSessionInternal(skip = false) {
       setLoading(false);
       return undefined;
     }
-  }, []);
+  }, [skip]);
 
-  return { session, user: (session?.user ?? null) as User | null, loading };
+  return useMemo(
+    () => ({ session, user: (session?.user ?? null) as User | null, loading }),
+    [session, loading],
+  );
 }
 
 export function useAuth() {
