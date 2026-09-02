@@ -7,10 +7,10 @@ import {
   CalendarRange,
   ListFilter,
   Mail,
+  Plus,
+  Search,
   Bell,
-  ChevronDown,
   Megaphone,
-  MoreHorizontal,
   MessageSquare,
   ShieldCheck,
   UserCheck,
@@ -119,7 +119,6 @@ function Board() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
