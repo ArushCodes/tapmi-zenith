@@ -391,7 +391,53 @@ export function AttendancePanel({ now }: { now: number }) {
               {me.name ? `${me.name}, no classes on record yet.` : "No classes on record yet."}
             </p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <>
+              <div className="flex flex-col items-center gap-5 rounded-2xl bg-surface p-4 ring-1 ring-border sm:flex-row sm:items-center">
+                <Donut
+                  value={overall.pct}
+                  color={meterColor(overall.pct)}
+                  size={150}
+                  label={`${overall.pct}%`}
+                  sub={focus ? shortSubject(focus, 16) : "overall"}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base font-semibold">
+                    {focus ? shortSubject(focus, 28) : "All subjects"}
+                  </p>
+                  <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
+                    {overall.absent} missed of {overall.planned} planned ·{" "}
+                    {overall.pct >= threshold
+                      ? `${overall.pct - threshold}% of headroom above the ${threshold}% line`
+                      : `${threshold - overall.pct}% below the ${threshold}% line`}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setFocus(null)}
+                      className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
+                        focus === null ? "bg-surface2 text-ink ring-cyan/40" : "text-dim ring-border"
+                      }`}
+                    >
+                      Overall
+                    </button>
+                    {stats.map((s) => (
+                      <button
+                        key={s.course}
+                        onClick={() => setFocus(focus === s.course ? null : s.course)}
+                        className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
+                          focus === s.course
+                            ? "bg-surface2 text-ink ring-cyan/40"
+                            : "text-dim ring-border hover:text-ink"
+                        }`}
+                      >
+                        {shortSubject(s.course, 14)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+
               {stats.map((s) => {
                 const color = meterColor(s.pct);
                 return (
