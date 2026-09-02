@@ -149,18 +149,6 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
           </p>
         ) : (
           <>
-          <AnimatePresence>
-            {breakInfo && (
-              <BreakBanner
-                key="break"
-                startsIn={breakInfo.startsIn}
-                nextLabel={shortSubject(sessionLabel(breakInfo.next), 26)}
-                nextAt={clock.format(new Date(breakInfo.next.start_at))}
-                prevLabel={breakInfo.prev ? shortSubject(sessionLabel(breakInfo.prev), 26) : null}
-                name={me.name}
-              />
-            )}
-          </AnimatePresence>
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="shrink-0">
               <Donut
@@ -174,6 +162,15 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                 {stats.finished}/{classes.length} classes ·{" "}
                 {stats.remainingMin > 0 ? `${stats.remainingMin} min left` : "wrapped"}
               </p>
+              <AnimatePresence mode="wait">
+                <NextUpTimer
+                  key={live ? `live-${live.id}` : breakInfo ? `next-${breakInfo.next.id}` : "wrapped"}
+                  live={live ?? null}
+                  next={breakInfo?.next ?? null}
+                  now={now}
+                  colorMap={colorMap}
+                />
+              </AnimatePresence>
             </div>
 
             <div className="min-w-0 flex-1 space-y-2">
