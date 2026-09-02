@@ -318,6 +318,29 @@ export function TimetablePanel() {
                             {s.course_code}
                           </span>
                         )}
+                        {!s.is_holiday && isMember && user && (
+                          <motion.button
+                            whileTap={{ scale: 0.94 }}
+                            onClick={() =>
+                              markAbsent.mutate({
+                                session: s,
+                                clear: absentIds.has(s.id),
+                              })
+                            }
+                            title={
+                              absentIds.has(s.id) ? "Tap again to clear" : "Mark yourself absent"
+                            }
+                            className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] ring-1 transition-colors ${
+                              absentIds.has(s.id)
+                                ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                                : "text-dim ring-border hover:text-ink"
+                            }`}
+                          >
+                            <CircleSlash className="size-3.5" />
+                            {absentIds.has(s.id) ? "Absent" : "Mark absent"}
+                          </motion.button>
+                        )}
+
                       </motion.div>
                     );
                   })}
