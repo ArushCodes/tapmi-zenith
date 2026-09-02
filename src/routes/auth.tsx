@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase, backendConfigured } from "@/lib/backend";
 import { lovable } from "@/integrations/lovable/index";
 import { batchTreeQuery } from "@/lib/batches";
 
@@ -31,9 +31,6 @@ const fieldClass =
   "w-full rounded-lg bg-ground px-3 py-2 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/50";
 
 const ALLOWED_DOMAIN = "learner.manipal.edu";
-const backendConfigured = Boolean(
-  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
-);
 const isAllowedEmail = (value: string) =>
   value.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
 
