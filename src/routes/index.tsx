@@ -332,42 +332,41 @@ function Board() {
 
 
         {tab === "calendar" && (
-          <div className="sticky top-0 z-20 -mx-5 mb-7 bg-ground/80 px-5 py-4 backdrop-blur-md sm:-mx-8 sm:px-8">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-wrap gap-2">
+          <div className="sticky top-0 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Segmented type filter */}
+              <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl bg-surface2/70 p-1 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {FILTERS.map((f) => (
-                  <motion.button
+                  <button
                     key={f.key}
                     onClick={() => setFilter(f.key)}
-                    whileTap={{ scale: 0.95 }}
-                    whileHover={{ y: -2 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className={
-                      filter === f.key
-                        ? "rounded-xl bg-cyan/15 px-3.5 py-2 font-mono text-xs font-medium text-cyan ring-1 ring-cyan/30"
-                        : "rounded-xl px-3.5 py-2 font-mono text-xs text-dim ring-1 ring-border transition-colors hover:text-ink"
-                    }
+                    className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+                      filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
+                    }`}
                   >
-                    {f.label}
-                  </motion.button>
+                    {filter === f.key && (
+                      <motion.span
+                        layoutId="filter-pill"
+                        className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
+                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                      />
+                    )}
+                    <span className="relative whitespace-nowrap">{f.label}</span>
+                  </button>
                 ))}
               </div>
 
-              <div className="ml-auto flex flex-wrap items-center gap-2.5">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-xs text-faint">
-                    ⌕
-                  </span>
+              <div className="flex items-center gap-2 sm:ml-auto">
+                <div className="relative flex-1 sm:flex-none">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search course or code…"
                     aria-label="Search deadlines"
-                    className="w-44 rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:w-52 focus:ring-2 focus:ring-cyan/40 sm:w-60 sm:focus:w-72"
+                    className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
                   />
                 </div>
-
-
 
                 {isMod && (
                   <motion.button
@@ -375,18 +374,20 @@ function Board() {
                       setEditing(null);
                       setDialogOpen(true);
                     }}
-                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="flex items-center gap-1.5 rounded-xl bg-cyan px-4 py-2 text-sm font-semibold text-ground ring-1 ring-cyan shadow-[0_0_28px_-6px_var(--cyan)]"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-ground shadow-[0_0_28px_-8px_var(--cyan)]"
                   >
-                    <span className="text-base leading-none">+</span> Add
+                    <Plus className="size-4" />
+                    <span className="hidden sm:inline">Add</span>
                   </motion.button>
                 )}
               </div>
             </div>
           </div>
         )}
+
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
