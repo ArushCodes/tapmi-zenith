@@ -26,6 +26,10 @@ export const Route = createFileRoute("/auth")({
 const fieldClass =
   "w-full rounded-lg bg-ground px-3 py-2 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/50";
 
+const ALLOWED_DOMAIN = "learner.manipal.edu";
+const isAllowedEmail = (value: string) =>
+  value.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
