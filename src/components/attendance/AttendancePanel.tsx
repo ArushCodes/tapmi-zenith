@@ -263,7 +263,8 @@ export function AttendancePanel({ now }: { now: number }) {
         )}
       </div>
 
-      {(
+      {
+
         <div className="flex flex-col gap-4">
           {conflicts.length > 0 && canManage && (
 
