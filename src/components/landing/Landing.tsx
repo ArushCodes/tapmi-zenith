@@ -51,6 +51,23 @@ const steps = [
   { n: "03", t: "Get approved", d: "A moderator approves you and the full board unlocks." },
 ];
 
+/** MAHE constituent institutions the portal can be rolled out to. */
+const colleges = [
+  { name: "TAPMI", city: "Manipal", note: "T. A. Pai Management Institute", live: true },
+  { name: "MIT", city: "Manipal", note: "Manipal Institute of Technology" },
+  { name: "KMC", city: "Manipal", note: "Kasturba Medical College" },
+  { name: "KMC", city: "Mangalore", note: "Kasturba Medical College" },
+  { name: "MCODS", city: "Manipal", note: "Manipal College of Dental Sciences" },
+  { name: "MCHP", city: "Manipal", note: "Manipal College of Health Professions" },
+  { name: "MSAP", city: "Manipal", note: "School of Architecture & Planning" },
+  { name: "MCOPS", city: "Manipal", note: "Manipal College of Pharmaceutical Sciences" },
+  { name: "MIC", city: "Manipal", note: "Manipal Institute of Communication" },
+  { name: "MAHE", city: "Bengaluru", note: "MAHE Bengaluru campus" },
+  { name: "MAHE", city: "Jamshedpur", note: "MAHE Jamshedpur campus" },
+  { name: "MAHE", city: "Dubai", note: "MAHE Dubai campus" },
+];
+
+
 export function Landing() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
@@ -145,6 +162,50 @@ export function Landing() {
               <p className="mt-1.5 text-sm leading-relaxed text-dim">{f.body}</p>
             </motion.div>
           ))}
+        </section>
+
+        <section className="mt-16 sm:mt-24">
+          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            Built for every MAHE campus
+          </h2>
+          <p className="mt-2 max-w-xl text-sm text-dim sm:text-base">
+            Starting with TAPMI Manipal — any constituent institution under Manipal Academy of
+            Higher Education can be added, batch by batch.
+          </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {colleges.map((c, i) => (
+              <motion.div
+                key={`${c.name}-${c.city}`}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }}
+                transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.3), ease }}
+                whileHover={{ y: -3 }}
+                className={`flex items-center gap-3 rounded-2xl p-4 ring-1 transition-colors ${
+                  c.live
+                    ? "bg-cyan/10 ring-cyan/40"
+                    : "bg-surface/50 ring-border hover:ring-cyan/30"
+                }`}
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-surface2 font-display text-[11px] font-semibold text-cyan ring-1 ring-border">
+                  {c.name.slice(0, 4)}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-display text-sm font-semibold tracking-tight">
+                    {c.name} {c.city}
+                  </span>
+                  <span className="block truncate font-mono text-[10px] text-dim">{c.note}</span>
+                </span>
+                <span
+                  className={`ml-auto shrink-0 rounded-md px-2 py-1 font-mono text-[9px] uppercase tracking-wide ${
+                    c.live ? "bg-cyan/20 text-cyan" : "text-faint ring-1 ring-border"
+                  }`}
+                >
+                  {c.live ? "Live" : "Soon"}
+                </span>
+              </motion.div>
+            ))}
+          </div>
         </section>
 
         <section className="mt-16 sm:mt-24">
