@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CircleSlash, Plus, RefreshCw, Search, Settings2 } from "lucide-react";
+import { Check, CheckSquare, CircleSlash, Plus, RefreshCw, Search, Settings2, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,7 +24,15 @@ import {
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
-import { Marker } from "@/lib/shapes";
+import { Marker, shapeForDeadline } from "@/lib/shapes";
+import {
+  DEADLINE_TYPES,
+  deadlinesQueryFor,
+  eventMeta,
+  formatDeadlineWhen,
+  type Deadline,
+  type DeadlineType,
+} from "@/lib/deadlines";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 
 const HOLIDAY_COLOR = "#10B981";
@@ -105,11 +113,14 @@ export function TimetablePanel() {
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
+  const [types, setTypes] = useState<DeadlineType[]>([]);
+  const [picked, setPicked] = useState<string[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   /** Day drill-down: clicking a date switches to that day's agenda. */
   const [dayFocus, setDayFocus] = useState<string | null>(null);
 
+  const { data: deadlines = [] } = useQuery(deadlinesQueryFor(batchId));
 
   const runSync = useServerFn(syncTimetableNow);
   const saveFeed = useServerFn(saveIcsUrl);
@@ -128,20 +139,108 @@ export function TimetablePanel() {
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
 
+  /** How many events of each type exist this week — drives greyed-out chips. */
+  const typeCounts = useMemo(() => {
+    const c = {} as Record<DeadlineType, number>;
+    for (const d of deadlines) {
+      const t = new Date(d.due_at);
+      if (t < weekStart || t >= weekEnd) continue;
+      c[d.type] = (c[d.type] ?? 0) + 1;
+    }
+    return c;
+  }, [deadlines, weekStart, weekEnd]);
+
   const grouped = useMemo(() => {
-    const map = new Map<string, ClassSession[]>();
+    const map = new Map<string, { sessions: ClassSession[]; events: Deadline[] }>();
+    const bucket = (k: string) => {
+      const cur = map.get(k) ?? { sessions: [], events: [] };
+      map.set(k, cur);
+      return cur;
+    };
     for (const s of sessions) {
       if (s.notes === "academic-calendar") continue;
       const start = new Date(s.start_at);
       if (start < weekStart || start >= weekEnd) continue;
       if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
-      const k = start.toDateString();
-      map.set(k, [...(map.get(k) ?? []), s]);
+      bucket(start.toDateString()).sessions.push(s);
+    }
+    for (const d of deadlines) {
+      const start = new Date(d.due_at);
+      if (start < weekStart || start >= weekEnd) continue;
+      if (types.length > 0 && !types.includes(d.type)) continue;
+      bucket(start.toDateString()).events.push(d);
+    }
+    for (const v of map.values()) {
+      v.sessions.sort((a, b) => a.start_at.localeCompare(b.start_at));
+      v.events.sort((a, b) => a.due_at.localeCompare(b.due_at));
     }
     return [...map.entries()].sort(
       ([a], [b]) => new Date(a).getTime() - new Date(b).getTime(),
     );
-  }, [sessions, weekStart, weekEnd, selected]);
+  }, [sessions, deadlines, weekStart, weekEnd, selected, types]);
+
+  /** Every markable class currently on screen — the pool for mass actions. */
+  const visibleSessions = useMemo(
+    () => grouped.flatMap(([day, v]) => (!dayFocus || day === dayFocus ? v.sessions : [])).filter((s) => !s.is_holiday),
+    [grouped, dayFocus],
+  );
+  const pickedSet = useMemo(() => new Set(picked), [picked]);
+  const togglePick = (id: string) =>
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const bulk = useMutation({
+    mutationFn: async (action: "absent" | "clear") => {
+      const ids = picked;
+      if (ids.length === 0) return 0;
+      if (action === "clear") {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .in("session_id", ids)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return ids.length;
+      }
+      const rows = visibleSessions
+        .filter((s) => pickedSet.has(s.id))
+        .map((s) => ({
+          session_id: s.id,
+          batch_id: s.batch_id,
+          user_id: user!.id,
+          status: "absent" as const,
+          mark_source: "self" as const,
+          marked_by: user!.id,
+        }));
+      const { error } = await supabase
+        .from("attendance_marks")
+        .upsert(rows, { onConflict: "session_id,user_id,mark_source" });
+      if (error) throw error;
+      return rows.length;
+    },
+    onSuccess: (n, action) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      setPicked([]);
+      toast.success(action === "clear" ? `Cleared ${n} classes` : `Marked ${n} classes absent`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkDelete = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("class_sessions").delete().in("id", picked);
+      if (error) throw error;
+      return picked.length;
+    },
+    onSuccess: (n) => {
+      queryClient.invalidateQueries({ queryKey: ["class-sessions", batchId] });
+      setPicked([]);
+      toast.success(`Deleted ${n} classes`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
 
   /** Every class that appears anywhere in the feed, plus catalogued courses.
    *  All holidays collapse into a single "Holidays" filter. */
@@ -292,6 +391,111 @@ export function TimetablePanel() {
         onClear={() => setSelected([])}
       />
 
+      <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+          <span>Events this week</span>
+          <span className="h-px flex-1 bg-border" />
+          <button
+            onClick={() => setTypes([])}
+            disabled={types.length === 0}
+            className="text-faint normal-case hover:text-ink disabled:opacity-40"
+          >
+            Reset
+          </button>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {DEADLINE_TYPES.map((t) => {
+            const n = typeCounts[t.value] ?? 0;
+            const meta = eventMeta(t.value);
+            const on = types.includes(t.value);
+            return (
+              <motion.button
+                key={t.value}
+                whileHover={n ? { y: -2 } : {}}
+                whileTap={n ? { scale: 0.96 } : {}}
+                disabled={n === 0}
+                onClick={() =>
+                  setTypes((p) =>
+                    p.includes(t.value) ? p.filter((x) => x !== t.value) : [...p, t.value],
+                  )
+                }
+                title={n === 0 ? `No ${t.label.toLowerCase()} this week` : `${n} scheduled`}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-all ${
+                  n === 0
+                    ? "cursor-not-allowed bg-surface2 text-faint opacity-50 ring-1 ring-border"
+                    : `${meta.chip} ${on ? "ring-2" : ""}`
+                }`}
+              >
+                <Marker
+                  shape={shapeForDeadline(t.value)}
+                  color={n === 0 ? "#64748B" : "currentColor"}
+                  size={8}
+                />
+                {t.label}
+                <span className="opacity-70">{n}</span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {(isMember || canManage) && visibleSessions.length > 0 && (
+          <motion.div
+            layout
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface2 px-3 py-2 ring-1 ring-border"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              {picked.length > 0 ? `${picked.length} selected` : "Multi-select"}
+            </span>
+            <button
+              onClick={() => setPicked(visibleSessions.map((s) => s.id))}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink"
+            >
+              <CheckSquare className="size-3.5" /> Select all ({visibleSessions.length})
+            </button>
+            <button
+              onClick={() => setPicked([])}
+              disabled={picked.length === 0}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+            >
+              <X className="size-3.5" /> Clear selection
+            </button>
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {isMember && user && (
+                <>
+                  <button
+                    onClick={() => bulk.mutate("absent")}
+                    disabled={picked.length === 0 || bulk.isPending}
+                    className="flex items-center gap-1.5 rounded-lg bg-evt-exam/15 px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/40 disabled:opacity-40"
+                  >
+                    <CircleSlash className="size-3.5" /> Mark absent
+                  </button>
+                  <button
+                    onClick={() => bulk.mutate("clear")}
+                    disabled={picked.length === 0 || bulk.isPending}
+                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+                  >
+                    <Check className="size-3.5" /> Clear marks
+                  </button>
+                </>
+              )}
+              {canManage && (
+                <button
+                  onClick={() => bulkDelete.mutate()}
+                  disabled={picked.length === 0 || bulkDelete.isPending}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/30 hover:bg-evt-exam/10 disabled:opacity-40"
+                >
+                  <Trash2 className="size-3.5" /> Delete classes
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
 
       {isLoading ? (
@@ -318,20 +522,42 @@ export function TimetablePanel() {
 
           {grouped
             .filter(([day]) => !dayFocus || day === dayFocus)
-            .map(([day, list]) => (
+            .map(([day, list]) => {
+              const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
+              const allPicked =
+                dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
+              const total = list.sessions.length + list.events.length;
+              return (
               <motion.div key={day} layout>
-                <button
-                  onClick={() => setDayFocus((d) => (d === day ? null : day))}
-                  className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
-                >
-                  {dayFmt.format(new Date(day))}
-                  <span className="normal-case tracking-normal text-faint">
-                    {dayFocus === day ? "· agenda" : `· ${list.length} entr${list.length === 1 ? "y" : "ies"}`}
-                  </span>
-                </button>
+                <div className="mb-2 flex items-center gap-3">
+                  <button
+                    onClick={() => setDayFocus((d) => (d === day ? null : day))}
+                    className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
+                  >
+                    {dayFmt.format(new Date(day))}
+                    <span className="normal-case tracking-normal text-faint">
+                      {dayFocus === day ? "· agenda" : `· ${total} entr${total === 1 ? "y" : "ies"}`}
+                    </span>
+                  </button>
+                  {dayMarkable.length > 0 && (isMember || canManage) && (
+                    <button
+                      onClick={() =>
+                        setPicked((p) =>
+                          allPicked
+                            ? p.filter((id) => !dayMarkable.some((s) => s.id === id))
+                            : [...new Set([...p, ...dayMarkable.map((s) => s.id)])],
+                        )
+                      }
+                      className="font-mono text-[10px] text-faint hover:text-ink"
+                    >
+                      {allPicked ? "Unselect day" : "Select day"}
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-col gap-2">
-                  {list.map((s) => {
+                  {list.sessions.map((s) => {
                     const color = s.is_holiday ? HOLIDAY_COLOR : colorOf(s);
+                    const isPicked = pickedSet.has(s.id);
                     return (
                       <motion.div
                         key={s.id}
@@ -339,9 +565,26 @@ export function TimetablePanel() {
                         whileHover={{ scale: 1.01, y: -2 }}
                         style={{ borderLeftColor: color ?? "transparent" }}
                         className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
-                          s.is_holiday ? "ring-evt-present/30" : "ring-border"
+                          isPicked
+                            ? "ring-cyan/50"
+                            : s.is_holiday
+                              ? "ring-evt-present/30"
+                              : "ring-border"
                         }`}
                       >
+                        {!s.is_holiday && (isMember || canManage) ? (
+                          <button
+                            onClick={() => togglePick(s.id)}
+                            title="Select for mass actions"
+                            className={`shrink-0 transition-colors ${isPicked ? "text-cyan" : "text-faint hover:text-ink"}`}
+                          >
+                            {isPicked ? (
+                              <CheckSquare className="size-4" />
+                            ) : (
+                              <Square className="size-4" />
+                            )}
+                          </button>
+                        ) : null}
                         <Marker
                           shape={s.is_holiday ? "bar" : "circle"}
                           color={color ?? FALLBACK_COURSE_COLOR}
@@ -399,9 +642,35 @@ export function TimetablePanel() {
                       </motion.div>
                     );
                   })}
+
+                  {list.events.map((d) => {
+                    const meta = eventMeta(d.type);
+                    return (
+                      <motion.div
+                        key={d.id}
+                        layout
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-surface px-3 py-2.5 ring-1 ${meta.ring}`}
+                      >
+                        <Marker shape={shapeForDeadline(d.type)} color="currentColor" size={9} />
+                        <span className="font-mono text-[11px] text-dim">
+                          {formatDeadlineWhen(d)}
+                        </span>
+                        <span className="min-w-0 flex-1 basis-full truncate font-display text-sm font-semibold sm:basis-auto">
+                          {d.title}
+                        </span>
+                        <span className={`shrink-0 rounded-md px-2 py-1 font-mono text-[10px] ${meta.chip}`}>
+                          {meta.label}
+                          {d.subject ? ` · ${d.subject}` : ""}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
+
         </div>
       )}
 
