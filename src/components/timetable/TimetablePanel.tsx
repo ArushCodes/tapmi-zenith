@@ -292,30 +292,34 @@ export function TimetablePanel() {
     <section className="mt-4">
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
-          onClick={() => {
-            const next = new Date(weekStart);
-            next.setDate(weekStart.getDate() - 7);
-            setWeekStart(next);
-          }}
+          aria-label="Previous month"
+          onClick={() =>
+            setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))
+          }
           className="rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
         >
-          ← Prev
+          ←
+        </button>
+        <span className="min-w-[9.5rem] text-center font-display text-sm font-semibold tracking-tight">
+          {monthFmt.format(monthStart)}
+        </span>
+        <button
+          aria-label="Next month"
+          onClick={() =>
+            setMonthStart((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))
+          }
+          className="rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
+        >
+          →
         </button>
         <button
-          onClick={() => setWeekStart(startOfWeek(new Date()))}
+          onClick={() => {
+            setMonthStart(startOfMonth(new Date()));
+            setDayFocus(null);
+          }}
           className="rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-dim ring-1 ring-border hover:text-ink"
         >
-          This week
-        </button>
-        <button
-          onClick={() => {
-            const next = new Date(weekStart);
-            next.setDate(weekStart.getDate() + 7);
-            setWeekStart(next);
-          }}
-          className="rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
-        >
-          Next →
+          Today
         </button>
 
         <div className="ml-auto flex items-center gap-2">
