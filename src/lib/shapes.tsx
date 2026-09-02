@@ -9,6 +9,7 @@ export type MarkerShape =
   | "diamond"
   | "star"
   | "bar"
+  | "hexagon"
   | "pentagon";
 
 const CLIP: Partial<Record<MarkerShape, string>> = {
@@ -16,6 +17,7 @@ const CLIP: Partial<Record<MarkerShape, string>> = {
   diamond: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
   star: "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)",
   pentagon: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)",
+  hexagon: "polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)",
 };
 
 export function shapeForDeadline(type: DeadlineType): MarkerShape {
@@ -43,7 +45,8 @@ export const SHAPE_LABEL: Record<MarkerShape, string> = {
   diamond: "Presentation",
   star: "Midterm / Endterm",
   pentagon: "Lecture / Other",
-  bar: "Holiday",
+  hexagon: "Holiday",
+  bar: "Academic calendar",
 };
 
 /** Renders a coloured marker. `color` is a CSS colour; `className` may carry a

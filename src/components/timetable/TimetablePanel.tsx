@@ -244,8 +244,8 @@ export function TimetablePanel() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-
+  /** Unique colour per subject in this batch, catalogued or feed-discovered. */
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   /** Every class that appears anywhere in the feed, plus catalogued courses.
    *  All holidays collapse into a single "Holidays" filter. */
@@ -259,7 +259,7 @@ export function TimetablePanel() {
         key: courseKey(c),
         label: c.short_name || c.code,
         sub: [c.code, c.faculty_name].filter(Boolean).join(" · "),
-        color: c.color ?? FALLBACK_COURSE_COLOR,
+        color: colorMap.get(courseKey(c)) ?? c.color ?? FALLBACK_COURSE_COLOR,
         count: 0,
       });
     }
@@ -275,7 +275,7 @@ export function TimetablePanel() {
         key,
         label: key === HOLIDAY_KEY ? "Holidays" : sessionLabel(s),
         sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
-        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : autoColor(key),
+        color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : (colorMap.get(key) ?? autoColor(key)),
         count: 1,
       });
     }
@@ -284,10 +284,7 @@ export function TimetablePanel() {
       if (b.key === HOLIDAY_KEY) return -1;
       return a.label.localeCompare(b.label);
     });
-  }, [courses, sessions]);
-
-
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  }, [courses, sessions, colorMap]);
 
   const colorOf = (s: ClassSession) => sessionColor(s, colorMap);
 

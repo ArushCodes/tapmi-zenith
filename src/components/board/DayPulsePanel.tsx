@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { CircleSlash, Sun } from "lucide-react";
+import { Coffee, CircleSlash, Sun } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,7 +39,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
   const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   /** My own self-marks for today's classes, keyed by session. */
   const myMarks = useMemo(() => {
@@ -115,7 +115,20 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     (s) => now >= new Date(s.start_at).getTime() && now <= new Date(s.end_at).getTime(),
   );
 
+  /** Gap between two classes — the moment worth celebrating. */
+  const breakInfo = useMemo(() => {
+    if (live || classes.length === 0) return null;
+    const prev = [...classes]
+      .reverse()
+      .find((s) => new Date(s.end_at).getTime() <= now);
+    const next = classes.find((s) => new Date(s.start_at).getTime() > now);
+    if (!next) return null;
+    const startsIn = Math.max(0, Math.round((new Date(next.start_at).getTime() - now) / 60000));
+    return { prev, next, startsIn, beforeFirst: !prev };
+  }, [classes, live, now]);
+
   const color = stats.pct >= 100 ? "var(--evt-present)" : "var(--cyan)";
+
 
   return (
     <section className={compact ? "" : "mt-4"}>
@@ -134,6 +147,19 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
               : "No classes scheduled today."}
           </p>
         ) : (
+          <>
+          <AnimatePresence>
+            {breakInfo && (
+              <BreakBanner
+                key="break"
+                startsIn={breakInfo.startsIn}
+                nextLabel={shortSubject(sessionLabel(breakInfo.next), 26)}
+                nextAt={clock.format(new Date(breakInfo.next.start_at))}
+                prevLabel={breakInfo.prev ? shortSubject(sessionLabel(breakInfo.prev), 26) : null}
+                name={me.name}
+              />
+            )}
+          </AnimatePresence>
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="shrink-0">
               <Donut
@@ -206,8 +232,84 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
               </AnimatePresence>
             </div>
           </div>
+          </>
         )}
       </div>
     </section>
+  );
+}
+
+/** Between two classes — a playful, breathing "break in progress" banner. */
+function BreakBanner({
+  startsIn,
+  nextLabel,
+  nextAt,
+  prevLabel,
+  name,
+}: {
+  startsIn: number;
+  nextLabel: string;
+  nextAt: string;
+  prevLabel: string | null;
+  name?: string | null;
+}) {
+  const h = Math.floor(startsIn / 60);
+  const m = startsIn % 60;
+  const left = h > 0 ? `${h}h ${m}m` : `${m} min`;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 160, damping: 20 }}
+      className="mb-4 overflow-hidden rounded-xl bg-surface2/70 px-4 py-3 ring-1 ring-amber/30"
+    >
+      <div className="flex items-center gap-3">
+        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-amber/12">
+          <motion.span
+            className="absolute inset-0 rounded-full ring-1 ring-amber/40"
+            animate={{ scale: [1, 1.25, 1], opacity: [0.7, 0, 0.7] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
+          />
+          <motion.div
+            animate={{ rotate: [-6, 6, -6] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <Coffee className="size-4 text-amber" />
+          </motion.div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 font-display text-[13px] font-semibold text-amber">
+            Break time{name ? `, ${name}` : ""}
+            <span className="flex items-end gap-0.5">
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className="block size-1 rounded-full bg-amber"
+                  animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.18 }}
+                />
+              ))}
+            </span>
+          </p>
+          <p className="truncate font-mono text-[10px] text-dim">
+            {prevLabel ? `${prevLabel} wrapped · ` : "Day not started · "}
+            {nextLabel} at {nextAt} — {left} to go
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex gap-1 overflow-hidden">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <motion.span
+            key={i}
+            className="h-1 flex-1 rounded-full bg-amber/25"
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08 }}
+          />
+        ))}
+      </div>
+    </motion.div>
   );
 }

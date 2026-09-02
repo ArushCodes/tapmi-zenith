@@ -30,24 +30,64 @@ export function autoColor(key: string) {
   return AUTO_PALETTE[h % AUTO_PALETTE.length]!;
 }
 
-/** Lookup of course code / short name → colour. */
-export function buildColorMap(courses: Course[]) {
+/** Lookup of course code / short name / session key → colour.
+ *  Every distinct subject in the batch is guaranteed a *unique* colour: the
+ *  catalogue colour wins, collisions are pushed to the next free palette slot,
+ *  and anything still unclaimed gets a generated hue that is not in use yet. */
+export function buildColorMap(courses: Course[], sessions: ClassSession[] = []) {
   const m = new Map<string, string>();
+  const used = new Set<string>();
+
+  const claim = (preferred: string, seed: string) => {
+    if (!used.has(preferred)) return preferred;
+    const free = AUTO_PALETTE.find((c) => !used.has(c));
+    if (free) return free;
+    // Palette exhausted — walk the hue wheel deterministically until free.
+    let h = 0;
+    for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < 360; i += 1) {
+      const c = `hsl(${(h + i * 37) % 360} 70% 62%)`;
+      if (!used.has(c)) return c;
+    }
+    return preferred;
+  };
+
+  const assign = (keys: (string | null | undefined)[], preferred: string, seed: string) => {
+    const known = keys.find((k) => k && m.has(k.toLowerCase()));
+    if (known) {
+      const color = m.get(known.toLowerCase())!;
+      for (const k of keys) if (k) m.set(k.toLowerCase(), color);
+      return;
+    }
+    const color = claim(preferred, seed);
+    used.add(color);
+    for (const k of keys) if (k) m.set(k.toLowerCase(), color);
+  };
+
   for (const c of courses) {
     if (!c.color) continue;
-    m.set(c.code.toLowerCase(), c.color);
-    m.set(c.short_name.toLowerCase(), c.color);
+    assign([c.code, c.short_name], c.color, c.code);
   }
+
+  for (const s of sessions) {
+    if (s.is_holiday || isAcademicEvent(s)) continue;
+    const key = sessionKey(s);
+    assign([s.course_code, s.short_name, key], autoColor(key), key);
+  }
+
   return m;
 }
 
 export function sessionColor(s: ClassSession, map: Map<string, string>) {
+  if (s.is_holiday) return null;
   return (
     (s.course_code && map.get(s.course_code.toLowerCase())) ||
     (s.short_name && map.get(s.short_name.toLowerCase())) ||
-    (s.is_holiday ? null : autoColor(sessionKey(s)))
+    map.get(sessionKey(s)) ||
+    autoColor(sessionKey(s))
   );
 }
+
 
 
 /** Academic-calendar entries are stored as custom sessions tagged in notes. */

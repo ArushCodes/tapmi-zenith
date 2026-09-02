@@ -63,13 +63,18 @@ export function CalendarPanel({ deadlines, sessions = [], courses = [], now, onS
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
 
-  const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   const classSessions = useMemo(
-    () => sessions.filter((s) => !isAcademicEvent(s)),
+    () => sessions.filter((s) => !isAcademicEvent(s) && !s.is_holiday),
     [sessions],
   );
-  const academic = useMemo(() => sessions.filter(isAcademicEvent), [sessions]);
+  /** Holidays ride along with academic-calendar entries so they get their own
+   *  hexagon marker instead of a class dot. */
+  const academic = useMemo(
+    () => sessions.filter((s) => isAcademicEvent(s) || s.is_holiday),
+    [sessions],
+  );
 
   const visibleClasses = useMemo(() => {
     if (!showClasses) return [];
@@ -407,7 +412,11 @@ function AcademicChip({ entry, dense = false }: { entry: ClassSession; dense?: b
           : "bg-cyan/12 text-cyan"
       }`}
     >
-      <Marker shape="bar" size={7} className={entry.is_holiday ? "bg-evt-present" : "bg-cyan"} />
+      <Marker
+        shape={entry.is_holiday ? "hexagon" : "bar"}
+        size={entry.is_holiday ? 8 : 7}
+        className={entry.is_holiday ? "bg-evt-present" : "bg-cyan"}
+      />
       <span className="truncate">{entry.title}</span>
     </span>
   );
@@ -780,7 +789,8 @@ function Legend() {
     { label: SHAPE_LABEL.square, cls: "bg-evt-assign", shape: "square" },
     { label: SHAPE_LABEL.diamond, cls: "bg-evt-present", shape: "diamond" },
     { label: SHAPE_LABEL.pentagon, cls: "bg-evt-lecture", shape: "pentagon" },
-    { label: SHAPE_LABEL.bar, cls: "bg-evt-present", shape: "bar" },
+    { label: SHAPE_LABEL.hexagon, cls: "bg-evt-present", shape: "hexagon" },
+    { label: SHAPE_LABEL.bar, cls: "bg-cyan", shape: "bar" },
     { label: SHAPE_LABEL.circle, cls: "bg-dim", shape: "circle" },
   ];
   return (
