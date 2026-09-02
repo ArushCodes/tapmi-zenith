@@ -6,6 +6,7 @@ import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
 import {
+import { SessionMeta } from "@/components/common/SessionMeta";
   FALLBACK_COURSE_COLOR,
   buildColorMap,
   courseKey,

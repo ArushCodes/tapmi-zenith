@@ -14,6 +14,7 @@ import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { shortSubject } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { dayKey } from "@/lib/deadlines";
+import { SessionMeta } from "@/components/common/SessionMeta";
 
 
 const clock = new Intl.DateTimeFormat("en-GB", {

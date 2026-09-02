@@ -38,6 +38,7 @@ import {
   type DeadlineType,
 } from "@/lib/deadlines";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
+import { SessionMeta } from "@/components/common/SessionMeta";
 
 const HOLIDAY_COLOR = "#10B981";
 

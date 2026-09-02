@@ -22,6 +22,7 @@ import {
   shortSubject,
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
+import { SessionMeta } from "@/components/common/SessionMeta";
 
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
