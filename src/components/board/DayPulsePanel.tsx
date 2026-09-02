@@ -8,7 +8,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
 import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches";
-import { buildColorMap, isAcademicEvent, sessionColor, sessionLabel } from "@/lib/courses";
+import {
+  buildColorMap,
+  isAcademicEvent,
+  sessionColor,
+  sessionFullName,
+  sessionMeta,
+} from "@/lib/courses";
 import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { Donut } from "@/components/ui/donut";
