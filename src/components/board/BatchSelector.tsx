@@ -9,27 +9,10 @@ import { useBatch } from "@/hooks/use-batch";
 import { NewBatchDialog } from "@/components/board/NewBatchDialog";
 
 export function BatchSelector() {
-  const { user, isAdmin } = useAuth();
-  const { batches, batch, batchId, setBatchId, membership, isMember, isPending } = useBatch();
+  const { isAdmin } = useAuth();
+  const { batches, batch, batchId, setBatchId } = useBatch();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const queryClient = useQueryClient();
-
-
-  const join = useMutation({
-    mutationFn: async () => {
-      if (!user || !batchId) throw new Error("Sign in to request access");
-      const { error } = await supabase
-        .from("batch_memberships")
-        .insert({ batch_id: batchId, user_id: user.id, status: "pending", role: "student" });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-memberships"] });
-      toast.success("Request sent — a moderator will review it");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   return (
     <div className="flex items-center gap-2">
