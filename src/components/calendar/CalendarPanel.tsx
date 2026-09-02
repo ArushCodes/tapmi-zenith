@@ -5,8 +5,10 @@ import { dayKey, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
+import { SessionMeta } from "@/components/common/SessionMeta";
 import {
   FALLBACK_COURSE_COLOR,
+
   buildColorMap,
   courseKey,
   isAcademicEvent,
@@ -782,19 +784,18 @@ function Agenda({
               return (
                 <div
                   key={s.id}
-                  className="flex items-center gap-3 rounded-xl bg-surface/70 px-3 py-2.5 ring-1 ring-border"
+                  className="flex items-start gap-3 rounded-xl bg-surface/70 px-3 py-2.5 ring-1 ring-border"
                 >
-                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="font-mono text-[11px] text-dim">
+                  <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="mt-0.5 font-mono text-[11px] text-dim">
                     {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-display text-sm">
-                    {s.course_name ?? sessionLabel(s)}
-                  </span>
-                  <span className="hidden shrink-0 truncate font-mono text-[10px] text-faint sm:block">
-                    {[s.faculty_name, s.classroom].filter(Boolean).join(" · ")}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-display text-sm">{sessionLabel(s)}</span>
+                    <SessionMeta session={s} />
                   </span>
                   {canManage && <EditSessionButton onClick={() => onEditSession(s)} />}
+
                 </div>
               );
             })}

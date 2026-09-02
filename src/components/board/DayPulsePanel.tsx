@@ -14,6 +14,7 @@ import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { shortSubject } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { dayKey } from "@/lib/deadlines";
+import { SessionMeta } from "@/components/common/SessionMeta";
 
 
 const clock = new Intl.DateTimeFormat("en-GB", {
@@ -203,6 +204,8 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
                         </span>
                       </div>
+                      <SessionMeta session={s} max={4} />
+
                       <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface2">
                         <motion.div
                           initial={{ width: 0 }}
