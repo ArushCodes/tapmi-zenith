@@ -16,10 +16,17 @@ export const Route = createFileRoute("/api/public/ics/$token")({
         const token = params.token.replace(/\.ics$/, "");
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+        const { data: tokenRow } = await supabaseAdmin
+          .from("batch_feed_tokens")
+          .select("batch_id")
+          .eq("token", token)
+          .maybeSingle();
+        if (!tokenRow) return new Response("Not found", { status: 404 });
+
         const { data: batch } = await supabaseAdmin
           .from("batches")
           .select("id, name")
-          .eq("feed_token", token)
+          .eq("id", tokenRow.batch_id)
           .maybeSingle();
         if (!batch) return new Response("Not found", { status: 404 });
 

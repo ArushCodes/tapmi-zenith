@@ -3,16 +3,21 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertSafeFeedUrl } from "@/lib/safe-url";
 
-async function assertBatchMod(
-  supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> },
-  userId: string,
-  batchId: string,
-) {
-  const { data } = await supabase.rpc("is_batch_mod", {
-    _user_id: userId,
-    _batch_id: batchId,
-  });
-  if (data !== true) throw new Error("Forbidden — moderators only");
+type ModCheckClient = {
+  from: (table: string) => any;
+};
+
+async function assertBatchMod(supabase: ModCheckClient, userId: string, batchId: string) {
+  const { data } = await supabase
+    .from("batch_memberships")
+    .select("role, status")
+    .eq("batch_id", batchId)
+    .eq("user_id", userId)
+    .eq("status", "approved")
+    .maybeSingle();
+  if (!data || (data.role !== "mod" && data.role !== "admin")) {
+    throw new Error("Forbidden — moderators only");
+  }
 }
 
 export const saveIcsUrl = createServerFn({ method: "POST" })
