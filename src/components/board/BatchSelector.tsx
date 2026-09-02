@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, GraduationCap } from "lucide-react";
+import { Check, ChevronDown, GraduationCap, Plus } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
+import { NewBatchDialog } from "@/components/board/NewBatchDialog";
 
 export function BatchSelector() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { batches, batch, batchId, setBatchId, membership, isMember, isPending } = useBatch();
   const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
+
 
   const join = useMutation({
     mutationFn: async () => {
@@ -81,6 +84,17 @@ export function BatchSelector() {
                     {b.id === batchId && <Check className="size-3.5 shrink-0 text-cyan" />}
                   </button>
                 ))}
+                {isAdmin && (
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      setCreating(true);
+                    }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-lg border-t border-border px-3 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-cyan transition-colors hover:bg-surface2"
+                  >
+                    <Plus className="size-3.5" /> New batch
+                  </button>
+                )}
               </motion.div>
             </>
           )}
@@ -100,6 +114,9 @@ export function BatchSelector() {
               : "Request access"}
         </button>
       )}
+
+      {creating && <NewBatchDialog onClose={() => setCreating(false)} />}
     </div>
   );
+
 }
