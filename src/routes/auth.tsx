@@ -149,6 +149,12 @@ function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@learner.manipal.edu"
             />
+            {mode === "signup" && (
+              <p className="mt-1 font-mono text-[10px] text-faint">
+                Only @learner.manipal.edu addresses can register. We'll email you a
+                verification link.
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="password" className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
