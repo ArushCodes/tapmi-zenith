@@ -387,7 +387,7 @@ function ClassDots({
       {list.slice(0, 8).map((s) => (
         <span
           key={s.id}
-          title={`${timeFmt.format(new Date(s.start_at))} · ${s.short_name ?? s.title}${s.faculty_name ? ` · ${s.faculty_name}` : ""}${s.classroom ? ` · ${s.classroom}` : ""}`}
+          title={`${timeFmt.format(new Date(s.start_at))} · ${sessionLabel(s)}${s.faculty_name ? ` · ${s.faculty_name}` : ""}${s.classroom ? ` · ${s.classroom}` : ""}`}
           className="size-2 rounded-full ring-1 ring-black/30"
           style={{ backgroundColor: sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR }}
         />
@@ -590,7 +590,7 @@ function WeekTimeline({
                         return (
                           <span
                             key={s.id}
-                            title={[s.course_name ?? s.title, s.faculty_name, s.classroom]
+                            title={[s.course_name ?? sessionLabel(s), s.faculty_name, s.classroom]
                               .filter(Boolean)
                               .join(" · ")}
                             className="flex items-center gap-1 truncate rounded-md px-1.5 py-1 font-mono text-[10px]"
@@ -600,7 +600,7 @@ function WeekTimeline({
                               className="size-1.5 shrink-0 rounded-full"
                               style={{ backgroundColor: color }}
                             />
-                            <span className="truncate">{s.short_name ?? s.title}</span>
+                            <span className="truncate">{sessionLabel(s)}</span>
                           </span>
                         );
                       })}
@@ -738,7 +738,7 @@ function Agenda({
                         : "bg-cyan/10 ring-cyan/30"
                     }`}
                   >
-                    <p className="font-display text-sm font-semibold">{s.title}</p>
+                    <p className="font-display text-sm font-semibold">{sessionLabel(s)}</p>
                     <p className="font-mono text-[10px] text-dim">
                       Academic calendar ·{" "}
                       {rangeFmt.format(new Date(s.start_at))} — {rangeFmt.format(new Date(s.end_at))}
@@ -757,7 +757,7 @@ function Agenda({
                     {timeFmt.format(new Date(s.start_at))}–{timeFmt.format(new Date(s.end_at))}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-display text-sm">
-                    {s.course_name ?? s.short_name ?? s.title}
+                    {s.course_name ?? sessionLabel(s)}
                   </span>
                   <span className="hidden shrink-0 truncate font-mono text-[10px] text-faint sm:block">
                     {[s.faculty_name, s.classroom].filter(Boolean).join(" · ")}
