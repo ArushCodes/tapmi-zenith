@@ -177,31 +177,67 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                   const p = pctOf(s, now);
                   const c = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
                   const isLive = live?.id === s.id;
+                  const absent = myMarks.get(s.id) === "absent";
+                  const meta = sessionMeta(s);
                   return (
                     <motion.div
                       key={s.id}
                       initial={{ opacity: 0, x: 12 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: Math.min(i * 0.05, 0.3) }}
-                      className={`rounded-xl px-3 py-2 ring-1 ${
+                      className={`rounded-xl px-3 py-2.5 ring-1 ${
                         isLive ? "bg-surface2 ring-cyan/40" : "ring-border"
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5">
                         <span
-                          className={`size-2 shrink-0 rounded-full ${isLive ? "pulse-dot" : ""}`}
+                          className={`mt-1.5 size-2 shrink-0 rounded-full ${isLive ? "pulse-dot" : ""}`}
                           style={{ backgroundColor: c }}
                         />
-                        <span className="min-w-0 flex-1 truncate font-display text-[13px] font-semibold">
-                          {sessionLabel(s)}
-                        </span>
-                        <span className="shrink-0 font-mono text-[10px] text-faint">
-                          {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
-                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate font-display text-[13px] font-semibold leading-snug">
+                            {sessionFullName(s)}
+                          </p>
+                          {meta.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                              {meta.map((m) => (
+                                <span
+                                  key={m}
+                                  className="rounded-md px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide"
+                                  style={{
+                                    color: c,
+                                    backgroundColor: `color-mix(in oklab, ${c} 14%, transparent)`,
+                                    boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 28%, transparent)`,
+                                  }}
+                                >
+                                  {m}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1.5">
+                          <span className="font-mono text-[10px] tabular-nums text-faint">
+                            {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
+                          </span>
+                          {isMember && user && (
+                            <motion.button
+                              whileTap={{ scale: 0.94 }}
+                              onClick={() => toggleAbsent.mutate(s)}
+                              className={`flex items-center gap-1 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 transition-colors ${
+                                absent
+                                  ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                                  : "text-dim ring-border hover:text-ink"
+                              }`}
+                            >
+                              <CircleSlash className="size-3" />
+                              {absent ? "Absent" : "Mark absent"}
+                            </motion.button>
+                          )}
+                        </div>
                       </div>
 
-
-                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-surface2">
+                      <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface2">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${p}%` }}
@@ -210,25 +246,12 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           style={{ backgroundColor: p === 100 ? "var(--evt-present)" : c }}
                         />
                       </div>
-                      {isMember && user && (
-                        <button
-                          onClick={() => toggleAbsent.mutate(s)}
-                          className={`mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
-                            myMarks.get(s.id) === "absent"
-                              ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
-                              : "text-dim ring-border hover:text-ink"
-                          }`}
-                        >
-                          <CircleSlash className="size-3" />
-                          {myMarks.get(s.id) === "absent" ? "Marked absent" : "Absent"}
-                        </button>
-                      )}
-
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
             </div>
+
           </div>
           </>
         )}
