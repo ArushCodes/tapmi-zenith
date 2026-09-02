@@ -40,8 +40,10 @@ type Props = {
 };
 
 export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen }: Props) {
-  const u = urgencyOf(deadline.due_at, now);
+  const phase = phaseOf(deadline, now);
+  const u = phase === "completed" ? "past" : urgencyOf(deadline.due_at, now);
   const meta = eventMeta(deadline.type);
+
 
   return (
     <div
