@@ -92,7 +92,11 @@ export function AttendancePanel({ now }: { now: number }) {
     () => sessions.filter((s) => !s.is_holiday),
     [sessions],
   );
+
+  /** Any class from the timetable, newest first, searchable. */
+  const browsable = useMemo(() => {
     const needle = q.trim().toLowerCase();
+
     return classes
       .filter((s) =>
         !needle
