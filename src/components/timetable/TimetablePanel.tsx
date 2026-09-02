@@ -411,8 +411,8 @@ export function TimetablePanel() {
             return (
               <motion.button
                 key={t.value}
-                whileHover={n ? { y: -2 } : undefined}
-                whileTap={n ? { scale: 0.96 } : undefined}
+                whileHover={n ? { y: -2 } : {}}
+                whileTap={n ? { scale: 0.96 } : {}}
                 disabled={n === 0}
                 onClick={() =>
                   setTypes((p) =>
