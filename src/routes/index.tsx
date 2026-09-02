@@ -214,18 +214,20 @@ function Board() {
     setDialogOpen(true);
   }
 
-  const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode };
+
+  const primaryTabs: TabDef[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-3.5" /> },
-    { key: "today", label: "Today", icon: <Sun className="size-3.5" /> },
-    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+  ];
+
+  const moreTabs: TabDef[] = [
+    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-3.5" /> },
     { key: "activity", label: "Notifications", icon: <Bell className="size-3.5" /> },
     { key: "members", label: "Members", icon: <Users className="size-3.5" /> },
-
     { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-3.5" /> },
-
     ...(isMod
       ? [
           {
@@ -237,6 +239,9 @@ function Board() {
         ]
       : []),
   ];
+
+  const activeMore = moreTabs.find((t) => t.key === tab) ?? null;
+
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
