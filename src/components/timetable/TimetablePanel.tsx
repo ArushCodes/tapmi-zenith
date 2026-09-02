@@ -244,8 +244,8 @@ export function TimetablePanel() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-
+  /** Unique colour per subject in this batch, catalogued or feed-discovered. */
+  const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
   /** Every class that appears anywhere in the feed, plus catalogued courses.
    *  All holidays collapse into a single "Holidays" filter. */
