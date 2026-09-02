@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import type { ClassSession } from "@/lib/types";
+import type { ClassSession } from "@/lib/batches";
 import { sessionLabel, sessionNumberOf } from "@/lib/courses";
 
 type Chip = { key: string; text: string; mono?: boolean; accent?: boolean };
@@ -52,8 +52,8 @@ export function SessionMeta({
             c.mono ? "font-mono" : ""
           } ${
             c.accent
-              ? "bg-accent/10 text-accent"
-              : "bg-surface-2/70 text-dim"
+              ? "bg-amber/10 text-amber"
+              : "bg-surface2/70 text-dim"
           }`}
         >
           {c.text}
