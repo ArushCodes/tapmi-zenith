@@ -319,93 +319,16 @@ function Board() {
           </p>
         </motion.div>
 
-        {/* Top-level tab switcher — four primary views, everything else under More */}
-        <div className="mb-6 flex items-center gap-1.5 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none]">
-          {primaryTabs.map((t) => (
-            <motion.button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              whileTap={{ scale: 0.96 }}
-              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                tab === t.key ? "text-ink" : "text-dim hover:text-ink"
-              }`}
-            >
-              {tab === t.key && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                />
-              )}
-              <span className="relative flex items-center gap-2">
-                {t.icon}
-                {t.label}
-              </span>
-            </motion.button>
-          ))}
+        {/* Primary navigation — one bar, two logical clusters, no hidden menus */}
+        <nav
+          aria-label="Board sections"
+          className="mb-7 flex items-center gap-1 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {workTabs.map(renderTab)}
+          <span aria-hidden className="mx-1.5 h-6 w-px shrink-0 bg-border" />
+          {batchTabs.map(renderTab)}
+        </nav>
 
-          <div className="relative ml-auto shrink-0">
-            <motion.button
-              onClick={() => setMoreOpen((v) => !v)}
-              whileTap={{ scale: 0.96 }}
-              className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                activeMore ? "text-ink" : "text-dim hover:text-ink"
-              }`}
-            >
-              {activeMore && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                />
-              )}
-              <span className="relative flex items-center gap-2">
-                {activeMore?.icon ?? <MoreHorizontal className="size-3.5" />}
-                {activeMore?.label ?? "More"}
-                <ChevronDown
-                  className={`size-3 transition-transform ${moreOpen ? "rotate-180" : ""}`}
-                />
-              </span>
-            </motion.button>
-
-            <AnimatePresence>
-              {moreOpen && (
-                <>
-                  <button
-                    aria-label="Close menu"
-                    className="fixed inset-0 z-30 cursor-default"
-                    onClick={() => setMoreOpen(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                    transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-                    className="absolute right-0 top-[calc(100%+8px)] z-40 w-56 overflow-hidden rounded-2xl bg-surface p-1.5 ring-1 ring-border shadow-2xl"
-                  >
-                    {moreTabs.map((t) => (
-                      <button
-                        key={t.key}
-                        onClick={() => {
-                          setTab(t.key);
-                          setMoreOpen(false);
-                        }}
-                        className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left font-mono text-[11px] uppercase tracking-wide transition-colors ${
-                          tab === t.key
-                            ? "bg-surface2 text-cyan"
-                            : "text-dim hover:bg-surface2/70 hover:text-ink"
-                        }`}
-                      >
-                        {t.icon}
-                        {t.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
 
 
         {tab === "calendar" && (
