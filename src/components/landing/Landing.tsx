@@ -51,6 +51,23 @@ const steps = [
   { n: "03", t: "Get approved", d: "A moderator approves you and the full board unlocks." },
 ];
 
+/** MAHE constituent institutions the portal can be rolled out to. */
+const colleges = [
+  { name: "TAPMI", city: "Manipal", note: "T. A. Pai Management Institute", live: true },
+  { name: "MIT", city: "Manipal", note: "Manipal Institute of Technology" },
+  { name: "KMC", city: "Manipal", note: "Kasturba Medical College" },
+  { name: "KMC", city: "Mangalore", note: "Kasturba Medical College" },
+  { name: "MCODS", city: "Manipal", note: "Manipal College of Dental Sciences" },
+  { name: "MCHP", city: "Manipal", note: "Manipal College of Health Professions" },
+  { name: "MSAP", city: "Manipal", note: "School of Architecture & Planning" },
+  { name: "MCOPS", city: "Manipal", note: "Manipal College of Pharmaceutical Sciences" },
+  { name: "MIC", city: "Manipal", note: "Manipal Institute of Communication" },
+  { name: "MAHE", city: "Bengaluru", note: "MAHE Bengaluru campus" },
+  { name: "MAHE", city: "Jamshedpur", note: "MAHE Jamshedpur campus" },
+  { name: "MAHE", city: "Dubai", note: "MAHE Dubai campus" },
+];
+
+
 export function Landing() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
