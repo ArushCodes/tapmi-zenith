@@ -190,6 +190,16 @@ export function AttendancePanel({ now }: { now: number }) {
 
   const threshold = Number(batch?.attendance_threshold ?? 75);
 
+  /** Donut source: one subject when focused, else the whole trimester. */
+  const overall = useMemo(() => {
+    const rows = focus ? stats.filter((s) => s.course === focus) : stats;
+    const planned = rows.reduce((a, s) => a + s.planned, 0);
+    const absent = rows.reduce((a, s) => a + s.absent, 0);
+    const attended = Math.max(0, planned - absent);
+    return { planned, absent, pct: planned ? Math.round((attended / planned) * 100) : 100 };
+  }, [stats, focus]);
+
+
   const conflicts = useMemo(() => {
     const bySession = new Map<string, AttendanceMark[]>();
     for (const m of marks) bySession.set(`${m.session_id}|${m.user_id}`, [
