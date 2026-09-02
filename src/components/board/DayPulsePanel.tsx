@@ -122,7 +122,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           style={{ backgroundColor: c }}
                         />
                         <span className="min-w-0 flex-1 truncate font-display text-[13px] font-semibold">
-                          {shortSubject(s.short_name ?? s.title, 26)}
+                          {shortSubject(sessionLabel(s), 26)}
                         </span>
                         <span className="shrink-0 font-mono text-[10px] text-faint">
                           {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}

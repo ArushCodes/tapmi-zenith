@@ -1,4 +1,5 @@
 import type { AttendanceMark, ClassSession } from "@/lib/batches";
+import { sessionLabel } from "@/lib/courses";
 
 /** Planned number of sessions per subject for the trimester.
  *  Keyed by a normalised subject name so ICS short names match. */
@@ -58,7 +59,7 @@ export function meterColor(pct: number) {
 
 /** Course label used to group sessions for attendance. */
 export function sessionSubject(s: ClassSession) {
-  return s.short_name ?? s.course_name ?? s.title;
+  return sessionLabel(s);
 }
 
 /** Rep marks win over self marks for the same session. */
