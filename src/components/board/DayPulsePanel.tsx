@@ -239,74 +239,72 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
   );
 }
 
-/** Between two classes — a playful, breathing "break in progress" banner. */
-function BreakBanner({
-  startsIn,
-  nextLabel,
-  nextAt,
-  prevLabel,
-  name,
+function fmtLeft(ms: number) {
+  const min = Math.max(0, Math.ceil(ms / 60000));
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m} min`;
+}
+
+/** Dynamic timer under the donut — current class, break, next class or wrapped. */
+function NextUpTimer({
+  live,
+  next,
+  now,
+  colorMap,
 }: {
-  startsIn: number;
-  nextLabel: string;
-  nextAt: string;
-  prevLabel: string | null;
-  name?: string | null;
+  live: ClassSession | null;
+  next: ClassSession | null;
+  now: number;
+  colorMap: Map<string, string>;
 }) {
-  const h = Math.floor(startsIn / 60);
-  const m = startsIn % 60;
-  const left = h > 0 ? `${h}h ${m}m` : `${m} min`;
+  const target = live ?? next;
+  if (!target)
+    return (
+      <motion.p
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        className="mt-3 rounded-xl bg-surface2/70 px-3 py-2 text-center font-mono text-[10px] text-dim ring-1 ring-border"
+      >
+        Day wrapped 🎉
+      </motion.p>
+    );
+
+  const msLeft = live
+    ? new Date(target.end_at).getTime() - now
+    : new Date(target.start_at).getTime() - now;
+  const c = sessionColor(target, colorMap) ?? FALLBACK_COURSE_COLOR;
+  const mode = live ? "Now" : "Up next";
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: -8, scale: 0.98 }}
+      initial={{ opacity: 0, y: 8, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.98 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
       transition={{ type: "spring", stiffness: 160, damping: 20 }}
-      className="mb-4 overflow-hidden rounded-xl bg-surface2/70 px-4 py-3 ring-1 ring-amber/30"
+      className="mt-3 overflow-hidden rounded-xl bg-surface2/70 px-3 py-2 text-center ring-1 ring-border"
     >
-      <div className="flex items-center gap-3">
-        <div className="relative grid size-9 shrink-0 place-items-center rounded-full bg-amber/12">
-          <motion.span
-            className="absolute inset-0 rounded-full ring-1 ring-amber/40"
-            animate={{ scale: [1, 1.25, 1], opacity: [0.7, 0, 0.7] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: "easeOut" }}
-          />
-          <motion.div
-            animate={{ rotate: [-6, 6, -6] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <Coffee className="size-4 text-amber" />
-          </motion.div>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 font-display text-[13px] font-semibold text-amber">
-            Break time{name ? `, ${name}` : ""}
-            <span className="flex items-end gap-0.5">
-              {[0, 1, 2].map((i) => (
-                <motion.span
-                  key={i}
-                  className="block size-1 rounded-full bg-amber"
-                  animate={{ y: [0, -3, 0], opacity: [0.4, 1, 0.4] }}
-                  transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.18 }}
-                />
-              ))}
-            </span>
-          </p>
-          <p className="truncate font-mono text-[10px] text-dim">
-            {prevLabel ? `${prevLabel} wrapped · ` : "Day not started · "}
-            {nextLabel} at {nextAt} — {left} to go
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-2.5 flex gap-1 overflow-hidden">
-        {Array.from({ length: 14 }).map((_, i) => (
+      <p
+        className="flex items-center justify-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
+        style={{ color: c }}
+      >
+        {live && <span className="pulse-dot inline-block size-1.5 rounded-full" style={{ backgroundColor: c }} />}
+        {mode}
+      </p>
+      <p className="mt-0.5 truncate font-display text-[12px] font-semibold">{sessionLabel(target)}</p>
+      <p className="font-mono text-[10px] text-faint">
+        {live ? `${fmtLeft(msLeft)} left` : `in ${fmtLeft(msLeft)}`} ·{" "}
+        {clock.format(new Date(target.start_at))}–{clock.format(new Date(target.end_at))}
+      </p>
+      <div className="mt-1.5 flex gap-0.5">
+        {Array.from({ length: 10 }).map((_, i) => (
           <motion.span
             key={i}
-            className="h-1 flex-1 rounded-full bg-amber/25"
-            animate={{ opacity: [0.2, 1, 0.2] }}
-            transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08 }}
+            className="h-0.5 flex-1 rounded-full"
+            style={{ backgroundColor: c }}
+            animate={{ opacity: [0.15, 0.9, 0.15] }}
+            transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.09 }}
           />
         ))}
       </div>
