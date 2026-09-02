@@ -263,9 +263,8 @@ export function AttendancePanel({ now }: { now: number }) {
         )}
       </div>
 
-      {
-
         <div className="flex flex-col gap-4">
+
           {conflicts.length > 0 && canManage && (
 
             <p className="flex items-center gap-2 rounded-lg bg-evt-quiz/10 px-3 py-2 font-mono text-[11px] text-evt-quiz ring-1 ring-evt-quiz/30">
