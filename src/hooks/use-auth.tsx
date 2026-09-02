@@ -66,6 +66,7 @@ export function useAuth() {
   const { data: roles = [], isLoading: rolesLoading } = useQuery({
     queryKey: ["roles", user?.id],
     enabled: !!user?.id,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
