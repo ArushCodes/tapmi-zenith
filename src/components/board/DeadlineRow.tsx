@@ -1,11 +1,13 @@
 import {
   eventMeta,
-  formatDue,
+  formatDeadlineWhen,
+  phaseOf,
   timeLeft,
   typeLabel,
   urgencyOf,
   type Deadline,
 } from "@/lib/deadlines";
+
 
 const accent: Record<string, string> = {
   past: "bg-faint",
