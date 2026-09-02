@@ -8,10 +8,11 @@ import {
   ListFilter,
   Mail,
   Bell,
+  ChevronDown,
   Megaphone,
+  MoreHorizontal,
   MessageSquare,
   ShieldCheck,
-  Sun,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -89,7 +90,6 @@ function IndexPage() {
 
 type TabKey =
   | "feed"
-  | "today"
   | "announcements"
   | "calendar"
   | "timetable"
@@ -119,6 +119,7 @@ function Board() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -583,8 +584,6 @@ function Board() {
                 )}
               </>
             )}
-
-            {tab === "today" && <DayPulsePanel now={now} />}
 
             {tab === "announcements" && <AnnouncementsPanel />}
 
