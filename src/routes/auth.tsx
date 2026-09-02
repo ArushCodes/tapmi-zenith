@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { batchTreeQuery } from "@/lib/batches";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -36,6 +38,8 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [batchId, setBatchId] = useState("");
+  const { data: batches = [] } = useQuery(batchTreeQuery);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -56,12 +60,15 @@ function AuthPage() {
         if (!isAllowedEmail(email)) {
           throw new Error(`Sign-ups are limited to @${ALLOWED_DOMAIN} email addresses.`);
         }
+        if (!batchId) {
+          throw new Error("Pick the batch you belong to.");
+        }
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName },
+            data: { full_name: fullName, batch_id: batchId },
           },
         });
         if (error) throw error;
@@ -134,6 +141,30 @@ function AuthPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Arush Gaur"
               />
+            </div>
+          )}
+          {mode === "signup" && (
+            <div>
+              <label htmlFor="batch" className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+                Your batch
+              </label>
+              <select
+                id="batch"
+                required
+                className={`${fieldClass} mt-1`}
+                value={batchId}
+                onChange={(e) => setBatchId(e.target.value)}
+              >
+                <option value="">Select your batch…</option>
+                {batches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.path} · {b.programme_name} · {b.name}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 font-mono text-[10px] text-faint">
+                You'll only ever see this batch's board.
+              </p>
             </div>
           )}
           <div>
