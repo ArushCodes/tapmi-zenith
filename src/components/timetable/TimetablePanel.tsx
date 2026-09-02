@@ -269,7 +269,7 @@ export function TimetablePanel() {
       }
       m.set(key, {
         key,
-        label: key === HOLIDAY_KEY ? "Holidays" : (s.short_name ?? s.course_name ?? s.title),
+        label: key === HOLIDAY_KEY ? "Holidays" : sessionLabel(s),
         sub: key === HOLIDAY_KEY ? "No classes scheduled" : [s.course_code, s.faculty_name].filter(Boolean).join(" · "),
         color: key === HOLIDAY_KEY ? HOLIDAY_COLOR : FALLBACK_COURSE_COLOR,
         count: 1,
@@ -398,7 +398,7 @@ export function TimetablePanel() {
 
       <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
         <div className="flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-          <span>Events this week</span>
+          <span>Events this month</span>
           <span className="h-px flex-1 bg-border" />
           <button
             onClick={() => setTypes([])}
@@ -424,7 +424,7 @@ export function TimetablePanel() {
                     p.includes(t.value) ? p.filter((x) => x !== t.value) : [...p, t.value],
                   )
                 }
-                title={n === 0 ? `No ${t.label.toLowerCase()} this week` : `${n} scheduled`}
+                title={n === 0 ? `No ${t.label.toLowerCase()} this month` : `${n} scheduled`}
                 className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-all ${
                   n === 0
                     ? "cursor-not-allowed bg-surface2 text-faint opacity-50 ring-1 ring-border"
@@ -507,7 +507,7 @@ export function TimetablePanel() {
         <p className="mt-6 text-center font-mono text-xs text-faint">Loading timetable…</p>
       ) : grouped.length === 0 ? (
         <p className="mt-8 text-center font-mono text-xs text-faint">
-          No classes this week. {canManage ? "Paste a calendar link and sync, or add a custom class." : ""}
+          No classes this month. {canManage ? "Paste a calendar link and sync, or add a custom class." : ""}
         </p>
       ) : (
         <div className="flex flex-col gap-5">
@@ -520,7 +520,7 @@ export function TimetablePanel() {
                 onClick={() => setDayFocus(null)}
                 className="self-start rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-cyan ring-1 ring-cyan/30"
               >
-                ← Back to the whole week
+                ← Back to the whole month
               </motion.button>
             )}
           </AnimatePresence>
@@ -602,7 +602,7 @@ export function TimetablePanel() {
                         </span>
                         <span className="min-w-0 flex-1 basis-full sm:basis-auto">
                           <span className="block truncate font-display text-sm font-semibold">
-                            {s.title}
+                            {sessionLabel(s)}
                           </span>
                           <span className="block truncate font-mono text-[11px] text-dim">
                             {[s.course_name, s.faculty_name, s.classroom, s.section]
