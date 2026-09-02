@@ -20,6 +20,8 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Moderator access to the TAPMI IPM 2026–2031 deadline board.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: AuthPage,
@@ -29,6 +31,9 @@ const fieldClass =
   "w-full rounded-lg bg-ground px-3 py-2 text-sm text-ink ring-1 ring-border outline-none placeholder:text-faint focus:ring-cyan/50";
 
 const ALLOWED_DOMAIN = "learner.manipal.edu";
+const backendConfigured = Boolean(
+  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
+);
 const isAllowedEmail = (value: string) =>
   value.trim().toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
 
@@ -39,17 +44,28 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [batchId, setBatchId] = useState("");
-  const { data: batches = [] } = useQuery(batchTreeQuery);
+  const { data: batches = [] } = useQuery({
+    ...batchTreeQuery,
+    enabled: backendConfigured,
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/", replace: true });
-    });
+    if (!backendConfigured) return;
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (data.session) navigate({ to: "/", replace: true });
+      })
+      .catch(() => undefined);
   }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!backendConfigured) {
+      toast.error("Sign-in is temporarily unavailable. Please try again shortly.");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signin") {
@@ -86,6 +102,10 @@ function AuthPage() {
   }
 
   async function handleGoogle() {
+    if (!backendConfigured) {
+      toast.error("Sign-in is temporarily unavailable. Please try again shortly.");
+      return;
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
