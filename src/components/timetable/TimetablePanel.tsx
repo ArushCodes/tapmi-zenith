@@ -605,17 +605,8 @@ export function TimetablePanel() {
                           <span className="block truncate font-display text-sm font-semibold">
                             {sessionLabel(s)}
                           </span>
-                          <span className="block truncate font-mono text-[11px] text-dim">
-                            {[
-                              s.course_name,
-                              s.faculty_name,
-                              s.classroom,
-                              sessionNumberOf(s) ? `S${sessionNumberOf(s)}` : null,
-                            ]
+                          <SessionMeta session={s} />
 
-                              .filter(Boolean)
-                              .join(" · ") || "—"}
-                          </span>
                         </span>
                         {s.course_code && (
                           <span
