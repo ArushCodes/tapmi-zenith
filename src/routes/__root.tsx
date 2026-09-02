@@ -11,13 +11,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase, backendConfigured } from "@/lib/backend";
 import { Toaster } from "@/components/ui/sonner";
 import { BatchProvider } from "@/hooks/use-batch";
 
-const backendConfigured = Boolean(
-  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
-);
 
 function NotFoundComponent() {
   return (

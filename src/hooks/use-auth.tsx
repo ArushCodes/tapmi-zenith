@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { db as supabase, backendConfigured } from "@/lib/backend";
 
 export type AppRole = "student" | "mod" | "admin";
 
-const backendConfigured = Boolean(
-  import.meta.env["VITE_SUPABASE_URL"] && import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
-);
 
 export function useSession() {
   const [session, setSession] = useState<Session | null>(null);
