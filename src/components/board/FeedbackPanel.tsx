@@ -150,7 +150,7 @@ export function FeedbackPanel() {
                 >
                   <div className="flex items-center gap-2">
                     <span className="flex items-center gap-1.5 rounded-md bg-surface2 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-dim">
-                      {kindIcon[f.kind] ?? kindIcon.other}
+                      {kindIcon[f.kind] ?? kindIcon["other"]}
                       {f.kind}
                     </span>
                     <span
