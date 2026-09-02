@@ -522,20 +522,42 @@ export function TimetablePanel() {
 
           {grouped
             .filter(([day]) => !dayFocus || day === dayFocus)
-            .map(([day, list]) => (
+            .map(([day, list]) => {
+              const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
+              const allPicked =
+                dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
+              const total = list.sessions.length + list.events.length;
+              return (
               <motion.div key={day} layout>
-                <button
-                  onClick={() => setDayFocus((d) => (d === day ? null : day))}
-                  className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
-                >
-                  {dayFmt.format(new Date(day))}
-                  <span className="normal-case tracking-normal text-faint">
-                    {dayFocus === day ? "· agenda" : `· ${list.length} entr${list.length === 1 ? "y" : "ies"}`}
-                  </span>
-                </button>
+                <div className="mb-2 flex items-center gap-3">
+                  <button
+                    onClick={() => setDayFocus((d) => (d === day ? null : day))}
+                    className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
+                  >
+                    {dayFmt.format(new Date(day))}
+                    <span className="normal-case tracking-normal text-faint">
+                      {dayFocus === day ? "· agenda" : `· ${total} entr${total === 1 ? "y" : "ies"}`}
+                    </span>
+                  </button>
+                  {dayMarkable.length > 0 && (isMember || canManage) && (
+                    <button
+                      onClick={() =>
+                        setPicked((p) =>
+                          allPicked
+                            ? p.filter((id) => !dayMarkable.some((s) => s.id === id))
+                            : [...new Set([...p, ...dayMarkable.map((s) => s.id)])],
+                        )
+                      }
+                      className="font-mono text-[10px] text-faint hover:text-ink"
+                    >
+                      {allPicked ? "Unselect day" : "Select day"}
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-col gap-2">
-                  {list.map((s) => {
+                  {list.sessions.map((s) => {
                     const color = s.is_holiday ? HOLIDAY_COLOR : colorOf(s);
+                    const isPicked = pickedSet.has(s.id);
                     return (
                       <motion.div
                         key={s.id}
@@ -543,9 +565,26 @@ export function TimetablePanel() {
                         whileHover={{ scale: 1.01, y: -2 }}
                         style={{ borderLeftColor: color ?? "transparent" }}
                         className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-l-[3px] bg-surface px-3 py-3 ring-1 transition-shadow hover:shadow-lg hover:shadow-black/30 ${
-                          s.is_holiday ? "ring-evt-present/30" : "ring-border"
+                          isPicked
+                            ? "ring-cyan/50"
+                            : s.is_holiday
+                              ? "ring-evt-present/30"
+                              : "ring-border"
                         }`}
                       >
+                        {!s.is_holiday && (isMember || canManage) ? (
+                          <button
+                            onClick={() => togglePick(s.id)}
+                            title="Select for mass actions"
+                            className={`shrink-0 transition-colors ${isPicked ? "text-cyan" : "text-faint hover:text-ink"}`}
+                          >
+                            {isPicked ? (
+                              <CheckSquare className="size-4" />
+                            ) : (
+                              <Square className="size-4" />
+                            )}
+                          </button>
+                        ) : null}
                         <Marker
                           shape={s.is_holiday ? "bar" : "circle"}
                           color={color ?? FALLBACK_COURSE_COLOR}
@@ -603,9 +642,35 @@ export function TimetablePanel() {
                       </motion.div>
                     );
                   })}
+
+                  {list.events.map((d) => {
+                    const meta = eventMeta(d.type);
+                    return (
+                      <motion.div
+                        key={d.id}
+                        layout
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-surface px-3 py-2.5 ring-1 ${meta.ring}`}
+                      >
+                        <Marker shape={shapeForDeadline(d.type)} color="currentColor" size={9} />
+                        <span className="font-mono text-[11px] text-dim">
+                          {formatDeadlineWhen(d)}
+                        </span>
+                        <span className="min-w-0 flex-1 basis-full truncate font-display text-sm font-semibold sm:basis-auto">
+                          {d.title}
+                        </span>
+                        <span className={`shrink-0 rounded-md px-2 py-1 font-mono text-[10px] ${meta.chip}`}>
+                          {meta.label}
+                          {d.subject ? ` · ${d.subject}` : ""}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               </motion.div>
-            ))}
+              );
+            })}
+
         </div>
       )}
 
