@@ -319,7 +319,7 @@ function NextUpTimer({
         {live && <span className="pulse-dot inline-block size-1.5 rounded-full" style={{ backgroundColor: c }} />}
         {mode}
       </p>
-      <p className="mt-0.5 truncate font-display text-[12px] font-semibold">{sessionLabel(target)}</p>
+      <p className="mt-0.5 truncate font-display text-[12px] font-semibold">{sessionFullName(target)}</p>
       <p className="font-mono text-[10px] text-faint">
         {live ? `${fmtLeft(msLeft)} left` : `in ${fmtLeft(msLeft)}`} ·{" "}
         {clock.format(new Date(target.start_at))}–{clock.format(new Date(target.end_at))}
