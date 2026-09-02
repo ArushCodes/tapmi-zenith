@@ -5,7 +5,7 @@ import { Sun } from "lucide-react";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
 import { sessionsQuery, type ClassSession } from "@/lib/batches";
-import { buildColorMap, isAcademicEvent, sessionColor } from "@/lib/courses";
+import { buildColorMap, isAcademicEvent, sessionColor, sessionLabel } from "@/lib/courses";
 import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { shortSubject } from "@/lib/attendance";
