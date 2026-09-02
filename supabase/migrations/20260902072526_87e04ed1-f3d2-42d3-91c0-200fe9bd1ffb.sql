@@ -1,0 +1,1 @@
+CREATE POLICY "batch members view roster" ON public.batch_memberships FOR SELECT TO authenticated USING (public.is_batch_member(auth.uid(), batch_id));

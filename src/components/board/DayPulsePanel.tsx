@@ -1,16 +1,20 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Sun } from "lucide-react";
+import { CircleSlash, Sun } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
-import { sessionsQuery, type ClassSession } from "@/lib/batches";
+import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches";
 import { buildColorMap, isAcademicEvent, sessionColor, sessionLabel } from "@/lib/courses";
 import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { shortSubject } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { dayKey } from "@/lib/deadlines";
+
 
 const clock = new Intl.DateTimeFormat("en-GB", {
   hour: "2-digit",
@@ -28,11 +32,56 @@ function pctOf(s: ClassSession, now: number) {
 
 /** "How much of today is done" — animated day pulse. */
 export function DayPulsePanel({ now, compact = false }: { now: number; compact?: boolean }) {
-  const { batchId } = useBatch();
+  const { batchId, isMember } = useBatch();
+  const { user } = useAuth();
   const me = useMe();
+  const queryClient = useQueryClient();
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
+  const { data: marks = [] } = useQuery(attendanceQuery(batchId, isMember));
   const colorMap = useMemo(() => buildColorMap(courses), [courses]);
+
+  /** My own self-marks for today's classes, keyed by session. */
+  const myMarks = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of marks)
+      if (m.user_id === user?.id && m.mark_source === "self") map.set(m.session_id, m.status);
+    return map;
+  }, [marks, user?.id]);
+
+  const toggleAbsent = useMutation({
+    mutationFn: async (s: ClassSession) => {
+      if (myMarks.get(s.id) === "absent") {
+        const { error } = await supabase
+          .from("attendance_marks")
+          .delete()
+          .eq("session_id", s.id)
+          .eq("user_id", user!.id)
+          .eq("mark_source", "self");
+        if (error) throw error;
+        return "cleared" as const;
+      }
+      const { error } = await supabase.from("attendance_marks").upsert(
+        {
+          session_id: s.id,
+          batch_id: s.batch_id,
+          user_id: user!.id,
+          status: "absent",
+          mark_source: "self",
+          marked_by: user!.id,
+        },
+        { onConflict: "session_id,user_id,mark_source" },
+      );
+      if (error) throw error;
+      return "saved" as const;
+    },
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", batchId] });
+      toast.success(r === "cleared" ? "Attendance cleared" : "Marked absent");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   const today = useMemo(() => {
     const key = dayKey(new Date(now));
@@ -137,6 +186,20 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           style={{ backgroundColor: p === 100 ? "var(--evt-present)" : c }}
                         />
                       </div>
+                      {isMember && user && (
+                        <button
+                          onClick={() => toggleAbsent.mutate(s)}
+                          className={`mt-2 flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+                            myMarks.get(s.id) === "absent"
+                              ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                              : "text-dim ring-border hover:text-ink"
+                          }`}
+                        >
+                          <CircleSlash className="size-3" />
+                          {myMarks.get(s.id) === "absent" ? "Marked absent" : "Absent"}
+                        </button>
+                      )}
+
                     </motion.div>
                   );
                 })}

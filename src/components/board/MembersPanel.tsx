@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, ShieldPlus, ShieldMinus, Trash2, UserPlus, X } from "lucide-react";
+import { ShieldPlus, ShieldMinus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,9 +11,9 @@ import { batchMembersQuery, type Membership } from "@/lib/batches";
 type Row = Membership & { profiles: { full_name: string | null; email: string | null } | null };
 
 export function MembersPanel() {
-  const { batchId, canManage } = useBatch();
+  const { batchId, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
-  const { data: members = [], isLoading } = useQuery(batchMembersQuery(batchId, canManage));
+  const { data: members = [], isLoading } = useQuery(batchMembersQuery(batchId, isMember));
 
   const update = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Membership> }) => {
@@ -42,18 +42,16 @@ export function MembersPanel() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const { pending, approved, others } = useMemo(() => {
-    const rows = members as Row[];
-    return {
-      pending: rows.filter((m) => m.status === "pending"),
-      approved: rows.filter((m) => m.status === "approved"),
-      others: rows.filter((m) => m.status === "rejected" || m.status === "removed"),
-    };
+  /** Everyone in the batch is a member — there is no approval queue any more. */
+  const rows = useMemo(() => {
+    const all = members as Row[];
+    return all.filter((m) => m.status !== "removed" && m.status !== "rejected");
   }, [members]);
 
-  if (!canManage) return null;
+  if (!isMember) return null;
   if (isLoading)
     return <p className="mt-6 text-center font-mono text-xs text-faint">Loading members…</p>;
+
 
   function Person({ m }: { m: Row }) {
     const name = m.profiles?.full_name ?? m.profiles?.email ?? "Unknown member";
@@ -69,22 +67,7 @@ export function MembersPanel() {
           </span>
         </span>
 
-        {m.status === "pending" ? (
-          <>
-            <button
-              onClick={() => update.mutate({ id: m.id, patch: { status: "approved" } })}
-              className="flex items-center gap-1.5 rounded-lg bg-evt-present/15 px-2.5 py-1.5 font-mono text-[11px] text-evt-present ring-1 ring-evt-present/30"
-            >
-              <Check className="size-3.5" /> Approve
-            </button>
-            <button
-              onClick={() => update.mutate({ id: m.id, patch: { status: "rejected" } })}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-rose ring-1 ring-border"
-            >
-              <X className="size-3.5" /> Reject
-            </button>
-          </>
-        ) : (
+        {canManage && (
           <>
             {m.role === "student" ? (
               <button
@@ -101,14 +84,6 @@ export function MembersPanel() {
                 <ShieldMinus className="size-3.5" /> Demote
               </button>
             )}
-            {m.status !== "approved" && (
-              <button
-                onClick={() => update.mutate({ id: m.id, patch: { status: "approved" } })}
-                className="rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-evt-present ring-1 ring-border"
-              >
-                Restore
-              </button>
-            )}
             <button
               onClick={() => remove.mutate(m.id)}
               aria-label="Remove member"
@@ -122,16 +97,17 @@ export function MembersPanel() {
     );
   }
 
-  function Section({ title, rows }: { title: string; rows: Row[] }) {
-    return (
+  return (
+    <div className="mt-4">
+      {canManage && <GrantAccess />}
       <section className="mb-6">
         <div className="mb-2 flex items-center gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">{title}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Members</p>
           <span className="h-px flex-1 bg-border" />
           <p className="font-mono text-[10px] text-faint">{rows.length}</p>
         </div>
         {rows.length === 0 ? (
-          <p className="py-3 font-mono text-[11px] text-faint">Nothing here.</p>
+          <p className="py-3 font-mono text-[11px] text-faint">No members yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {rows.map((m) => (
@@ -140,18 +116,10 @@ export function MembersPanel() {
           </div>
         )}
       </section>
-    );
-  }
-
-  return (
-    <div className="mt-4">
-      <GrantAccess />
-      <Section title="Join requests" rows={pending} />
-      <Section title="Members" rows={approved} />
-      {others.length > 0 && <Section title="Declined / removed" rows={others} />}
     </div>
   );
 }
+
 
 /** Moderator-side: add anyone by email and hand out elevated access. */
 function GrantAccess() {

@@ -7,6 +7,7 @@ import {
   CalendarRange,
   ListFilter,
   Mail,
+  Bell,
   Megaphone,
   MessageSquare,
   ShieldCheck,
@@ -27,6 +28,7 @@ import { EventDrawer } from "@/components/board/EventDrawer";
 import { ApprovalsPanel } from "@/components/board/ApprovalsPanel";
 import { AnnouncementsPanel } from "@/components/board/AnnouncementsPanel";
 import { DayPulsePanel } from "@/components/board/DayPulsePanel";
+import { ActivityPanel } from "@/components/board/ActivityPanel";
 import { CalendarPanel } from "@/components/calendar/CalendarPanel";
 import { TimetablePanel } from "@/components/timetable/TimetablePanel";
 import { AttendancePanel } from "@/components/attendance/AttendancePanel";
@@ -92,6 +94,7 @@ type TabKey =
   | "calendar"
   | "timetable"
   | "attendance"
+  | "activity"
   | "approvals"
   | "inbox"
   | "members"
@@ -142,7 +145,7 @@ function Board() {
   }, [queryClient, batchId]);
 
   useEffect(() => {
-    if (!isMod && (tab === "approvals" || tab === "inbox" || tab === "members")) setTab("feed");
+    if (!isMod && (tab === "approvals" || tab === "inbox")) setTab("feed");
   }, [isMod, tab]);
 
   const remove = useMutation({
@@ -218,6 +221,8 @@ function Board() {
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-3.5" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-3.5" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-3.5" /> },
+    { key: "activity", label: "Notifications", icon: <Bell className="size-3.5" /> },
+    { key: "members", label: "Members", icon: <Users className="size-3.5" /> },
 
     { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-3.5" /> },
 
@@ -229,7 +234,6 @@ function Board() {
             icon: <ShieldCheck className="size-3.5" />,
           },
           { key: "inbox" as TabKey, label: "Email Inbox", icon: <Mail className="size-3.5" /> },
-          { key: "members" as TabKey, label: "Members", icon: <Users className="size-3.5" /> },
         ]
       : []),
   ];
@@ -537,7 +541,9 @@ function Board() {
 
             {tab === "inbox" && isMod && <EmailInboxPanel />}
 
-            {tab === "members" && isMod && <MembersPanel />}
+            {tab === "members" && <MembersPanel />}
+
+            {tab === "activity" && <ActivityPanel />}
 
             {tab === "feedback" && <FeedbackPanel />}
           </motion.div>
