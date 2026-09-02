@@ -67,22 +67,7 @@ export function MembersPanel() {
           </span>
         </span>
 
-        {m.status === "pending" ? (
-          <>
-            <button
-              onClick={() => update.mutate({ id: m.id, patch: { status: "approved" } })}
-              className="flex items-center gap-1.5 rounded-lg bg-evt-present/15 px-2.5 py-1.5 font-mono text-[11px] text-evt-present ring-1 ring-evt-present/30"
-            >
-              <Check className="size-3.5" /> Approve
-            </button>
-            <button
-              onClick={() => update.mutate({ id: m.id, patch: { status: "rejected" } })}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-rose ring-1 ring-border"
-            >
-              <X className="size-3.5" /> Reject
-            </button>
-          </>
-        ) : (
+        {canManage && (
           <>
             {m.role === "student" ? (
               <button
@@ -99,14 +84,6 @@ export function MembersPanel() {
                 <ShieldMinus className="size-3.5" /> Demote
               </button>
             )}
-            {m.status !== "approved" && (
-              <button
-                onClick={() => update.mutate({ id: m.id, patch: { status: "approved" } })}
-                className="rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-evt-present ring-1 ring-border"
-              >
-                Restore
-              </button>
-            )}
             <button
               onClick={() => remove.mutate(m.id)}
               aria-label="Remove member"
@@ -120,16 +97,17 @@ export function MembersPanel() {
     );
   }
 
-  function Section({ title, rows }: { title: string; rows: Row[] }) {
-    return (
+  return (
+    <div className="mt-4">
+      {canManage && <GrantAccess />}
       <section className="mb-6">
         <div className="mb-2 flex items-center gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">{title}</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Members</p>
           <span className="h-px flex-1 bg-border" />
           <p className="font-mono text-[10px] text-faint">{rows.length}</p>
         </div>
         {rows.length === 0 ? (
-          <p className="py-3 font-mono text-[11px] text-faint">Nothing here.</p>
+          <p className="py-3 font-mono text-[11px] text-faint">No members yet.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {rows.map((m) => (
@@ -138,18 +116,10 @@ export function MembersPanel() {
           </div>
         )}
       </section>
-    );
-  }
-
-  return (
-    <div className="mt-4">
-      <GrantAccess />
-      <Section title="Join requests" rows={pending} />
-      <Section title="Members" rows={approved} />
-      {others.length > 0 && <Section title="Declined / removed" rows={others} />}
     </div>
   );
 }
+
 
 /** Moderator-side: add anyone by email and hand out elevated access. */
 function GrantAccess() {
