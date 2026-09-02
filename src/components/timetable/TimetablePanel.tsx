@@ -111,7 +111,7 @@ export function TimetablePanel() {
   });
 
 
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
+  const [monthStart, setMonthStart] = useState(() => startOfMonth(new Date()));
   const [selected, setSelected] = useState<string[]>([]);
   const [types, setTypes] = useState<DeadlineType[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
