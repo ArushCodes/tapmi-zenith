@@ -384,9 +384,11 @@ export function TimetablePanel() {
             }}
           />
         )}
-        {showCustom && canManage && (
+        {showCustom && (isMember || canManage) && (
           <CustomClassForm
             batchId={batchId!}
+            canManage={canManage}
+            userId={user?.id ?? null}
             onDone={() => {
               setShowCustom(false);
               queryClient.invalidateQueries({ queryKey: ["class-sessions", batchId] });
