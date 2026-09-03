@@ -78,6 +78,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
       /** null clears an existing mark (tap the active button again). */
       status: AttendanceMark["status"] | null;
       source: AttendanceMark["mark_source"];
+      leave?: LeaveType;
     }) => {
       if (input.status === null) {
         const { error } = await supabase
