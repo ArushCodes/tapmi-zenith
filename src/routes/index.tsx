@@ -46,11 +46,13 @@ import { coursesQuery, sessionsQuery } from "@/lib/batches";
 import {
   FILTERS,
   deadlinesQueryFor,
+  eventMeta,
   filterByKey,
   formatWeek,
   phaseOf,
   weekKey,
   type Deadline,
+  type DeadlineType,
   type FilterKey,
 } from "@/lib/deadlines";
 
