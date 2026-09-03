@@ -727,10 +727,11 @@ function WeekTimeline({
             return (
               <button
                 key={d.toISOString()}
+                type="button"
                 onClick={() => onPickDay(dayKey(d))}
-                title={mark?.label ?? undefined}
+                title={mark?.label ?? "Open this day"}
                 style={mark ? { color: mark.color } : undefined}
-                className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
+                className={`rounded-md px-1 py-1.5 text-center font-mono text-xs uppercase tracking-[0.14em] ring-1 ring-transparent transition-colors hover:bg-surface2 hover:text-ink hover:ring-cyan/40 ${
                   dayKey(d) === todayKey
                     ? "text-cyan"
                     : isDayOff(d)
@@ -742,6 +743,7 @@ function WeekTimeline({
               </button>
             );
           })}
+
         </div>
 
 
