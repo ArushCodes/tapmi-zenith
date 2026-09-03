@@ -50,8 +50,10 @@ const emptyForm = {
   submission_link: "",
   work_mode: "individual" as "individual" | "group",
   group_size: "",
+  working_group: "",
   notes: "",
 };
+
 
 const fieldClass =
   "w-full rounded-lg bg-ground px-3 py-2 text-sm text-ink ring-1 ring-border outline-none transition-shadow placeholder:text-faint focus:ring-cyan/50";
@@ -91,6 +93,7 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
         submission_link: deadline.submission_link ?? "",
         work_mode: deadline.work_mode,
         group_size: deadline.group_size ? String(deadline.group_size) : "",
+        working_group: deadline.working_group ?? "",
         notes: deadline.notes ?? "",
       });
     } else {
@@ -118,6 +121,7 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
         submission_link: form.submission_link.trim() || null,
         work_mode: form.work_mode,
         group_size: form.work_mode === "group" && form.group_size ? Number(form.group_size) : null,
+        working_group: form.working_group.trim() || null,
         notes: form.notes.trim() || null,
         is_major: form.type === "midterm" || form.type === "endterm",
       };
@@ -175,7 +179,7 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
               className={`${fieldClass} mt-1`}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Quiz 04 — Sampling Distributions"
+              placeholder="Probability"
             />
           </div>
 
@@ -285,6 +289,17 @@ export function DeadlineDialog({ open, onOpenChange, deadline }: Props) {
               value={form.group_size}
               onChange={(e) => setForm({ ...form, group_size: e.target.value })}
               placeholder="4"
+            />
+          </div>
+
+          <div>
+            <label className={labelClass} htmlFor="wg">Working group no. (optional)</label>
+            <input
+              id="wg"
+              className={`${fieldClass} mt-1 font-mono`}
+              value={form.working_group}
+              onChange={(e) => setForm({ ...form, working_group: e.target.value })}
+              placeholder="WG 7"
             />
           </div>
 

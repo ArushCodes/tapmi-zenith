@@ -121,6 +121,49 @@
   --ring: var(--cyan);
 }
 
+.dark {
+  /* Zenith dark: warm charcoal ground, same sunrise-orange accent */
+  --ground: oklch(0.181 0.012 62);
+  --surface: oklch(0.226 0.014 62);
+  --surface2: oklch(0.268 0.016 62);
+  --ink: oklch(0.962 0.008 70);
+  --dim: oklch(0.758 0.014 70);
+  --faint: oklch(0.605 0.016 70);
+  --cyan: oklch(0.742 0.168 52);
+  --magenta: oklch(0.688 0.166 34);
+  --violet: oklch(0.668 0.148 285);
+  --amber: oklch(0.802 0.148 78);
+  --rose: oklch(0.665 0.192 25);
+  --hairline: oklch(0.962 0.008 70 / 14%);
+
+  --evt-exam: oklch(0.688 0.192 26);
+  --evt-quiz: oklch(0.782 0.152 66);
+  --evt-assign: oklch(0.688 0.158 278);
+  --evt-present: oklch(0.722 0.128 164);
+  --evt-lecture: oklch(0.702 0.168 295);
+
+  --background: var(--ground);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--cyan);
+  --primary-foreground: oklch(0.181 0.012 62);
+  --secondary: var(--surface2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface2);
+  --muted-foreground: var(--dim);
+  --accent: var(--surface2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--rose);
+  --destructive-foreground: oklch(0.181 0.012 62);
+  --border: var(--hairline);
+  --input: oklch(0.962 0.008 70 / 20%);
+  --ring: var(--cyan);
+}
+
+
 @layer base {
   * {
     border-color: var(--color-border);

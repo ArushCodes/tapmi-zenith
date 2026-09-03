@@ -15,6 +15,13 @@ import {
   type ClassSession,
 } from "@/lib/batches";
 import {
+  BAND_COPY,
+  HARD_LINE,
+  SAFE_LINE,
+  allowanceFor,
+  bandFor,
+  creditsFor,
+  hardAllowanceFor,
   meterColor,
   plannedFor,
   resolveMarks,
@@ -35,7 +42,7 @@ const timeFmt = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
-export function AttendancePanel({ now }: { now: number }) {
+export function AttendancePanel({ now, compact = false }: { now: number; compact?: boolean }) {
   const { user } = useAuth();
   const me = useMe();
   const { batchId, batch, canManage, isMember } = useBatch();
@@ -149,6 +156,7 @@ export function AttendancePanel({ now }: { now: number }) {
       .map(([course, v]) => {
         const planned = plannedFor(course, scheduled.get(course) ?? v.held);
         const attended = Math.max(0, planned - v.absent);
+        const allowance = allowanceFor(planned);
         return {
           course,
           planned,
@@ -156,6 +164,10 @@ export function AttendancePanel({ now }: { now: number }) {
           present: v.present,
           held: v.held,
           attended,
+          credits: creditsFor(planned),
+          allowance,
+          left: allowance - v.absent,
+          hardLeft: hardAllowanceFor(planned) - v.absent,
           pct: planned ? Math.round((attended / planned) * 100) : 100,
         };
       })
@@ -170,7 +182,14 @@ export function AttendancePanel({ now }: { now: number }) {
     const planned = rows.reduce((a, s) => a + s.planned, 0);
     const absent = rows.reduce((a, s) => a + s.absent, 0);
     const attended = Math.max(0, planned - absent);
-    return { planned, absent, pct: planned ? Math.round((attended / planned) * 100) : 100 };
+    const allowance = rows.reduce((a, s) => a + s.allowance, 0);
+    return {
+      planned,
+      absent,
+      allowance,
+      left: allowance - absent,
+      pct: planned ? Math.round((attended / planned) * 100) : 100,
+    };
   }, [stats, focus]);
 
 
@@ -227,7 +246,7 @@ export function AttendancePanel({ now }: { now: number }) {
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
           {me.possessive ? `${me.possessive} attendance` : "Attendance"}
         </p>
-        {canManage && (
+        {canManage && !compact && (
           <button
             onClick={exportCsv}
             className="ml-auto flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
@@ -266,10 +285,12 @@ export function AttendancePanel({ now }: { now: number }) {
                   </p>
                   <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
                     {overall.absent} missed of {overall.planned} planned ·{" "}
-                    {overall.pct >= threshold
-                      ? `${overall.pct - threshold}% of headroom above the ${threshold}% line`
-                      : `${threshold - overall.pct}% below the ${threshold}% line`}
+                    {overall.left >= 0
+                      ? `${overall.left} holiday${overall.left === 1 ? "" : "s"} still in budget`
+                      : `${-overall.left} over the safe budget`}
                   </p>
+                  <BandChip pct={overall.pct} />
+                  <ThresholdBar pct={overall.pct} />
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setFocus(null)}
@@ -320,20 +341,18 @@ export function AttendancePanel({ now }: { now: number }) {
                           {s.pct}%
                         </span>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface2">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, s.pct)}%` }}
-                          transition={{ type: "spring", stiffness: 120, damping: 22 }}
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                      </div>
+                      <ThresholdBar pct={s.pct} />
                       <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                        {s.absent} missed of {s.planned} planned · {s.held} held so far
-                        <br className="sm:hidden" />
-                        <span className="sm:before:content-['_·_']">threshold {threshold}%</span>
+                        {s.credits} credit · {s.planned} sessions · {s.held} held
+                        <br />
+                        <span className={s.left < 0 ? "text-rose" : "text-dim"}>
+                          {s.absent} of {s.allowance} holiday{s.allowance === 1 ? "" : "s"} used
+                          {s.left >= 0
+                            ? ` · ${s.left} left`
+                            : ` · ${s.hardLeft >= 0 ? `${s.hardLeft} before the ${HARD_LINE}% line` : "past the hard line"}`}
+                        </span>
                       </p>
+                      <BandChip pct={s.pct} />
                     </motion.button>
                   );
                 })}
@@ -341,6 +360,7 @@ export function AttendancePanel({ now }: { now: number }) {
             </>
           )}
 
+          {!compact && (
           <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
             <button
               onClick={() => setBrowse((v) => !v)}
@@ -379,9 +399,57 @@ export function AttendancePanel({ now }: { now: number }) {
               </div>
             )}
           </section>
+          )}
+
+          <p className="font-mono text-[10px] leading-relaxed text-faint">
+            TAPMI policy · one holiday per 8 sessions (1 credit), 2 per 16, 3 per 24 ·
+            85%+ clear · 70–85% repeat exam only · below 70% fail.
+          </p>
         </div>
 
     </section>
+  );
+}
+
+/** Percentage bar with the 70% hard line and 85% safe line marked on it. */
+function ThresholdBar({ pct }: { pct: number }) {
+  return (
+    <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-surface2">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${Math.min(100, pct)}%` }}
+        transition={{ type: "spring", stiffness: 120, damping: 22 }}
+        className="h-full rounded-full"
+        style={{ backgroundColor: meterColor(pct) }}
+      />
+      {[HARD_LINE, SAFE_LINE].map((line) => (
+        <span
+          key={line}
+          title={`${line}% line`}
+          className="absolute top-0 h-full w-px bg-ink/45"
+          style={{ left: `${line}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/** Which side of the 85 / 70 policy lines this percentage falls on. */
+function BandChip({ pct }: { pct: number }) {
+  const band = bandFor(pct);
+  const tone =
+    band === "good"
+      ? "bg-evt-present/12 text-evt-present ring-evt-present/30"
+      : band === "warn"
+        ? "bg-amber/15 text-amber ring-amber/30"
+        : "bg-rose/12 text-rose ring-rose/30";
+  return (
+    <span
+      title={BAND_COPY[band].detail}
+      className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${tone}`}
+    >
+      {BAND_COPY[band].label}
+    </span>
   );
 }
 

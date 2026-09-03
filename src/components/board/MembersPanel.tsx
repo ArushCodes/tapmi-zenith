@@ -6,14 +6,20 @@ import { toast } from "sonner";
 import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
-import { batchMembersQuery, type Membership } from "@/lib/batches";
+import { directoryQuery, type DirectoryRow, type Membership } from "@/lib/batches";
 
-type Row = Membership & { profiles: { full_name: string | null; email: string | null } | null };
+type Row = DirectoryRow;
+
+const ROLE_LABEL: Record<string, string> = {
+  student: "Student",
+  mod: "Class rep / moderator",
+  admin: "Administrator",
+};
 
 export function MembersPanel() {
   const { batchId, canManage, isMember } = useBatch();
   const queryClient = useQueryClient();
-  const { data: members = [], isLoading } = useQuery(batchMembersQuery(batchId, isMember));
+  const { data: members = [], isLoading } = useQuery(directoryQuery(isMember));
 
   const update = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: Partial<Membership> }) => {
@@ -24,7 +30,7 @@ export function MembersPanel() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["batch-members", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["member-directory"] });
       toast.success("Membership updated");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -36,17 +42,31 @@ export function MembersPanel() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["batch-members", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["member-directory"] });
       toast.success("Member removed");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   /** Everyone in the batch is a member — there is no approval queue any more. */
-  const rows = useMemo(() => {
-    const all = members as Row[];
-    return all.filter((m) => m.status !== "removed" && m.status !== "rejected");
+  const groups = useMemo(() => {
+    const live = (members as Row[]).filter(
+      (m) => m.status !== "removed" && m.status !== "rejected",
+    );
+    const map = new Map<string, Row[]>();
+    for (const m of live) {
+      const key = m.batches?.name ?? "Other batches";
+      map.set(key, [...(map.get(key) ?? []), m]);
+    }
+    for (const list of map.values())
+      list.sort((a, b) =>
+        (a.profiles?.full_name ?? a.profiles?.email ?? "").localeCompare(
+          b.profiles?.full_name ?? b.profiles?.email ?? "",
+        ),
+      );
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [members]);
+  const total = groups.reduce((a, [, list]) => a + list.length, 0);
 
   if (!isMember) return null;
   if (isLoading)
@@ -60,14 +80,42 @@ export function MembersPanel() {
         layout
         className="flex flex-wrap items-center gap-3 rounded-xl bg-surface px-3 py-3 ring-1 ring-border"
       >
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan/12 font-display text-[12px] font-semibold text-cyan">
+          {name
+            .split(/[\s@.]+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w) => w[0]?.toUpperCase())
+            .join("")}
+        </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-display text-sm font-semibold">{name}</span>
           <span className="block truncate font-mono text-[11px] text-dim">
-            {m.profiles?.email ?? "—"} · {m.role}
+            {m.profiles?.email ?? "—"}
+          </span>
+          <span className="mt-1 flex flex-wrap gap-1.5">
+            <span className="rounded-md bg-cyan/12 px-1.5 py-0.5 font-mono text-[10px] text-cyan">
+              {ROLE_LABEL[m.role] ?? m.role}
+            </span>
+            {m.batches?.name && (
+              <span className="rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-dim">
+                {m.batches.name}
+              </span>
+            )}
+            {m.profiles?.section && (
+              <span className="rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-dim">
+                Section {m.profiles.section}
+              </span>
+            )}
+            {m.profiles?.registration_no && (
+              <span className="rounded-md bg-surface2 px-1.5 py-0.5 font-mono text-[10px] text-faint">
+                {m.profiles.registration_no}
+              </span>
+            )}
           </span>
         </span>
 
-        {canManage && (
+        {canManage && m.batch_id === batchId && (
           <>
             {m.role === "student" ? (
               <button
@@ -100,22 +148,27 @@ export function MembersPanel() {
   return (
     <div className="mt-4">
       {canManage && <GrantAccess />}
-      <section className="mb-6">
-        <div className="mb-2 flex items-center gap-3">
-          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Members</p>
-          <span className="h-px flex-1 bg-border" />
-          <p className="font-mono text-[10px] text-faint">{rows.length}</p>
-        </div>
-        {rows.length === 0 ? (
-          <p className="py-3 font-mono text-[11px] text-faint">No members yet.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {rows.map((m) => (
-              <Person key={m.id} m={m} />
-            ))}
-          </div>
-        )}
-      </section>
+      <div className="mb-2 flex items-center gap-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Directory</p>
+        <span className="h-px flex-1 bg-border" />
+        <p className="font-mono text-[10px] text-faint">{total}</p>
+      </div>
+      {total === 0 ? (
+        <p className="py-3 font-mono text-[11px] text-faint">No members yet.</p>
+      ) : (
+        groups.map(([batchName, list]) => (
+          <section key={batchName} className="mb-6">
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-dim">
+              {batchName} · {list.length}
+            </p>
+            <div className="flex flex-col gap-2">
+              {list.map((m) => (
+                <Person key={m.id} m={m} />
+              ))}
+            </div>
+          </section>
+        ))
+      )}
     </div>
   );
 }
@@ -165,7 +218,7 @@ function GrantAccess() {
     onSuccess: () => {
       setEmail("");
       setSiteAdmin(false);
-      queryClient.invalidateQueries({ queryKey: ["batch-members", batchId] });
+      queryClient.invalidateQueries({ queryKey: ["member-directory"] });
       toast.success("Access granted");
     },
     onError: (e: Error) => toast.error(e.message),

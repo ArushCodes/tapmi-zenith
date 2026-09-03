@@ -77,6 +77,33 @@ export function CalendarPanel({
 
   const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
+  /** Filter chips come from the catalogue when there is one, otherwise straight
+   *  from the timetable — every batch gets coloured subject chips either way. */
+  const subjectChips = useMemo(() => {
+    const out = new Map<string, { key: string; label: string; color: string; title: string }>();
+    for (const c of courses) {
+      const key = courseKey(c);
+      out.set(key, {
+        key,
+        label: c.short_name || c.code,
+        color: c.color ?? colorMap.get(key) ?? FALLBACK_COURSE_COLOR,
+        title: [c.name, c.faculty_name].filter(Boolean).join(" · "),
+      });
+    }
+    for (const s of sessions) {
+      if (s.is_holiday || isAcademicEvent(s)) continue;
+      const key = sessionKey(s);
+      if (out.has(key)) continue;
+      out.set(key, {
+        key,
+        label: sessionLabel(s),
+        color: sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR,
+        title: [s.course_name, s.faculty_name].filter(Boolean).join(" · "),
+      });
+    }
+    return [...out.values()].sort((a, b) => a.label.localeCompare(b.label));
+  }, [courses, sessions, colorMap]);
+
   const classSessions = useMemo(
     () => sessions.filter((s) => !isAcademicEvent(s) && !s.is_holiday),
     [sessions],
@@ -153,7 +180,7 @@ export function CalendarPanel({
   return (
     <section className="mt-4">
       <SubjectLegend
-        courses={courses}
+        subjects={subjectChips}
         active={activeSubjects}
         onToggle={(key) =>
           setActiveSubjects((prev) =>
@@ -273,21 +300,21 @@ export function CalendarPanel({
 }
 
 function SubjectLegend({
-  courses,
+  subjects,
   active,
   onToggle,
   onClear,
   showClasses,
   onToggleClasses,
 }: {
-  courses: Course[];
+  subjects: { key: string; label: string; color: string; title: string }[];
   active: string[];
   onToggle: (key: string) => void;
   onClear: () => void;
   showClasses: boolean;
   onToggleClasses: () => void;
 }) {
-  if (courses.length === 0) return null;
+  if (subjects.length === 0) return null;
   return (
     <div className="mb-5 rounded-2xl bg-surface/60 p-4 ring-1 ring-border">
       <div className="mb-3 flex items-center gap-3">
@@ -311,17 +338,17 @@ function SubjectLegend({
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        {courses.map((c) => {
-          const key = courseKey(c);
+        {subjects.map((c) => {
+          const key = c.key;
           const on = active.length === 0 || active.includes(key);
-          const color = c.color ?? FALLBACK_COURSE_COLOR;
+          const color = c.color;
           return (
             <motion.button
-              key={c.id}
+              key={key}
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => onToggle(key)}
-              title={[c.name, c.faculty_name].filter(Boolean).join(" · ")}
+              title={c.title}
               className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] ring-1 transition-opacity ${
                 on ? "opacity-100" : "opacity-40"
               }`}
@@ -333,7 +360,7 @@ function SubjectLegend({
               }}
             >
               <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
-              {c.short_name}
+              {c.label}
             </motion.button>
           );
         })}
@@ -468,7 +495,9 @@ function MonthGrid({
         {WEEKDAYS.map((w) => (
           <span
             key={w}
-            className="text-center font-mono text-[10px] uppercase tracking-[0.18em] text-faint"
+            className={`text-center font-mono text-[10px] uppercase tracking-[0.18em] ${
+              w === "Sun" ? "text-amber" : "text-faint"
+            }`}
           >
             {w.slice(0, 1)}
             <span className="hidden sm:inline">{w.slice(1)}</span>
@@ -496,7 +525,9 @@ function MonthGrid({
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
               className={`min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
-              } ${isToday ? "ring-cyan/50" : ""} hover:shadow-lg hover:shadow-black/30`}
+              } ${isToday ? "ring-cyan/50" : ""} ${
+                date.getDay() === 0 ? "bg-amber/8" : ""
+              } hover:shadow-lg hover:shadow-black/30`}
             >
               <div className="flex items-center justify-between">
                 <span
@@ -573,7 +604,11 @@ function WeekTimeline({
               key={d.toISOString()}
               onClick={() => onPickDay(dayKey(d))}
               className={`text-center font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:text-ink ${
-                dayKey(d) === todayKey ? "text-cyan" : "text-faint"
+                dayKey(d) === todayKey
+                  ? "text-cyan"
+                  : d.getDay() === 0
+                    ? "text-amber"
+                    : "text-faint"
               }`}
             >
               {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
@@ -608,7 +643,9 @@ function WeekTimeline({
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
-                    className="min-h-[36px] rounded-md bg-surface/60 p-1 ring-1 ring-border/60"
+                    className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
+                      d.getDay() === 0 ? "bg-amber/8" : "bg-surface/60"
+                    }`}
                   >
                     <div className="flex flex-col gap-1">
                       {classes.map((s) => {
