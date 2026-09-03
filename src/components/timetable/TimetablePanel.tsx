@@ -164,19 +164,26 @@ export function TimetablePanel() {
       map.set(k, cur);
       return cur;
     };
+    const subjFilter = selected.length > 0;
+    const typeFilter = types.length > 0;
     for (const s of sessions) {
       if (s.notes === "academic-calendar") continue;
+      // A pure event-type filter means the user asked for events only.
+      if (typeFilter && !subjFilter) continue;
       const start = new Date(s.start_at);
       if (start < monthStart || start >= monthEnd) continue;
-      if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
+      if (subjFilter && !selected.includes(sessionKey(s))) continue;
       bucket(start.toDateString()).sessions.push(s);
     }
     for (const d of deadlines) {
+      // A pure subject filter means the user asked for classes only.
+      if (subjFilter && !typeFilter) continue;
       const start = new Date(d.due_at);
       if (start < monthStart || start >= monthEnd) continue;
-      if (types.length > 0 && !types.includes(d.type)) continue;
+      if (typeFilter && !types.includes(d.type)) continue;
       bucket(start.toDateString()).events.push(d);
     }
+
     for (const v of map.values()) {
       v.sessions.sort((a, b) => a.start_at.localeCompare(b.start_at));
       v.events.sort((a, b) => a.due_at.localeCompare(b.due_at));
@@ -326,15 +333,16 @@ export function TimetablePanel() {
         </button>
 
         <div className="ml-auto flex items-center gap-2">
-
+          {(isMember || canManage) && (
+            <button
+              onClick={() => setShowCustom((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
+            >
+              <Plus className="size-3.5" /> Custom class
+            </button>
+          )}
           {canManage && (
             <>
-              <button
-                onClick={() => setShowCustom((v) => !v)}
-                className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
-              >
-                <Plus className="size-3.5" /> Custom class
-              </button>
               <button
                 onClick={() => setShowSettings((v) => !v)}
                 className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
@@ -376,9 +384,11 @@ export function TimetablePanel() {
             }}
           />
         )}
-        {showCustom && canManage && (
+        {showCustom && (isMember || canManage) && (
           <CustomClassForm
             batchId={batchId!}
+            canManage={canManage}
+            userId={user?.id ?? null}
             onDone={() => {
               setShowCustom(false);
               queryClient.invalidateQueries({ queryKey: ["class-sessions", batchId] });
@@ -428,7 +438,7 @@ export function TimetablePanel() {
                   )
                 }
                 title={n === 0 ? `No ${t.label.toLowerCase()} this month` : `${n} scheduled`}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-all ${
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] outline-none transition-all focus:outline-none focus-visible:outline-none ${
                   n === 0
                     ? "cursor-not-allowed bg-surface2 text-faint opacity-50 ring-1 ring-border"
                     : `${meta.chip} ${on ? "ring-2" : ""}`
@@ -779,13 +789,13 @@ function CourseCatalogue({
               whileTap={{ scale: 0.96 }}
               onClick={() => onToggle(o.key)}
               title={o.sub || o.label}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-opacity ${
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] outline-none transition-opacity focus:outline-none focus-visible:outline-none ${
                 dimmed ? "opacity-40" : "opacity-100"
               }`}
               style={{
                 color: o.color,
                 backgroundColor: `${o.color}1a`,
-                boxShadow: isOn ? `0 0 0 1px ${o.color}` : undefined,
+                boxShadow: isOn ? `0 0 0 1px ${o.color}` : "none",
               }}
             >
               {isOn ? (
@@ -891,11 +901,22 @@ function IcsSettings({
   );
 }
 
-function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => void }) {
+function CustomClassForm({
+  batchId,
+  canManage,
+  userId,
+  onDone,
+}: {
+  batchId: string;
+  canManage: boolean;
+  userId: string | null;
+  onDone: () => void;
+}) {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [room, setRoom] = useState("");
+  const [scope, setScope] = useState<"batch" | "private">(canManage ? "batch" : "private");
   const [busy, setBusy] = useState(false);
 
   return (
@@ -913,11 +934,17 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
           start_at: new Date(start).toISOString(),
           end_at: new Date(end).toISOString(),
           classroom: room || null,
+          visibility: canManage ? scope : "private",
+          created_by: userId,
         });
         setBusy(false);
         if (error) toast.error(error.message);
         else {
-          toast.success("Custom class added");
+          toast.success(
+            (canManage ? scope : "private") === "batch"
+              ? "Class added for the whole batch"
+              : "Class added — only you can see it",
+          );
           onDone();
         }
       }}
@@ -926,6 +953,33 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
         Add a class the calendar feed does not have
       </p>
+      {canManage ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(
+            [
+              { key: "batch", label: "Everyone in this batch" },
+              { key: "private", label: "Only me" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => setScope(o.key)}
+              className={`rounded-lg px-3 py-1.5 font-mono text-[11px] outline-none transition-colors focus:outline-none ${
+                scope === o.key
+                  ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40"
+                  : "bg-surface2 text-dim ring-1 ring-border hover:text-ink"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="mb-3 font-mono text-[10px] text-faint">
+          Personal class — only you will see it.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-4">
         <input
           value={title}
