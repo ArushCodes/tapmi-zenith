@@ -10,7 +10,16 @@ import {
   Palette,
   Plus,
 } from "lucide-react";
-import { dayKey, displayTitle, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
+import {
+  dayKey,
+  deadlineShortLabel,
+  displayTitle,
+  eventMeta,
+  fullDeadlineLabel,
+  urgencyOf,
+  type Deadline,
+} from "@/lib/deadlines";
+
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { DayMarkDialog } from "@/components/calendar/DayMarkDialog";
