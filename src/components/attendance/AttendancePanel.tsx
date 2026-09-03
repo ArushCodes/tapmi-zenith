@@ -97,6 +97,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
           user_id: input.userId,
           status: input.status,
           mark_source: input.source,
+          leave_type: input.leave ?? "personal",
           marked_by: user!.id,
         },
         { onConflict: "session_id,user_id,mark_source" },
