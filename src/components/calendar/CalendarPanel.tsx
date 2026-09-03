@@ -286,10 +286,7 @@ export function CalendarPanel({
           >
             {subView === "month" && (
               <MonthGrid
-                onPickDay={(k) => {
-                  setFocusDay(k);
-                  setSubView("agenda");
-                }}
+                onPickDay={pickDay}
                 cursor={cursor}
                 byDay={byDay}
                 classesByDay={classesByDay}
@@ -304,10 +301,18 @@ export function CalendarPanel({
             )}
             {subView === "week" && (
               <WeekTimeline
-                onPickDay={(k) => {
-                  setFocusDay(k);
-                  setSubView("agenda");
-                }}
+                onPickDay={pickDay}
+                weekStart={weekStart}
+                byDay={byDay}
+                classesByDay={classesByDay}
+                academicByDay={academicByDay}
+                colorMap={colorMap}
+                marks={marks}
+                now={now}
+                onSelect={onSelect}
+              />
+            )}
+
                 weekStart={weekStart}
                 byDay={byDay}
                 classesByDay={classesByDay}
