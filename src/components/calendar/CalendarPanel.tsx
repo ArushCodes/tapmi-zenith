@@ -542,6 +542,9 @@ function MonthGrid({
   classesByDay,
   academicByDay,
   colorMap,
+  marks,
+  canManage,
+  onStyleDay,
   now,
   onSelect,
 }: {
@@ -551,9 +554,13 @@ function MonthGrid({
   classesByDay: Map<string, ClassSession[]>;
   academicByDay: Map<string, ClassSession[]>;
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
+  canManage: boolean;
+  onStyleDay: (dayKey: string) => void;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
+
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const gridStart = startOfWeek(first);
   const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
