@@ -587,6 +587,7 @@ function MonthGrid({
           const events = byDay.get(k) ?? [];
           const classes = classesByDay.get(k) ?? [];
           const acad = academicByDay.get(k) ?? [];
+          const mark = marks.get(k) ?? null;
           const inMonth = date.getMonth() === cursor.getMonth();
           const isToday = k === todayKey;
           return (
@@ -600,10 +601,11 @@ function MonthGrid({
               }}
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className={`min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
+              style={mark ? markTint(mark.color) : undefined}
+              className={`group relative min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} ${
-                isDayOff(date) ? "bg-amber/8" : ""
+                !mark && isDayOff(date) ? "bg-amber/8" : ""
               } hover:shadow-lg hover:shadow-black/30`}
             >
               <div className="flex items-center justify-between">
@@ -611,13 +613,37 @@ function MonthGrid({
                   className={`font-mono text-sm ${
                     isToday ? "text-cyan" : inMonth ? "text-dim" : "text-faint"
                   }`}
+                  style={mark ? { color: mark.color } : undefined}
                 >
                   {date.getDate()}
                 </span>
                 {classes.length > 0 && (
                   <span className="font-mono text-[10px] text-faint">{classes.length}c</span>
                 )}
+                {canManage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStyleDay(k);
+                    }}
+                    aria-label="Style this day"
+                    className="absolute right-1 top-1 rounded-md bg-surface2/90 p-1 text-dim opacity-0 ring-1 ring-border transition-opacity hover:text-cyan group-hover:opacity-100"
+                  >
+                    <Palette className="size-3" />
+                  </button>
+                )}
               </div>
+
+              {mark?.label && (
+                <p
+                  className="mt-1 truncate rounded px-1 py-0.5 font-mono text-[10px]"
+                  style={{ color: mark.color, backgroundColor: `${mark.color}1f` }}
+                  title={mark.note ?? mark.label}
+                >
+                  {mark.label}
+                </p>
+              )}
+
 
               {acad.length > 0 && (
                 <div className="mt-1 flex flex-col gap-0.5">
