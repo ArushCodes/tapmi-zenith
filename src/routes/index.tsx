@@ -269,8 +269,8 @@ function Board() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/12 blur-[130px]" />
-        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/12 blur-[140px]" />
+        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/[0.06] blur-[130px] dark:bg-cyan/12" />
+        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/[0.06] blur-[140px] dark:bg-amber/12" />
       </div>
 
       <BoardHeader menuItems={menuItems} onMenuSelect={(k) => setPanel(k as PanelKey)} />
