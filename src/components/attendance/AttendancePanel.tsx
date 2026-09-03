@@ -16,19 +16,27 @@ import {
 } from "@/lib/batches";
 import {
   BAND_COPY,
+  CONTINUOUS_ABSENCE_DAYS,
   HARD_LINE,
+  LEAVE_COPY,
+  PENALTY_PER_SESSION,
+  PL_CAP_PCT,
   SAFE_LINE,
-  allowanceFor,
+  TOTAL_CAP_PCT,
   bandFor,
-  creditsFor,
-  hardAllowanceFor,
+  eligibilityMisses,
+  gradePenalty,
+  leaveCaps,
+  longestAbsenceRun,
   meterColor,
   plannedFor,
   resolveMarks,
+  safeMisses,
   sessionSubject,
   shortSubject,
   trimesterEnd,
   untilReset,
+  type LeaveType,
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { SessionMeta } from "@/components/common/SessionMeta";
@@ -72,6 +80,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
       /** null clears an existing mark (tap the active button again). */
       status: AttendanceMark["status"] | null;
       source: AttendanceMark["mark_source"];
+      leave?: LeaveType;
     }) => {
       if (input.status === null) {
         const { error } = await supabase
@@ -90,6 +99,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
           user_id: input.userId,
           status: input.status,
           mark_source: input.source,
+          leave_type: input.leave ?? "personal",
           marked_by: user!.id,
         },
         { onConflict: "session_id,user_id,mark_source" },
@@ -132,11 +142,20 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
     return map;
   }, [marks, user?.id]);
 
-  /** Per-course stats: attendance is measured against the planned trimester
-   *  session count, so every unexcused absence eats into the percentage. */
+  /** Marks that count as a leave, resolved rep-over-self, keyed by session. */
+  const resolvedMine = useMemo(() => resolveMarks(marks, user?.id), [marks, user?.id]);
+
+  const absentIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const [id, m] of resolvedMine) if (m.status === "absent") set.add(id);
+    return set;
+  }, [resolvedMine]);
+
+  /** Per-course stats following the IPM handbook: leaves are split into
+   *  Personal and Institutional, each capped at 15% of the course's sessions,
+   *  with 30% as the absolute combined wall. */
   const stats = useMemo(() => {
     const sessionById = new Map(classes.map((s) => [s.id, s]));
-    const resolved = resolveMarks(marks, user?.id);
 
     const scheduled = new Map<string, number>();
     for (const s of classes) {
@@ -144,62 +163,86 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
       scheduled.set(key, (scheduled.get(key) ?? 0) + 1);
     }
 
-    const rows = new Map<string, { held: number; absent: number; present: number }>();
-    for (const key of scheduled.keys()) rows.set(key, { held: 0, absent: 0, present: 0 });
+    type Row = { held: number; pl: number; il: number; present: number };
+    const rows = new Map<string, Row>();
+    for (const key of scheduled.keys()) rows.set(key, { held: 0, pl: 0, il: 0, present: 0 });
     for (const s of classes) {
       if (new Date(s.end_at).getTime() > now) continue;
-      const row = rows.get(sessionSubject(s))!;
-      row.held += 1;
+      rows.get(sessionSubject(s))!.held += 1;
     }
-    for (const [sessionId, m] of resolved) {
+    for (const [sessionId, m] of resolvedMine) {
       const s = sessionById.get(sessionId);
       if (!s) continue;
       const row = rows.get(sessionSubject(s));
       if (!row) continue;
-      if (m.status === "absent") row.absent += 1;
-      else row.present += 1;
+      if (m.status !== "absent") {
+        row.present += 1;
+        continue;
+      }
+      if (m.leave_type === "institutional") row.il += 1;
+      else row.pl += 1;
     }
 
     return [...rows.entries()]
       .map(([course, v]) => {
         const planned = plannedFor(course, scheduled.get(course) ?? v.held);
-        const attended = Math.max(0, planned - v.absent);
-        const allowance = allowanceFor(planned);
+        const absent = v.pl + v.il;
+        const attended = Math.max(0, planned - absent);
+        const caps = leaveCaps(planned, v.pl);
+        const pct = planned ? Math.round((attended / planned) * 100) : 100;
         return {
           course,
           planned,
-          absent: v.absent,
+          pl: v.pl,
+          il: v.il,
+          absent,
           present: v.present,
           held: v.held,
           attended,
-          credits: creditsFor(planned),
-          allowance,
-          left: allowance - v.absent,
-          hardLeft: hardAllowanceFor(planned) - v.absent,
-          pct: planned ? Math.round((attended / planned) * 100) : 100,
+          caps,
+          plLeft: caps.personal - v.pl,
+          ilLeft: caps.institutional - v.il,
+          totalLeft: caps.total - absent,
+          safeLeft: safeMisses(planned) - absent,
+          eligibleLeft: eligibilityMisses(planned) - absent,
+          penalty: gradePenalty(planned, absent),
+          pct,
         };
       })
       .sort((a, b) => a.pct - b.pct);
-  }, [marks, classes, user?.id, now]);
+  }, [resolvedMine, classes, now]);
 
-  const threshold = Number(batch?.attendance_threshold ?? 75);
-
-  /** The holiday budget belongs to the current trimester — its end is the last
-   *  class on the calendar, and the quota resets after it. */
+  /** The leave budget belongs to the current trimester — its end is the last
+   *  class on the calendar, and the budget resets after it. */
   const termEnd = useMemo(() => trimesterEnd(classes, now), [classes, now]);
+
+  /** More than 13 continuous calendar days absent forces a withdrawal. */
+  const longestRun = useMemo(
+    () => longestAbsenceRun(classes, (s) => absentIds.has(s.id), now),
+    [classes, absentIds, now],
+  );
 
   /** Donut source: one subject when focused, else the whole trimester. */
   const overall = useMemo(() => {
     const rows = focus ? stats.filter((s) => s.course === focus) : stats;
     const planned = rows.reduce((a, s) => a + s.planned, 0);
-    const absent = rows.reduce((a, s) => a + s.absent, 0);
+    const pl = rows.reduce((a, s) => a + s.pl, 0);
+    const il = rows.reduce((a, s) => a + s.il, 0);
+    const absent = pl + il;
     const attended = Math.max(0, planned - absent);
-    const allowance = rows.reduce((a, s) => a + s.allowance, 0);
+    const caps = leaveCaps(planned, pl);
     return {
       planned,
+      pl,
+      il,
       absent,
-      allowance,
-      left: allowance - absent,
+      caps,
+      plLeft: caps.personal - pl,
+      ilLeft: caps.institutional - il,
+      totalLeft: caps.total - absent,
+      safeLeft: safeMisses(planned) - absent,
+      eligibleLeft: eligibilityMisses(planned) - absent,
+      penalty: gradePenalty(planned, absent),
       pct: planned ? Math.round((attended / planned) * 100) : 100,
     };
   }, [stats, focus]);
@@ -297,19 +340,40 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                     {focus ? shortSubject(focus, 28) : "All subjects"}
                   </p>
                   <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
-                    {overall.absent} missed of {overall.planned} planned ·{" "}
-                    {overall.left >= 0
-                      ? `${overall.left} holiday${overall.left === 1 ? "" : "s"} left`
-                      : `${-overall.left} over budget`}
+                    {overall.absent} of {overall.planned} sessions missed ·{" "}
+                    {overall.safeLeft >= 0
+                      ? `${overall.safeLeft} more before grade cuts start`
+                      : overall.eligibleLeft >= 0
+                        ? `${overall.eligibleLeft} more before you lose exam eligibility`
+                        : "past the 70% eligibility line"}
                   </p>
                   {termEnd && (
                     <p className="mt-1 font-mono text-[10px] leading-relaxed text-faint">
-                      Quota runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
+                      Leave budget runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
                       {untilReset(termEnd, now)}
                     </p>
                   )}
-                  <BandChip pct={overall.pct} />
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <BandChip pct={overall.pct} />
+                    <PenaltyChip pct={overall.pct} penalty={overall.penalty} />
+                  </div>
                   <ThresholdBar pct={overall.pct} />
+                  <LeaveBudget
+                    pl={overall.pl}
+                    il={overall.il}
+                    absent={overall.absent}
+                    caps={overall.caps}
+                  />
+                  {longestRun.days > CONTINUOUS_ABSENCE_DAYS && (
+                    <p className="mt-2 flex items-start gap-2 rounded-lg bg-rose/10 px-2.5 py-2 font-mono text-[10px] leading-relaxed text-rose ring-1 ring-rose/30">
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                      {longestRun.days} continuous calendar days absent (
+                      {termFmt.format(new Date(longestRun.from))} –{" "}
+                      {termFmt.format(new Date(longestRun.to))}). Anything over{" "}
+                      {CONTINUOUS_ABSENCE_DAYS} days without the Director's approval means
+                      withdrawal from the programme.
+                    </p>
+                  )}
 
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
@@ -363,14 +427,26 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                         </span>
                       </div>
                       <ThresholdBar pct={s.pct} />
-                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                        <span className={s.left < 0 ? "text-rose" : "text-dim"}>
-                          {s.absent} of {s.allowance} holiday{s.allowance === 1 ? "" : "s"} used
-                          {s.left >= 0
-                            ? ` · ${s.left} left this trimester`
-                            : ` · ${s.hardLeft >= 0 ? `${s.hardLeft} before the ${HARD_LINE}% line` : "past the hard line"}`}
-                        </span>
+                      <LeaveBudget pl={s.pl} il={s.il} absent={s.absent} caps={s.caps} />
+                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-dim">
+                        {s.absent} of {s.planned} missed ·{" "}
+                        {s.pct < HARD_LINE ? (
+                          <span className="text-rose">
+                            Incomplete (I) — repeat the course next year
+                          </span>
+                        ) : s.penalty > 0 ? (
+                          <span className="text-amber">
+                            −{s.penalty.toFixed(1)} grade points · {Math.max(0, s.eligibleLeft)}{" "}
+                            left before {HARD_LINE}%
+                          </span>
+                        ) : (
+                          <span className="text-evt-present">
+                            no penalty · {Math.max(0, s.safeLeft)} miss
+                            {s.safeLeft === 1 ? "" : "es"} left at {SAFE_LINE}%
+                          </span>
+                        )}
                       </p>
+
 
                     </motion.button>
                   );
@@ -410,8 +486,8 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                     members={members}
                     marks={marks}
                     meId={user!.id}
-                    onMark={(status, userId, source) =>
-                      mark.mutate({ session: s, userId, status, source })
+                    onMark={(status, userId, source, leave) =>
+                      mark.mutate({ session: s, userId, status, source, leave: leave ?? "personal" })
                     }
                   />
                 ))}
@@ -420,14 +496,107 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
           </section>
           )}
 
-          {!compact && (
-            <p className="font-mono text-[10px] leading-relaxed text-faint">
-              One holiday per credit · 85%+ clear · 70–85% repeat exam only · below 70% fail.
-            </p>
-          )}
+          {!compact && <PolicyCard />}
         </div>
 
     </section>
+  );
+}
+
+/** Personal / Institutional leave usage against their handbook caps. */
+function LeaveBudget({
+  pl,
+  il,
+  absent,
+  caps,
+}: {
+  pl: number;
+  il: number;
+  absent: number;
+  caps: { total: number; personal: number; institutional: number };
+}) {
+  const items: Array<{ key: LeaveType; used: number; cap: number }> = [
+    { key: "personal", used: pl, cap: caps.personal },
+    { key: "institutional", used: il, cap: caps.institutional },
+  ];
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {items.map((it) => {
+        const over = it.used > it.cap;
+        return (
+          <span
+            key={it.key}
+            title={LEAVE_COPY[it.key].detail}
+            className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+              over ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
+            }`}
+          >
+            {LEAVE_COPY[it.key].short} {it.used}/{it.cap}
+          </span>
+        );
+      })}
+      <span
+        title={`Absolute wall — beyond ${TOTAL_CAP_PCT}% of sessions the course is Incomplete`}
+        className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+          absent > caps.total ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
+        }`}
+      >
+        Total {absent}/{caps.total}
+      </span>
+    </div>
+  );
+}
+
+/** Shows the 0.5-per-session grade cut once past the 85% safe line. */
+function PenaltyChip({ pct, penalty }: { pct: number; penalty: number }) {
+  if (pct < HARD_LINE)
+    return (
+      <span className="rounded-lg bg-rose/10 px-2 py-1 font-mono text-[10px] text-rose ring-1 ring-rose/30">
+        Below {HARD_LINE}% · Incomplete
+      </span>
+    );
+  if (penalty <= 0)
+    return (
+      <span className="rounded-lg px-2 py-1 font-mono text-[10px] text-evt-present ring-1 ring-evt-present/30">
+        No grade penalty
+      </span>
+    );
+  return (
+    <span className="rounded-lg bg-amber/10 px-2 py-1 font-mono text-[10px] text-amber ring-1 ring-amber/30">
+      −{penalty.toFixed(1)} grade points
+    </span>
+  );
+}
+
+/** The handbook rules, spelled out so nobody has to open the PDF. */
+function PolicyCard() {
+  return (
+    <div className="rounded-2xl bg-surface p-4 font-mono text-[10px] leading-relaxed text-faint ring-1 ring-border">
+      <p className="font-display text-sm font-semibold text-ink">How attendance is scored</p>
+      <ul className="mt-2 flex flex-col gap-1">
+        <li>
+          <span className="text-dim">{SAFE_LINE}% and above</span> — clean, no penalty.
+        </li>
+        <li>
+          <span className="text-dim">
+            {HARD_LINE}–{SAFE_LINE}%
+          </span>{" "}
+          — {PENALTY_PER_SESSION} grade points lost per session missed past the {SAFE_LINE}% line.
+        </li>
+        <li>
+          <span className="text-dim">Below {HARD_LINE}%</span> — Incomplete (I): the course has to be
+          repeated.
+        </li>
+        <li>
+          {LEAVE_COPY.personal.label} and {LEAVE_COPY.institutional.label} are capped at{" "}
+          {PL_CAP_PCT}% each, and {TOTAL_CAP_PCT}% combined, of a course's sessions.
+        </li>
+        <li>
+          More than {CONTINUOUS_ABSENCE_DAYS} continuous days absent without the Director's approval
+          means withdrawal from the programme.
+        </li>
+      </ul>
+    </div>
   );
 }
 
@@ -506,7 +675,9 @@ function SessionCard({
     status: AttendanceMark["status"] | null,
     userId: string,
     source: AttendanceMark["mark_source"],
+    leave?: LeaveType,
   ) => void;
+
 
   meId: string;
 }) {
@@ -537,18 +708,20 @@ function SessionCard({
           <SessionMeta session={session} />
 
         </span>
-        <button
-          onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
-          title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
-            myMark?.status === "absent"
-              ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
-              : "text-dim ring-border hover:text-ink"
-          }`}
-        >
-          <CircleSlash className="size-3.5" />{" "}
-          {myMark?.status === "absent" ? "Marked absent" : "Absent"}
-        </button>
+        <LeaveButtons
+          current={myMark?.status === "absent" ? ((myMark.leave_type ?? "personal") as LeaveType) : null}
+          onPick={(leave) =>
+            onMark(
+              myMark?.status === "absent" && (myMark.leave_type ?? "personal") === leave
+                ? null
+                : "absent",
+              meId,
+              "self",
+              leave,
+            )
+          }
+        />
+
 
 
         {canManage && (
@@ -572,18 +745,22 @@ function SessionCard({
                   <span className="min-w-0 flex-1 truncate text-sm">
                     {m.profiles?.full_name ?? m.profiles?.email ?? m.user_id}
                   </span>
-                  <button
-                    onClick={() =>
-                      onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
+                  <LeaveButtons
+                    current={
+                      mk?.status === "absent" ? ((mk.leave_type ?? "personal") as LeaveType) : null
                     }
-                    className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
-                      mk?.status === "absent"
-                        ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
-                        : "text-dim ring-border"
-                    }`}
-                  >
-                    Absent
-                  </button>
+                    onPick={(leave) =>
+                      onMark(
+                        mk?.status === "absent" && (mk.leave_type ?? "personal") === leave
+                          ? null
+                          : "absent",
+                        m.user_id,
+                        "rep",
+                        leave,
+                      )
+                    }
+                  />
+
 
                 </div>
               );
@@ -591,5 +768,37 @@ function SessionCard({
         </div>
       )}
     </motion.div>
+  );
+}
+
+/** Two-way absence marker: Personal leave or Institutional leave. */
+function LeaveButtons({
+  current,
+  onPick,
+}: {
+  current: LeaveType | null;
+  onPick: (leave: LeaveType) => void;
+}) {
+  const types: LeaveType[] = ["personal", "institutional"];
+  return (
+    <div className="flex flex-1 items-center gap-1.5 sm:flex-none">
+      {types.map((t) => {
+        const on = current === t;
+        return (
+          <button
+            key={t}
+            onClick={() => onPick(t)}
+            title={on ? "Tap again to clear" : LEAVE_COPY[t].detail}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none ${
+              on
+                ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                : "text-dim ring-border hover:text-ink"
+            }`}
+          >
+            <CircleSlash className="size-3.5" /> {LEAVE_COPY[t].short}
+          </button>
+        );
+      })}
+    </div>
   );
 }

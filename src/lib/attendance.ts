@@ -35,44 +35,127 @@ export function plannedFor(subject: string, fallback: number) {
 export type Band = "good" | "warn" | "risk";
 
 export function bandFor(pct: number): Band {
-  if (pct >= 85) return "good";
-  if (pct >= 70) return "warn";
+  if (pct >= SAFE_LINE) return "good";
+  if (pct >= HARD_LINE) return "warn";
   return "risk";
 }
 
-/** TAPMI IPM policy — 85% keeps you clear, 70% is the hard line. */
+/* ---------------------------------------------------------------------------
+ * IPM handbook policy
+ * ------------------------------------------------------------------------ */
+
+/** 85%+ = no penalty, 70–85% = 0.5 grade points per session missed below 85%,
+ *  below 70% = automatic Incomplete. */
 export const SAFE_LINE = 85;
 export const HARD_LINE = 70;
 
-export const BAND_COPY: Record<Band, { label: string; detail: string }> = {
-  good: {
-    label: "Clear",
-    detail: "At or above 85% — eligible for the end-term exam.",
+/** Personal Leave: personal / domestic / medical. Capped at 15% of sessions. */
+export const PL_CAP_PCT = 15;
+/** Institutional Leave: approved extracurricular / placement duty. 15% by
+ *  default, extendable up to 30% when Personal Leave is left unused. */
+export const IL_CAP_PCT = 15;
+/** Absolute ceiling on PL + IL combined — beyond it the grade is Incomplete. */
+export const TOTAL_CAP_PCT = 30;
+/** Grade points lost per session missed below the 85% bracket. */
+export const PENALTY_PER_SESSION = 0.5;
+/** Continuous absence beyond this many calendar days forces a withdrawal
+ *  unless the Director has approved it. */
+export const CONTINUOUS_ABSENCE_DAYS = 13;
+
+export type LeaveType = "personal" | "institutional";
+
+export const LEAVE_COPY: Record<LeaveType, { short: string; label: string; detail: string }> = {
+  personal: {
+    short: "PL",
+    label: "Personal leave",
+    detail: "Personal, domestic or medical. No exam or quiz is ever re-conducted for it.",
   },
-  warn: {
-    label: "Repeat exam",
-    detail: "Between 70% and 85% — blocked from the main exam, repeat exam only.",
-  },
-  risk: {
-    label: "Fail",
-    detail: "Below 70% — the course is failed on attendance.",
+  institutional: {
+    short: "IL",
+    label: "Institutional leave",
+    detail: "Approved extracurricular or placement duty, signed off by the institute.",
   },
 };
 
-/** Credits inferred from the planned session count: 8 → 1 credit, 16 → 2, 24 → 3. */
-export function creditsFor(planned: number) {
-  return Math.max(1, Math.round(planned / 8));
+export const BAND_COPY: Record<Band, { label: string; detail: string }> = {
+  good: {
+    label: "No penalty",
+    detail: "85% or above — fully eligible for every exam, no grade deduction.",
+  },
+  warn: {
+    label: "Grade deduction",
+    detail:
+      "70–85% — 0.5 grade points are cut for every session missed below the 85% mark.",
+  },
+  risk: {
+    label: "Incomplete (I)",
+    detail:
+      "Below 70% — barred from the End-Term and Make-Up exams; the course must be repeated next year.",
+  },
+};
+
+/** Leave budgets for a course, straight from the handbook percentages. */
+export function leaveCaps(planned: number, personalUsed = 0) {
+  const total = Math.floor((planned * TOTAL_CAP_PCT) / 100);
+  const personal = Math.floor((planned * PL_CAP_PCT) / 100);
+  const institutionalBase = Math.floor((planned * IL_CAP_PCT) / 100);
+  // Unused Personal Leave can be handed to Institutional Leave, up to the 30% wall.
+  const institutional = Math.min(total, Math.max(institutionalBase, total - personalUsed));
+  return { total, personal, institutionalBase, institutional };
 }
 
-/** Holidays you may take: one per credit (8 sessions = 1 credit). */
-export function allowanceFor(planned: number) {
-  return creditsFor(planned);
+/** Sessions you may still miss before dropping out of the 85% bracket. */
+export function safeMisses(planned: number) {
+  return Math.floor((planned * (100 - SAFE_LINE)) / 100);
 }
 
-/** Absences you may take before dropping under the 70% hard line. */
-export function hardAllowanceFor(planned: number) {
-  return Math.max(0, Math.floor(planned * (1 - HARD_LINE / 100)));
+/** Sessions you may still miss before the 70% eligibility line. */
+export function eligibilityMisses(planned: number) {
+  return Math.floor((planned * (100 - HARD_LINE)) / 100);
 }
+
+/** Grade points lost: 0.5 for every session missed below the 85% threshold.
+ *  Under 70% the grade is Incomplete instead, so no number is meaningful. */
+export function gradePenalty(planned: number, absent: number) {
+  const over = Math.max(0, absent - safeMisses(planned));
+  return over * PENALTY_PER_SESSION;
+}
+
+/** Longest unbroken stretch of missed classes, measured in calendar days —
+ *  more than 13 days means a withdrawal unless the Director approved it. */
+export function longestAbsenceRun(
+  classes: ClassSession[],
+  isAbsent: (s: ClassSession) => boolean,
+  now: number,
+) {
+  const past = [...classes]
+    .filter((s) => new Date(s.end_at).getTime() <= now)
+    .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
+
+  let best = { days: 0, from: 0, to: 0 };
+  let start: number | null = null;
+  let end = 0;
+
+  const close = () => {
+    if (start === null) return;
+    const days = Math.round((end - start) / 86_400_000) + 1;
+    if (days > best.days) best = { days, from: start, to: end };
+    start = null;
+  };
+
+  for (const s of past) {
+    const day = new Date(s.start_at).setHours(0, 0, 0, 0);
+    if (isAbsent(s)) {
+      if (start === null) start = day;
+      end = day;
+    } else {
+      close();
+    }
+  }
+  close();
+  return best;
+}
+
 
 
 /** Green above 85 (deeper green the higher), amber 70–85, red below 70. */
