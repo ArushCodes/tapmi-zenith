@@ -109,6 +109,53 @@ export type Database = {
           },
         ]
       }
+      batch_day_marks: {
+        Row: {
+          batch_id: string
+          color: string
+          created_at: string
+          created_by: string | null
+          day: string
+          id: string
+          is_off: boolean
+          label: string | null
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          day: string
+          id?: string
+          is_off?: boolean
+          label?: string | null
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          day?: string
+          id?: string
+          is_off?: boolean
+          label?: string | null
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_day_marks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_feed_tokens: {
         Row: {
           batch_id: string
