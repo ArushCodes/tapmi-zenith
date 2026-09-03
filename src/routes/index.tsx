@@ -283,9 +283,6 @@ function Board() {
           className="flex flex-wrap items-end justify-between gap-4 pb-4 pt-0"
         >
           <div className="space-y-2">
-            <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
-              {batch?.name ?? "TAPMI Manipal"}
-            </p>
             <h1 className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-4xl">
               {me.name ? `${me.greeting} — here's what's ahead` : "Your board"}
             </h1>
