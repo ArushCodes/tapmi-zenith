@@ -807,9 +807,6 @@ function CourseCatalogue({
             </motion.button>
           );
         })}
-        {shown.length === 0 && (
-          <p className="font-mono text-[10px] text-faint">No class matches “{q}”.</p>
-        )}
       </div>
 
       <AnimatePresence initial={false}>
