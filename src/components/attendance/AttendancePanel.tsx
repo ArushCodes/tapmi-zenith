@@ -288,6 +288,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                   value={overall.pct}
                   color={meterColor(overall.pct)}
                   size={150}
+                  thresholds={[HARD_LINE, SAFE_LINE]}
                   label={`${overall.pct}%`}
                   sub={focus ? shortSubject(focus, 16) : "overall"}
                 />
@@ -433,7 +434,8 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
 /** Percentage bar with the 70% hard line and 85% safe line marked on it. */
 function ThresholdBar({ pct }: { pct: number }) {
   return (
-    <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-surface2">
+    <div className="mt-2">
+      <div className="relative h-2 overflow-hidden rounded-full bg-surface2">
       <motion.div
         initial={{ width: 0 }}
         animate={{ width: `${Math.min(100, pct)}%` }}
@@ -449,6 +451,18 @@ function ThresholdBar({ pct }: { pct: number }) {
           style={{ left: `${line}%` }}
         />
       ))}
+      </div>
+      <div className="relative mt-1 h-3">
+        {[HARD_LINE, SAFE_LINE].map((line) => (
+          <span
+            key={line}
+            className="absolute font-mono text-[9px] leading-none text-faint"
+            style={{ left: `${line}%`, transform: "translateX(-50%)" }}
+          >
+            {line}%
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

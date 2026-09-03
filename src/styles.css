@@ -74,9 +74,9 @@
 :root {
   --radius: 0.75rem;
 
-  --font-display-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-  --font-body-family: "Source Sans 3", ui-sans-serif, system-ui, sans-serif;
-  --font-mono-family: "IBM Plex Mono", ui-monospace, monospace;
+  --font-display-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-family: "JetBrains Mono", ui-monospace, monospace;
 
   /* Zenith light: warm white ground, sunrise-orange accent */
   --ground: oklch(0.988 0.006 70);
