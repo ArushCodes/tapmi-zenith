@@ -3,8 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BookOpen,
   CalendarClock,
   CalendarRange,
+  GraduationCap,
   ListFilter,
   Mail,
   Plus,
@@ -92,7 +94,10 @@ function IndexPage() {
   return <Board />;
 }
 
-type TabKey = "feed" | "calendar" | "timetable" | "attendance";
+type TabKey = "feed" | "calendar" | "timetable" | "exams" | "assignments" | "attendance";
+
+const EXAM_TYPES = ["midterm", "endterm", "quiz"] as const;
+const WORK_TYPES = ["assignment", "presentation"] as const;
 
 /** Secondary sections — opened as overlays from the account menu, not tabs. */
 type PanelKey = "members" | "feedback" | "approvals" | "inbox";
@@ -213,6 +218,24 @@ function Board() {
     return { ongoing, upcoming, completed };
   }, [filtered, now]);
 
+  /** Exams and coursework get their own tabs and their own feed sections. */
+  const exams = useMemo(
+    () => approved.filter((d) => (EXAM_TYPES as readonly string[]).includes(d.type)),
+    [approved],
+  );
+  const projects = useMemo(
+    () => approved.filter((d) => (WORK_TYPES as readonly string[]).includes(d.type)),
+    [approved],
+  );
+  const nextExams = useMemo(
+    () => exams.filter((d) => phaseOf(d, now) !== "completed").slice(0, 4),
+    [exams, now],
+  );
+  const nextProjects = useMemo(
+    () => projects.filter((d) => phaseOf(d, now) !== "completed").slice(0, 4),
+    [projects, now],
+  );
+
   function openEdit(d: Deadline) {
     setSelected(null);
     setEditing(d);
@@ -225,6 +248,8 @@ function Board() {
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
+    { key: "exams", label: "Exams", icon: <GraduationCap className="size-4" /> },
+    { key: "assignments", label: "Assignments", icon: <BookOpen className="size-4" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
@@ -318,7 +343,7 @@ function Board() {
           ))}
         </nav>
 
-        {(tab === "feed" || tab === "calendar") && (
+        {tab === "calendar" && (
           <div className="sticky top-16 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {/* Segmented type filter */}
@@ -387,9 +412,83 @@ function Board() {
             {tab === "feed" && (
               <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="min-w-0">
+                  {isMod && (
+                    <div className="mb-5 flex justify-end">
+                      <motion.button
+                        onClick={() => {
+                          setEditing(null);
+                          setDialogOpen(true);
+                        }}
+                        whileHover={{ y: -1 }}
+                        whileTap={{ scale: 0.96 }}
+                        className="flex items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
+                      >
+                        <Plus className="size-4" /> Add event
+                      </motion.button>
+                    </div>
+                  )}
+
                   <div className="mb-8">
                     <DayPulsePanel now={now} compact />
                   </div>
+
+                  <FeedSection
+                    title="Exams & quizzes"
+                    tone="text-evt-exam"
+                    count={nextExams.length}
+                    onSeeAll={() => setTab("exams")}
+                  >
+                    {nextExams.length === 0 ? (
+                      <p className="font-mono text-[11px] text-faint">Nothing scheduled.</p>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {nextExams.map((d) => (
+                          <DeadlineRow
+                            key={d.id}
+                            deadline={d}
+                            now={now}
+                            canManage={isMod}
+                            onEdit={openEdit}
+                            onDelete={(x) => remove.mutate(x)}
+                            onOpen={setSelected}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </FeedSection>
+
+                  <FeedSection
+                    title="Projects & assignments"
+                    tone="text-evt-assign"
+                    count={nextProjects.length}
+                    onSeeAll={() => setTab("assignments")}
+                  >
+                    {nextProjects.length === 0 ? (
+                      <p className="font-mono text-[11px] text-faint">Nothing pending.</p>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {nextProjects.map((d) => (
+                          <DeadlineRow
+                            key={d.id}
+                            deadline={d}
+                            now={now}
+                            canManage={isMod}
+                            onEdit={openEdit}
+                            onDelete={(x) => remove.mutate(x)}
+                            onOpen={setSelected}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </FeedSection>
+
+                  <FeedSection
+                    title="Attendance"
+                    tone="text-cyan"
+                    onSeeAll={() => setTab("attendance")}
+                  >
+                    <AttendancePanel now={now} compact />
+                  </FeedSection>
 
                 <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
@@ -440,7 +539,7 @@ function Board() {
                             <span className="h-px flex-1 bg-border" />
                             <p className="font-mono text-[10px] text-faint">{items.length}</p>
                           </div>
-                          <div className="flex flex-col gap-3">
+                          <div className="flex flex-col gap-4">
                             {items.map((d, i) => (
                               <motion.div
                                 key={d.id}
@@ -524,6 +623,30 @@ function Board() {
 
             {tab === "timetable" && <TimetablePanel />}
 
+            {tab === "exams" && (
+              <DeadlineBoard
+                title="Exams, midterms, endterms and quizzes"
+                items={exams}
+                now={now}
+                canManage={isMod}
+                onEdit={openEdit}
+                onDelete={(x) => remove.mutate(x)}
+                onOpen={setSelected}
+              />
+            )}
+
+            {tab === "assignments" && (
+              <DeadlineBoard
+                title="Assignments and presentations"
+                items={projects}
+                now={now}
+                canManage={isMod}
+                onEdit={openEdit}
+                onDelete={(x) => remove.mutate(x)}
+                onOpen={setSelected}
+              />
+            )}
+
             {tab === "attendance" && <AttendancePanel now={now} />}
 
           </motion.div>
@@ -563,5 +686,113 @@ function Board() {
         <DeadlineDialog open={dialogOpen} onOpenChange={setDialogOpen} deadline={editing} />
       )}
     </div>
+  );
+}
+
+
+/** Titled block used to break the feed into readable sections. */
+function FeedSection({
+  title,
+  tone,
+  count,
+  onSeeAll,
+  children,
+}: {
+  title: string;
+  tone: string;
+  count?: number;
+  onSeeAll?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mb-9">
+      <div className="mb-3 flex items-center gap-3">
+        <p className={`font-mono text-[10px] uppercase tracking-[0.2em] ${tone}`}>{title}</p>
+        <span className="h-px flex-1 bg-border" />
+        {typeof count === "number" && (
+          <span className="font-mono text-[10px] text-faint">{count}</span>
+        )}
+        {onSeeAll && (
+          <button
+            onClick={onSeeAll}
+            className="rounded-lg px-2 py-1 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-ink"
+          >
+            See all
+          </button>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Full-tab list of one kind of work, split into what's live, ahead and done. */
+function DeadlineBoard({
+  title,
+  items,
+  now,
+  canManage,
+  onEdit,
+  onDelete,
+  onOpen,
+}: {
+  title: string;
+  items: Deadline[];
+  now: number;
+  canManage: boolean;
+  onEdit: (d: Deadline) => void;
+  onDelete: (d: Deadline) => void;
+  onOpen: (d: Deadline) => void;
+}) {
+  const groups: [string, Deadline[], string][] = [
+    ["Happening now", items.filter((d) => phaseOf(d, now) === "ongoing"), "text-cyan"],
+    ["Upcoming", items.filter((d) => phaseOf(d, now) === "upcoming"), "text-amber"],
+    [
+      "Completed",
+      items
+        .filter((d) => phaseOf(d, now) === "completed")
+        .sort((a, b) => new Date(b.due_at).getTime() - new Date(a.due_at).getTime()),
+      "text-evt-present",
+    ],
+  ];
+
+  return (
+    <section className="mt-2">
+      <h2 className="mb-6 font-display text-xl font-semibold tracking-tight">{title}</h2>
+      {items.length === 0 ? (
+        <p className="rounded-2xl bg-surface/50 px-8 py-14 text-center font-mono text-xs text-faint ring-1 ring-border">
+          Nothing here yet.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-9">
+          {groups.map(([label, list, tone]) =>
+            list.length === 0 ? null : (
+              <div key={label}>
+                <div className="mb-3 flex items-center gap-3">
+                  <p className={`font-mono text-[10px] uppercase tracking-[0.2em] ${tone}`}>
+                    {label}
+                  </p>
+                  <span className="h-px flex-1 bg-border" />
+                  <p className="font-mono text-[10px] text-faint">{list.length}</p>
+                </div>
+                <div className={`flex flex-col gap-4 ${label === "Completed" ? "opacity-70" : ""}`}>
+                  {list.map((d) => (
+                    <DeadlineRow
+                      key={d.id}
+                      deadline={d}
+                      now={now}
+                      canManage={canManage}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onOpen={onOpen}
+                    />
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
+    </section>
   );
 }

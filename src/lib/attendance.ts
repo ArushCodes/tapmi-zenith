@@ -40,6 +40,41 @@ export function bandFor(pct: number): Band {
   return "risk";
 }
 
+/** TAPMI IPM policy — 85% keeps you clear, 70% is the hard line. */
+export const SAFE_LINE = 85;
+export const HARD_LINE = 70;
+
+export const BAND_COPY: Record<Band, { label: string; detail: string }> = {
+  good: {
+    label: "Clear",
+    detail: "At or above 85% — eligible for the end-term exam.",
+  },
+  warn: {
+    label: "Repeat exam",
+    detail: "Between 70% and 85% — blocked from the main exam, repeat exam only.",
+  },
+  risk: {
+    label: "Fail",
+    detail: "Below 70% — the course is failed on attendance.",
+  },
+};
+
+/** Credits inferred from the planned session count: 8 → 1 credit, 16 → 2, 24 → 3. */
+export function creditsFor(planned: number) {
+  return Math.max(1, Math.round(planned / 8));
+}
+
+/** Holidays you may take and still stay at or above 85%. */
+export function allowanceFor(planned: number) {
+  return Math.max(0, Math.floor(planned * (1 - SAFE_LINE / 100)));
+}
+
+/** Absences you may take before dropping under the 70% hard line. */
+export function hardAllowanceFor(planned: number) {
+  return Math.max(0, Math.floor(planned * (1 - HARD_LINE / 100)));
+}
+
+
 /** Green above 85 (deeper green the higher), amber 70–85, red below 70. */
 export function meterColor(pct: number) {
   if (pct >= 85) {

@@ -187,6 +187,13 @@ export type Database = {
             referencedRelation: "sections"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "batch_memberships_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       batch_registro_credentials: {
@@ -458,6 +465,7 @@ export type Database = {
           type: Database["public"]["Enums"]["deadline_type"]
           updated_at: string
           work_mode: Database["public"]["Enums"]["work_mode"]
+          working_group: string | null
         }
         Insert: {
           all_day?: boolean
@@ -480,6 +488,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["deadline_type"]
           updated_at?: string
           work_mode?: Database["public"]["Enums"]["work_mode"]
+          working_group?: string | null
         }
         Update: {
           all_day?: boolean
@@ -502,6 +511,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["deadline_type"]
           updated_at?: string
           work_mode?: Database["public"]["Enums"]["work_mode"]
+          working_group?: string | null
         }
         Relationships: [
           {

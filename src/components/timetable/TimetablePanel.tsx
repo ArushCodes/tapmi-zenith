@@ -536,13 +536,26 @@ export function TimetablePanel() {
                 dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
               const total = list.sessions.length + list.events.length;
               return (
-              <motion.div key={day} layout>
+              <motion.div
+                key={day}
+                layout
+                className={
+                  new Date(day).getDay() === 0
+                    ? "rounded-2xl bg-amber/8 p-3 ring-1 ring-amber/20"
+                    : undefined
+                }
+              >
                 <div className="mb-2 flex items-center gap-3">
                   <button
                     onClick={() => setDayFocus((d) => (d === day ? null : day))}
-                    className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan transition-colors hover:text-ink"
+                    className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-colors hover:text-ink ${
+                      new Date(day).getDay() === 0 ? "text-amber" : "text-cyan"
+                    }`}
                   >
                     {dayFmt.format(new Date(day))}
+                    {new Date(day).getDay() === 0 && (
+                      <span className="normal-case tracking-normal text-amber">· Sunday off</span>
+                    )}
                     <span className="normal-case tracking-normal text-faint">
                       {dayFocus === day ? "· agenda" : `· ${total} entr${total === 1 ? "y" : "ies"}`}
                     </span>

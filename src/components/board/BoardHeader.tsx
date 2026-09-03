@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ChevronDown, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, Moon, ShieldCheck, Sun, UserRound } from "lucide-react";
 import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useMe } from "@/hooks/use-me";
+import { useTheme } from "@/hooks/use-theme";
 import { BatchSelector } from "@/components/board/BatchSelector";
 import {
   DropdownMenu,
@@ -14,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
 
 const spring = { type: "spring" as const, stiffness: 420, damping: 32 };
 
@@ -33,6 +35,8 @@ type Props = {
 export function BoardHeader({ menuItems = [], onMenuSelect }: Props) {
   const { user, isModerator } = useAuth();
   const me = useMe();
+  const { theme, toggle } = useTheme();
+
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -79,6 +83,16 @@ export function BoardHeader({ menuItems = [], onMenuSelect }: Props) {
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
           <BatchSelector />
+
+          <button
+            onClick={toggle}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+            className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-surface text-dim transition-colors hover:border-cyan/40 hover:text-ink"
+          >
+            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+          </button>
+
 
           {user ? (
             <DropdownMenu>

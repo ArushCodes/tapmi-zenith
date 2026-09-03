@@ -160,3 +160,32 @@ export function syncStateQuery(batchId: string | null, enabled: boolean) {
     },
   };
 }
+
+/** Every membership the viewer is allowed to see — used by the Members list so
+ *  people can find batchmates and see who runs which batch. */
+export type DirectoryRow = Membership & {
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+    section: string | null;
+    registration_no: string | null;
+  } | null;
+  batches: { name: string } | null;
+};
+
+export function directoryQuery(enabled: boolean) {
+  return {
+    queryKey: ["member-directory"],
+    enabled,
+    queryFn: async (): Promise<DirectoryRow[]> => {
+      const { data, error } = await supabase
+        .from("batch_memberships")
+        .select(
+          "*, profiles:user_id(full_name, email, section, registration_no), batches:batch_id(name)",
+        )
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as DirectoryRow[];
+    },
+  };
+}

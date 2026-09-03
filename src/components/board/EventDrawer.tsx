@@ -119,8 +119,10 @@ function Body({ deadline, now, canManage, onClose, onEdit, onDelete }: Props & {
           icon={<Users className="size-4" />}
           label={
             deadline.work_mode === "group"
-              ? `Group work${deadline.group_size ? ` · teams of ${deadline.group_size}` : ""}`
-              : "Individual"
+              ? `Group work${deadline.group_size ? ` · teams of ${deadline.group_size}` : ""}${
+                  deadline.working_group ? ` · ${deadline.working_group}` : ""
+                }`
+              : `Individual${deadline.working_group ? ` · ${deadline.working_group}` : ""}`
           }
         />
         {deadline.location && <Line icon={<MapPin className="size-4" />} label={deadline.location} />}
