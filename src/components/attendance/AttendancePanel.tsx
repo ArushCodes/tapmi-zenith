@@ -494,11 +494,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
           </section>
           )}
 
-          {!compact && (
-            <p className="font-mono text-[10px] leading-relaxed text-faint">
-              One holiday per credit · 85%+ clear · 70–85% repeat exam only · below 70% fail.
-            </p>
-          )}
+          {!compact && <PolicyCard />}
         </div>
 
     </section>
