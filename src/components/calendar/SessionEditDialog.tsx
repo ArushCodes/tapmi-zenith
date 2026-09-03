@@ -149,10 +149,10 @@ export function SessionEditDialog({ session, creating = false, batchId, day, onC
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-                  Edit calendar event
+                  {session ? "Edit calendar event" : "New event · whole batch"}
                 </p>
                 <h2 className="mt-1 font-display text-lg font-semibold tracking-tight">
-                  {session.title}
+                  {session ? session.title : "Add to the batch calendar"}
                 </h2>
               </div>
               <button
@@ -172,6 +172,15 @@ export function SessionEditDialog({ session, creating = false, batchId, day, onC
                   className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
                 />
               </Field>
+              <Field label="Subject">
+                <input
+                  value={course}
+                  onChange={(e) => setCourse(e.target.value)}
+                  placeholder="Optional — groups it with a subject colour"
+                  className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
+                />
+              </Field>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Starts">
                   <input
