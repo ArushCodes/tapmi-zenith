@@ -388,7 +388,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
 
                   <Rail pct={overall.pct} labels />
 
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="mt-5 grid gap-x-6 gap-y-3 sm:grid-cols-2">
                     <LeaveBar type="personal" used={overall.pl} cap={overall.caps.personal} />
                     <LeaveBar
                       type="institutional"
