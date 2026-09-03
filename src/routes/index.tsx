@@ -120,6 +120,7 @@ function Board() {
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [panel, setPanel] = useState<PanelKey | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -145,8 +146,8 @@ function Board() {
   }, [queryClient, batchId]);
 
   useEffect(() => {
-    if (!isMod && (tab === "approvals" || tab === "inbox")) setTab("feed");
-  }, [isMod, tab]);
+    if (!isMod && (panel === "approvals" || panel === "inbox")) setPanel(null);
+  }, [isMod, panel]);
 
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
@@ -214,73 +215,39 @@ function Board() {
     setDialogOpen(true);
   }
 
-  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number | undefined };
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode };
 
-  const workTabs: TabDef[] = [
+  const tabs: TabDef[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
-  const batchTabs: TabDef[] = [
-    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-4" /> },
-    { key: "activity", label: "Activity", icon: <Bell className="size-4" /> },
+  const menuItems = [
     { key: "members", label: "Members", icon: <Users className="size-4" /> },
     { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-4" /> },
     ...(isMod
       ? [
           {
-            key: "approvals" as TabKey,
+            key: "approvals",
             label: "Approvals",
             icon: <ShieldCheck className="size-4" />,
             badge: pendingCount || undefined,
           },
-          { key: "inbox" as TabKey, label: "Inbox", icon: <Mail className="size-4" /> },
+          { key: "inbox", label: "Inbox", icon: <Mail className="size-4" /> },
         ]
       : []),
   ];
 
-  const renderTab = (t: TabDef) => (
-    <motion.button
-      key={t.key}
-      onClick={() => setTab(t.key)}
-      whileTap={{ scale: 0.96 }}
-      aria-current={tab === t.key ? "page" : undefined}
-      className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors sm:px-3.5 ${
-        tab === t.key ? "text-ink" : "text-dim hover:text-ink"
-      }`}
-    >
-      {tab === t.key && (
-        <motion.span
-          layoutId="tab-pill"
-          className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-          transition={{ type: "spring", stiffness: 400, damping: 32 }}
-        />
-      )}
-      <span className="relative flex items-center gap-2">
-        {t.icon}
-        <span className="whitespace-nowrap">{t.label}</span>
-        {t.badge ? (
-          <span className="rounded-full bg-cyan/20 px-1.5 py-0.5 font-mono text-[10px] leading-none text-cyan">
-            {t.badge}
-          </span>
-        ) : null}
-      </span>
-    </motion.button>
-  );
-
-
-
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="aurora-a absolute -left-16 -top-24 h-[380px] w-[520px] rounded-full bg-cyan/20 blur-[120px]" />
-        <div className="aurora-c absolute right-[-60px] top-[220px] h-[360px] w-[480px] rounded-full bg-violet/20 blur-[130px]" />
-        <div className="aurora-b absolute bottom-[-120px] left-[35%] h-[420px] w-[560px] rounded-full bg-magenta/15 blur-[140px]" />
+        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/12 blur-[130px]" />
+        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/12 blur-[140px]" />
       </div>
 
-      <BoardHeader />
+      <BoardHeader menuItems={menuItems} onMenuSelect={(k) => setPanel(k as PanelKey)} />
 
       <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-24 sm:px-8">
         <motion.div
@@ -318,20 +285,37 @@ function Board() {
           </p>
         </motion.div>
 
-        {/* Primary navigation — one bar, two logical clusters, no hidden menus */}
         <nav
           aria-label="Board sections"
-          className="mb-7 flex items-center gap-1 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mb-6 flex w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] [scrollbar-width:none] sm:w-fit [&::-webkit-scrollbar]:hidden"
         >
-          {workTabs.map(renderTab)}
-          <span aria-hidden className="mx-1.5 h-6 w-px shrink-0 bg-border" />
-          {batchTabs.map(renderTab)}
+          {tabs.map((t) => (
+            <motion.button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              whileTap={{ scale: 0.96 }}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-colors ${
+                tab === t.key ? "text-white" : "text-dim hover:text-ink"
+              }`}
+            >
+              {tab === t.key && (
+                <motion.span
+                  layoutId="tab-pill"
+                  className="absolute inset-0 rounded-xl bg-cyan"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className="relative flex items-center gap-2">
+                {t.icon}
+                <span className="whitespace-nowrap">{t.label}</span>
+              </span>
+            </motion.button>
+          ))}
         </nav>
 
-
-
-        {tab === "calendar" && (
-          <div className="sticky top-0 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
+        {(tab === "feed" || tab === "calendar") && (
+          <div className="sticky top-16 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {/* Segmented type filter */}
               <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl bg-surface2/70 p-1 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
