@@ -60,6 +60,7 @@ export type Database = {
           batch_id: string
           created_at: string
           id: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
           mark_source: Database["public"]["Enums"]["mark_source"]
           marked_by: string
           reason: string | null
@@ -72,6 +73,7 @@ export type Database = {
           batch_id: string
           created_at?: string
           id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
           mark_source?: Database["public"]["Enums"]["mark_source"]
           marked_by: string
           reason?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           batch_id?: string
           created_at?: string
           id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
           mark_source?: Database["public"]["Enums"]["mark_source"]
           marked_by?: string
           reason?: string | null
@@ -956,6 +959,7 @@ export type Database = {
         | "endterm"
         | "guest_lecture"
         | "other"
+      leave_type: "personal" | "institutional"
       mark_source: "self" | "rep"
       membership_status: "pending" | "approved" | "rejected" | "removed"
       review_status: "pending" | "approved" | "rejected"
@@ -1099,6 +1103,7 @@ export const Constants = {
         "guest_lecture",
         "other",
       ],
+      leave_type: ["personal", "institutional"],
       mark_source: ["self", "rep"],
       membership_status: ["pending", "approved", "rejected", "removed"],
       review_status: ["pending", "approved", "rejected"],
