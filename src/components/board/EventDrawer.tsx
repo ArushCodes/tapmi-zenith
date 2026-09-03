@@ -18,6 +18,7 @@ import {
   timeLeft,
   urgencyOf,
   type Deadline,
+  displayTitle,
 } from "@/lib/deadlines";
 
 type Props = {
@@ -53,7 +54,7 @@ export function EventDrawer({ deadline, now, canManage, onClose, onEdit, onDelet
             key="panel"
             role="dialog"
             aria-modal="true"
-            aria-label={deadline.title}
+            aria-label={displayTitle(deadline.subject, deadline.title)}
             initial={{ x: "100%", opacity: 0.4 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0.2 }}

@@ -7,7 +7,13 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
-import { deadlinesQueryFor, formatDue, typeLabel, type Deadline } from "@/lib/deadlines";
+import {
+  deadlinesQueryFor,
+  formatDue,
+  fullDeadlineLabel,
+  typeLabel,
+  type Deadline,
+} from "@/lib/deadlines";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({

@@ -5,7 +5,7 @@ import { Bell, CalendarPlus, Megaphone, UserPlus } from "lucide-react";
 import { useBatch } from "@/hooks/use-batch";
 import { batchMembersQuery } from "@/lib/batches";
 import { announcementsQuery } from "@/lib/announcements";
-import { deadlinesQueryFor } from "@/lib/deadlines";
+import { deadlinesQueryFor, displayTitle } from "@/lib/deadlines";
 
 const when = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -64,7 +64,7 @@ export function ActivityPanel({ compact = false }: { compact?: boolean }) {
         id: `d-${d.id}`,
         at: new Date(d.created_at).getTime(),
         kind: "deadline",
-        title: d.title,
+        title: displayTitle(d.subject, d.title),
         sub: `${d.type.replace(/_/g, " ")} added for ${d.subject}`,
       });
     }

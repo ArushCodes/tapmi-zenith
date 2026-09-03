@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { db as supabase } from "@/lib/backend";
-import { eventMeta, formatDeadlineWhen, type Deadline } from "@/lib/deadlines";
+import { eventMeta, formatDeadlineWhen, fullDeadlineLabel, type Deadline } from "@/lib/deadlines";
 
 type Props = {
   deadlines: Deadline[];
