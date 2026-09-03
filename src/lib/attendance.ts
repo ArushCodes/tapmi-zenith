@@ -107,3 +107,33 @@ export function resolveMarks(marks: AttendanceMark[], userId: string | undefined
   }
   return resolved;
 }
+
+/** Last scheduled class of the current trimester — read straight from the
+ *  timetable, so the quota window follows the calendar rather than a constant. */
+export function trimesterEnd(sessions: ClassSession[], now: number) {
+  let last = 0;
+  for (const s of sessions) {
+    const t = new Date(s.end_at).getTime();
+    if (t > last) last = t;
+  }
+  return last > now ? last : null;
+}
+
+/** "2 months, 3 days" — how long until the holiday quota resets. */
+export function untilReset(endMs: number, now: number) {
+  const from = new Date(now);
+  const to = new Date(endMs);
+  let months =
+    (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  const anchor = new Date(from);
+  anchor.setMonth(anchor.getMonth() + months);
+  if (anchor.getTime() > endMs) {
+    months -= 1;
+    anchor.setMonth(anchor.getMonth() - 1);
+  }
+  const days = Math.max(0, Math.round((endMs - anchor.getTime()) / 86_400_000));
+  const parts: string[] = [];
+  if (months > 0) parts.push(`${months} month${months === 1 ? "" : "s"}`);
+  parts.push(`${days} day${days === 1 ? "" : "s"}`);
+  return parts.join(", ");
+}

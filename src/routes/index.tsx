@@ -6,6 +6,7 @@ import {
   BookOpen,
   CalendarClock,
   CalendarRange,
+  FileQuestion,
   GraduationCap,
   ListFilter,
   Mail,
@@ -49,9 +50,7 @@ import {
   deadlinesQueryFor,
   eventMeta,
   filterByKey,
-  formatWeek,
   phaseOf,
-  weekKey,
   type Deadline,
   type DeadlineType,
   type FilterKey,
@@ -97,9 +96,10 @@ function IndexPage() {
   return <Board />;
 }
 
-type TabKey = "feed" | "calendar" | "timetable" | "exams" | "assignments" | "attendance";
+type TabKey = "feed" | "calendar" | "timetable" | "quizzes" | "exams" | "projects" | "attendance";
 
-const EXAM_TYPES = ["midterm", "endterm", "quiz"] as const;
+const QUIZ_TYPES = ["quiz"] as const;
+const EXAM_TYPES = ["midterm", "endterm"] as const;
 const WORK_TYPES = ["assignment", "presentation"] as const;
 
 /** Secondary sections — opened as overlays from the account menu, not tabs. */
@@ -127,7 +127,6 @@ function Board() {
   const [tab, setTab] = useState<TabKey>("feed");
   const [filter, setFilter] = useState<FilterKey>("all");
   const [search, setSearch] = useState("");
-  const [view, setView] = useState<"list" | "timeline">("list");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
@@ -197,31 +196,11 @@ function Board() {
     [approved, filter, search],
   );
 
-  const weeks = useMemo(() => {
-    const map = new Map<string, Deadline[]>();
-    for (const d of filtered) {
-      const k = weekKey(d.due_at);
-      map.set(k, [...(map.get(k) ?? []), d]);
-    }
-    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  }, [filtered]);
-
-  /** Feed columns: what's live right now, what's ahead, what's already closed. */
-  const columns = useMemo(() => {
-    const ongoing: Deadline[] = [];
-    const upcoming: Deadline[] = [];
-    const completed: Deadline[] = [];
-    for (const d of filtered) {
-      const p = phaseOf(d, now);
-      if (p === "ongoing") ongoing.push(d);
-      else if (p === "completed") completed.push(d);
-      else upcoming.push(d);
-    }
-    completed.sort((a, b) => new Date(b.due_at).getTime() - new Date(a.due_at).getTime());
-    return { ongoing, upcoming, completed };
-  }, [filtered, now]);
-
-  /** Exams and coursework get their own tabs and their own feed sections. */
+  /** Quizzes, exams and coursework each get their own tab and feed section. */
+  const quizzes = useMemo(
+    () => approved.filter((d) => (QUIZ_TYPES as readonly string[]).includes(d.type)),
+    [approved],
+  );
   const exams = useMemo(
     () => approved.filter((d) => (EXAM_TYPES as readonly string[]).includes(d.type)),
     [approved],
@@ -230,14 +209,10 @@ function Board() {
     () => approved.filter((d) => (WORK_TYPES as readonly string[]).includes(d.type)),
     [approved],
   );
-  const nextExams = useMemo(
-    () => exams.filter((d) => phaseOf(d, now) !== "completed").slice(0, 40),
-    [exams, now],
-  );
-  const nextProjects = useMemo(
-    () => projects.filter((d) => phaseOf(d, now) !== "completed").slice(0, 40),
-    [projects, now],
-  );
+  const upcomingOf = (list: Deadline[]) => list.filter((d) => phaseOf(d, now) !== "completed");
+  const nextQuizzes = useMemo(() => upcomingOf(quizzes), [quizzes, now]);
+  const nextExams = useMemo(() => upcomingOf(exams), [exams, now]);
+  const nextProjects = useMemo(() => upcomingOf(projects), [projects, now]);
 
   function openEdit(d: Deadline) {
     setSelected(null);
@@ -251,10 +226,12 @@ function Board() {
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
+    { key: "quizzes", label: "Quizzes", icon: <FileQuestion className="size-4" /> },
     { key: "exams", label: "Exams", icon: <GraduationCap className="size-4" /> },
-    { key: "assignments", label: "Assignments", icon: <BookOpen className="size-4" /> },
+    { key: "projects", label: "Projects", icon: <BookOpen className="size-4" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
+
 
   const menuItems = [
     { key: "members", label: "Members", icon: <Users className="size-4" /> },
@@ -413,7 +390,7 @@ function Board() {
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === "feed" && (
-              <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="min-w-0">
                   {isMod && (
                     <div className="mb-5 flex justify-end">
@@ -431,186 +408,87 @@ function Board() {
                     </div>
                   )}
 
-                  <div className="mb-8">
+                  <div className="mb-10">
                     <DayPulsePanel now={now} compact />
                   </div>
 
-                  <FeedSection
-                    title="Exams & quizzes"
-                    tone="text-evt-exam"
-                    count={nextExams.length}
-                    onSeeAll={() => setTab("exams")}
-                  >
-                    {nextExams.length === 0 ? (
-                      <p className="font-mono text-[11px] text-faint">Nothing scheduled.</p>
-                    ) : (
-                      <div className="flex flex-col gap-4">
-                        {nextExams.map((d) => (
-                          <DeadlineRow
-                            key={d.id}
-                            deadline={d}
-                            now={now}
-                            canManage={isMod}
-                            onEdit={openEdit}
-                            onDelete={(x) => remove.mutate(x)}
-                            onOpen={setSelected}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </FeedSection>
-
-                  <FeedSection
-                    title="Projects & assignments"
-                    tone="text-evt-assign"
-                    count={nextProjects.length}
-                    onSeeAll={() => setTab("assignments")}
-                  >
-                    {nextProjects.length === 0 ? (
-                      <p className="font-mono text-[11px] text-faint">Nothing pending.</p>
-                    ) : (
-                      <div className="flex flex-col gap-4">
-                        {nextProjects.map((d) => (
-                          <DeadlineRow
-                            key={d.id}
-                            deadline={d}
-                            now={now}
-                            canManage={isMod}
-                            onEdit={openEdit}
-                            onDelete={(x) => remove.mutate(x)}
-                            onOpen={setSelected}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </FeedSection>
-
-                  <FeedSection
-                    title="Attendance"
-                    tone="text-cyan"
-                    onSeeAll={() => setTab("attendance")}
-                  >
-                    <AttendancePanel now={now} compact />
-                  </FeedSection>
-
-                <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-                  <span>Course · due</span>
-                  <span className="hidden text-right sm:block">Type</span>
-                  <span className="hidden text-right sm:block">Work</span>
-                  <span className="text-right">Status</span>
-                </div>
-
-                {isLoading ? (
-                  <div className="mt-5 flex flex-col gap-3">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface2/40" />
-                    ))}
-                  </div>
-                ) : filtered.length === 0 ? (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="mt-10 rounded-2xl bg-surface/50 px-8 py-14 text-center ring-1 ring-border"
-                  >
-                    <p className="font-display text-lg font-semibold">Nothing on the board</p>
-                    <p className="mt-2 font-mono text-xs text-faint">
-                      No items match this filter{search ? ` and “${search}”` : ""}.
-                    </p>
-                  </motion.div>
-                ) : view === "list" ? (
-                  <div className="mt-6 flex flex-col gap-9">
-                    {(
-                      [
-                        ["Happening now", columns.ongoing, "text-cyan"],
-                        ["Completed", columns.completed, "text-evt-present"],
-                      ] as const
-                    ).map(([label, items, tone]) =>
-
-                      items.length === 0 ? null : (
-                        <motion.section
-                          key={label}
-                          layout
-                          initial={{ opacity: 0, y: 14 }}
-                          animate={{ opacity: 1, y: 0 }}
-                        >
-                          <div className="mb-3 flex items-center gap-3">
-                            <p
-                              className={`font-mono text-[10px] uppercase tracking-[0.2em] ${tone}`}
-                            >
-                              {label}
-                            </p>
-                            <span className="h-px flex-1 bg-border" />
-                            <p className="font-mono text-[10px] text-faint">{items.length}</p>
-                          </div>
-                          <div className="flex flex-col gap-4">
-                            {items.map((d, i) => (
-                              <motion.div
-                                key={d.id}
-                                initial={{ opacity: 0, y: 14 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{
-                                  delay: Math.min(i * 0.03, 0.3),
-                                  duration: 0.3,
-                                  ease: [0.22, 1, 0.36, 1],
-                                }}
-                                className={label === "Completed" ? "opacity-70" : ""}
-                              >
-                                <DeadlineRow
-                                  deadline={d}
-                                  now={now}
-                                  canManage={isMod}
-                                  onEdit={openEdit}
-                                  onDelete={(x) => remove.mutate(x)}
-                                  onOpen={setSelected}
-                                />
-                              </motion.div>
-                            ))}
-                          </div>
-                        </motion.section>
-                      ),
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-6 flex flex-col gap-9">
-                    {weeks.map(([week, items], wi) => (
-                      <motion.section
-                        key={week}
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(wi * 0.06, 0.3), duration: 0.35 }}
+                  {isLoading ? (
+                    <div className="flex flex-col gap-3">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-16 animate-pulse rounded-2xl bg-surface2/40" />
+                      ))}
+                    </div>
+                  ) : (
+                    <>
+                      <FeedSection
+                        title="Quizzes"
+                        tone="text-evt-quiz"
+                        count={nextQuizzes.length}
+                        onSeeAll={() => setTab("quizzes")}
                       >
-                        <div className="mb-3 flex items-center gap-3">
-                          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-                            {formatWeek(week)}
-                          </p>
-                          <span className="h-px flex-1 bg-border" />
-                          <p className="font-mono text-[10px] text-faint">{items.length} items</p>
-                        </div>
-                        <div className="flex flex-col gap-3 border-l border-border pl-5">
-                          {items.map((d) => (
-                            <DeadlineRow
-                              key={d.id}
-                              deadline={d}
-                              now={now}
-                              canManage={isMod}
-                              onEdit={openEdit}
-                              onDelete={(x) => remove.mutate(x)}
-                              onOpen={setSelected}
-                            />
-                          ))}
-                        </div>
-                      </motion.section>
-                    ))}
-                  </div>
-                )}
+                        <FeedList
+                          items={nextQuizzes.slice(0, 6)}
+                          empty="No quizzes scheduled."
+                          now={now}
+                          isMod={isMod}
+                          onEdit={openEdit}
+                          onDelete={(x) => remove.mutate(x)}
+                          onOpen={setSelected}
+                        />
+                      </FeedSection>
+
+                      <FeedSection
+                        title="Exams"
+                        tone="text-evt-exam"
+                        count={nextExams.length}
+                        onSeeAll={() => setTab("exams")}
+                      >
+                        <FeedList
+                          items={nextExams.slice(0, 6)}
+                          empty="No exams scheduled."
+                          now={now}
+                          isMod={isMod}
+                          onEdit={openEdit}
+                          onDelete={(x) => remove.mutate(x)}
+                          onOpen={setSelected}
+                        />
+                      </FeedSection>
+
+                      <FeedSection
+                        title="Projects & assignments"
+                        tone="text-evt-assign"
+                        count={nextProjects.length}
+                        onSeeAll={() => setTab("projects")}
+                      >
+                        <FeedList
+                          items={nextProjects.slice(0, 6)}
+                          empty="Nothing pending."
+                          now={now}
+                          isMod={isMod}
+                          onEdit={openEdit}
+                          onDelete={(x) => remove.mutate(x)}
+                          onOpen={setSelected}
+                        />
+                      </FeedSection>
+
+                      <FeedSection
+                        title="Attendance"
+                        tone="text-cyan"
+                        onSeeAll={() => setTab("attendance")}
+                      >
+                        <AttendancePanel now={now} compact />
+                      </FeedSection>
+                    </>
+                  )}
                 </div>
 
-                <aside className="flex flex-col gap-6 lg:sticky lg:top-32">
+                <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-32">
                   <AnnouncementsPanel compact />
                   <ActivityPanel compact />
                 </aside>
               </div>
             )}
+
 
 
             {tab === "calendar" && (
@@ -628,9 +506,22 @@ function Board() {
 
             {tab === "timetable" && <TimetablePanel />}
 
+            {tab === "quizzes" && (
+              <DeadlineBoard
+                title="Quizzes"
+                items={quizzes}
+                now={now}
+                canManage={isMod}
+                showMarks
+                onEdit={openEdit}
+                onDelete={(x) => remove.mutate(x)}
+                onOpen={setSelected}
+              />
+            )}
+
             {tab === "exams" && (
               <DeadlineBoard
-                title="Exams, midterms, endterms and quizzes"
+                title="Midterms & endterms"
                 items={exams}
                 now={now}
                 canManage={isMod}
@@ -642,9 +533,9 @@ function Board() {
               />
             )}
 
-            {tab === "assignments" && (
+            {tab === "projects" && (
               <DeadlineBoard
-                title="Assignments and presentations"
+                title="Projects & assignments"
                 items={projects}
                 now={now}
                 canManage={isMod}
@@ -659,9 +550,6 @@ function Board() {
           </motion.div>
         </AnimatePresence>
 
-        <p className="mt-10 text-center font-mono text-[11px] text-faint">
-          Read-only for the batch · add, edit and delete are moderator-only
-        </p>
       </main>
 
       <EventDrawer
@@ -696,8 +584,45 @@ function Board() {
   );
 }
 
+/** A short list of deadline rows, or a quiet empty line. */
+function FeedList({
+  items,
+  empty,
+  now,
+  isMod,
+  onEdit,
+  onDelete,
+  onOpen,
+}: {
+  items: Deadline[];
+  empty: string;
+  now: number;
+  isMod: boolean;
+  onEdit: (d: Deadline) => void;
+  onDelete: (d: Deadline) => void;
+  onOpen: (d: Deadline) => void;
+}) {
+  if (items.length === 0)
+    return <p className="font-mono text-[11px] text-faint">{empty}</p>;
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((d) => (
+        <DeadlineRow
+          key={d.id}
+          deadline={d}
+          now={now}
+          canManage={isMod}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onOpen={onOpen}
+        />
+      ))}
+    </div>
+  );
+}
 
 /** Titled block used to break the feed into readable sections. */
+
 function FeedSection({
   title,
   tone,

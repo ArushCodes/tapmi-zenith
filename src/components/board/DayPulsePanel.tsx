@@ -1,21 +1,29 @@
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, CircleSlash, Clock3, Sun } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  CircleSlash,
+  Clock3,
+  Sun,
+} from "lucide-react";
 import { toast } from "sonner";
 import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
-import { useMe } from "@/hooks/use-me";
 import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches";
 import {
   breakMap,
   buildColorMap,
   formatBreak,
+  formatDuration,
   isAcademicEvent,
   isDayOff,
   isTeachingClass,
   sessionColor,
+  sessionDuration,
   sessionFullName,
   sessionMeta,
 } from "@/lib/courses";
@@ -31,6 +39,13 @@ const clock = new Intl.DateTimeFormat("en-GB", {
   hour12: false,
 });
 
+const dayFmt = new Intl.DateTimeFormat("en-GB", {
+  weekday: "short",
+  day: "2-digit",
+  month: "short",
+});
+
+
 function pctOf(s: ClassSession, now: number) {
   const a = new Date(s.start_at).getTime();
   const b = new Date(s.end_at).getTime();
@@ -43,7 +58,6 @@ function pctOf(s: ClassSession, now: number) {
 export function DayPulsePanel({ now, compact = false }: { now: number; compact?: boolean }) {
   const { batchId, isMember } = useBatch();
   const { user } = useAuth();
-  const me = useMe();
   const queryClient = useQueryClient();
   const { data: sessions = [] } = useQuery(sessionsQuery(batchId));
   const { data: courses = [] } = useQuery(coursesQuery(batchId));
@@ -91,20 +105,43 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /** Which day the panel is showing — 0 is today, negative is the past. */
+  const [offset, setOffset] = useState(0);
+  const [dir, setDir] = useState(1);
+
+  function go(step: number) {
+    setDir(step);
+    setOffset((o) => o + step);
+  }
+
+  const viewDate = useMemo(() => {
+    const d = new Date(now);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() + offset);
+    return d;
+  }, [now, offset]);
+
+  const dayStart = useMemo(() => {
+    const d = new Date(viewDate);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, [viewDate]);
+
   const today = useMemo(() => {
-    const key = dayKey(new Date(now));
+    const key = dayKey(viewDate);
     return sessions
       .filter((s) => !isAcademicEvent(s) && dayKey(s.start_at) === key)
       .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
-  }, [sessions, now]);
+  }, [sessions, viewDate]);
 
   /** Same definition of "a class" as the timetable and attendance pages. */
   const classes = today.filter(isTeachingClass);
-  const dayOff = isDayOff(new Date(now));
+  const dayOff = isDayOff(viewDate);
   /** Free stretches between classes read as break time on the timeline. */
   const breaks = useMemo(() => breakMap(classes), [classes]);
 
-
+  /** Progress is measured against the shown day, not always the current clock. */
+  const clockAt = offset === 0 ? now : dayStart + (offset < 0 ? 864e5 : 0);
 
   const stats = useMemo(() => {
     let total = 0;
@@ -113,49 +150,105 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
       const a = new Date(s.start_at).getTime();
       const b = new Date(s.end_at).getTime();
       total += b - a;
-      done += Math.min(b - a, Math.max(0, now - a));
+      done += Math.min(b - a, Math.max(0, clockAt - a));
     }
     const pct = total ? Math.round((done / total) * 100) : 0;
     const remainingMin = Math.max(0, Math.round((total - done) / 60000));
     return {
       pct,
       remainingMin,
-      finished: classes.filter((s) => new Date(s.end_at).getTime() <= now).length,
+      totalMin: Math.round(total / 60000),
+      finished: classes.filter((s) => new Date(s.end_at).getTime() <= clockAt).length,
     };
-  }, [classes, now]);
+  }, [classes, clockAt]);
 
-  const live = classes.find(
-    (s) => now >= new Date(s.start_at).getTime() && now <= new Date(s.end_at).getTime(),
-  );
+  const live =
+    offset === 0
+      ? classes.find(
+          (s) => now >= new Date(s.start_at).getTime() && now <= new Date(s.end_at).getTime(),
+        )
+      : undefined;
 
   const nextClass = useMemo(() => {
-    if (live) return null;
+    if (offset !== 0 || live) return null;
     return classes.find((s) => new Date(s.start_at).getTime() > now) ?? null;
-  }, [classes, live, now]);
+  }, [classes, live, now, offset]);
 
   const donutColor = stats.pct >= 100 ? "var(--evt-present)" : "var(--cyan)";
+
+  const dayLabel =
+    offset === 0
+      ? "Today"
+      : offset === 1
+        ? "Tomorrow"
+        : offset === -1
+          ? "Yesterday"
+          : dayFmt.format(viewDate);
 
   return (
     <section className={compact ? "" : "mt-4"}>
       <div className="mb-3 flex items-center gap-2">
         <Sun className="size-3.5 text-amber" />
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber">
-          {compact ? "Today" : `Today's pulse${me.name ? ` · ${me.name}` : ""}`}
+        <p className="min-w-0 flex-1 truncate font-mono text-[10px] uppercase tracking-[0.2em] text-amber">
+          {dayLabel}
+          <span className="ml-2 text-faint">{dayFmt.format(viewDate)}</span>
         </p>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            onClick={() => go(-1)}
+            aria-label="Previous day"
+            className="flex size-7 items-center justify-center rounded-lg text-dim ring-1 ring-border transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="size-3.5" />
+          </button>
+          {offset !== 0 && (
+            <button
+              onClick={() => {
+                setDir(offset > 0 ? -1 : 1);
+                setOffset(0);
+              }}
+              className="rounded-lg px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-dim ring-1 ring-border hover:text-ink"
+            >
+              Today
+            </button>
+          )}
+          <button
+            onClick={() => go(1)}
+            aria-label="Next day"
+            className="flex size-7 items-center justify-center rounded-lg text-dim ring-1 ring-border transition-colors hover:text-ink"
+          >
+            <ChevronRight className="size-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div
-        className={`overflow-hidden rounded-2xl ring-1 ${
+      <div className="overflow-hidden">
+      <AnimatePresence mode="wait" initial={false} custom={dir}>
+      <motion.div
+        key={offset}
+        custom={dir}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.14}
+        onDragEnd={(_, info) => {
+          if (info.offset.x < -60) go(1);
+          else if (info.offset.x > 60) go(-1);
+        }}
+        initial={{ opacity: 0, x: dir * 40 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: dir * -40 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        className={`touch-pan-y overflow-hidden rounded-2xl ring-1 ${
           dayOff ? "bg-amber/8 ring-amber/20" : "bg-surface ring-border"
         }`}
       >
         {classes.length === 0 ? (
           <p className="py-8 text-center font-mono text-[11px] text-faint">
             {dayOff
-              ? "Sunday off — no classes today."
+              ? "Sunday off — no classes."
               : today.some((s) => s.is_holiday)
-                ? "Holiday — no classes today."
-                : "No classes scheduled today."}
+                ? "Holiday — no classes."
+                : "No classes scheduled."}
           </p>
 
         ) : (
@@ -170,39 +263,53 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                 sub="day done"
               />
               <div className="min-w-0 flex-1">
-                <AnimatePresence mode="wait">
-                  <StatusBlock
-                    key={live ? `live-${live.id}` : nextClass ? `next-${nextClass.id}` : "wrapped"}
-                    live={live ?? null}
-                    next={nextClass}
-                    now={now}
-                    colorMap={colorMap}
-                  />
-                </AnimatePresence>
-                <div className="mt-3 flex items-center gap-4 font-mono text-[10px] text-faint">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3 text-evt-present" />
-                    {stats.finished}/{classes.length} classes done
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <Clock3 className="size-3" />
-                    {stats.remainingMin > 0 ? `${stats.remainingMin} min left` : "wrapped"}
-                  </span>
-                </div>
+                {offset === 0 ? (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <StatusBlock
+                        key={live ? `live-${live.id}` : nextClass ? `next-${nextClass.id}` : "wrapped"}
+                        live={live ?? null}
+                        next={nextClass}
+                        now={now}
+                        colorMap={colorMap}
+                      />
+                    </AnimatePresence>
+                    <div className="mt-3 flex items-center gap-4 font-mono text-[10px] text-faint">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="size-3 text-evt-present" />
+                        {stats.finished}/{classes.length} done
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock3 className="size-3" />
+                        {stats.remainingMin > 0 ? `${formatDuration(stats.remainingMin)} left` : "wrapped"}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-display text-base font-semibold leading-snug">
+                      {classes.length} class{classes.length === 1 ? "" : "es"}
+                    </p>
+                    <p className="mt-1 font-mono text-sm text-dim">
+                      {formatDuration(stats.totalMin)} of teaching
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
             {/* ── Class timeline ─────────────────────────────────────── */}
             <ol className="relative space-y-0 px-5 py-3">
+
               {classes.map((s, i) => {
-                const p = pctOf(s, now);
+                const p = pctOf(s, clockAt);
                 const c = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
                 const isLive = live?.id === s.id;
                 const isDone = p === 100;
                 const absent = myMarks.get(s.id) === "absent";
                 const meta = sessionMeta(s);
                 const gap = breaks.get(s.id);
-                const gapLive = gap ? now >= gap.start && now < gap.end : false;
+                const gapLive = gap ? clockAt >= gap.start && clockAt < gap.end : false;
                 return (
                   <Fragment key={s.id}>
                   {gap && (
@@ -260,13 +367,15 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                       } ${isDone && !isLive ? "opacity-70" : ""}`}
                     >
                       {/* row 1: name + time + absent */}
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                         <p className="min-w-0 font-display text-[13.5px] font-semibold leading-snug">
                           {sessionFullName(s)}
                         </p>
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className="font-mono text-xs tabular-nums text-faint">
+
+                          <span className="text-right font-mono text-xs tabular-nums text-faint">
                             {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
+                            <span className="ml-1.5 text-dim">{sessionDuration(s)}</span>
                           </span>
                           {isMember && user && (
                             <motion.button
@@ -327,6 +436,8 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
             </ol>
           </>
         )}
+      </motion.div>
+      </AnimatePresence>
       </div>
     </section>
   );
