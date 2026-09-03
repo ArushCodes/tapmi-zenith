@@ -349,6 +349,7 @@ export type Database = {
           start_at: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           batch_id: string
@@ -370,6 +371,7 @@ export type Database = {
           start_at: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           batch_id?: string
@@ -391,6 +393,7 @@ export type Database = {
           start_at?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
