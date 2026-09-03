@@ -601,7 +601,7 @@ function MonthGrid({
               }}
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              style={mark ? markTint(mark.color) : undefined}
+              style={mark ? markTint(mark.color) : {}}
               className={`group relative min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} ${
