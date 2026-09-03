@@ -11,7 +11,6 @@ import {
   ListFilter,
   Mail,
   Plus,
-  Search,
   MessageSquare,
   ShieldCheck,
   UserCheck,
@@ -126,7 +125,6 @@ function Board() {
 
   const [tab, setTab] = useState<TabKey>("feed");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
@@ -192,8 +190,8 @@ function Board() {
   );
 
   const filtered = useMemo(
-    () => filterByKey(approved, filter, search),
-    [approved, filter, search],
+    () => filterByKey(approved, filter, ""),
+    [approved, filter],
   );
 
   /** Quizzes, exams and coursework each get their own tab and feed section. */
@@ -428,13 +426,6 @@ function Board() {
                         />
                       </FeedSection>
 
-                      <FeedSection
-                        title="Attendance"
-                        tone="text-cyan"
-                        onSeeAll={() => setTab("attendance")}
-                      >
-                        <AttendancePanel now={now} compact />
-                      </FeedSection>
                     </>
                   )}
                 </div>
@@ -442,6 +433,13 @@ function Board() {
                 <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-32">
                   <AnnouncementsPanel compact />
                   <ActivityPanel compact />
+                  <FeedSection
+                    title="Attendance"
+                    tone="text-cyan"
+                    onSeeAll={() => setTab("attendance")}
+                  >
+                    <AttendancePanel now={now} compact />
+                  </FeedSection>
                 </aside>
               </div>
             )}
@@ -454,7 +452,7 @@ function Board() {
                 batchId={batchId}
 
                 deadlines={filtered}
-                sessions={sessions}
+                sessions={filter === "all" ? sessions : []}
                 courses={courses}
                 now={now}
                 onSelect={setSelected}
