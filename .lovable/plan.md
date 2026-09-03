@@ -1,43 +1,48 @@
-# Master prompt: rebuild this portal from scratch
+# Zenith — rebrand, declutter, and fix duplicated quiz names
 
-Copy everything in the block below into a fresh Lovable project as the first message.
+Three things: stop titles repeating the subject, reorganise the wall of tabs into a real dashboard layout, and rebrand the whole front end as Zenith in orange and white.
+
+## 1. Quiz names no longer repeat the subject
+
+Today a row reads "Sociology — Sociology Quiz" because the stored title already contains the subject.
+
+- Clean the stored titles once: strip a leading subject (and any leftover dash) from every deadline title where it duplicates the subject, so "Sociology Quiz" becomes "Quiz", "Midterm — Behavioural Economics" becomes "Midterm", "Ops Research Quiz 2" keeps its number as "Quiz 2".
+- Add a small display guard so any future title that repeats its subject is trimmed on screen too, everywhere a deadline title appears (feed rows, calendar, event drawer, today column, activity).
+- Nothing is deleted; only the redundant subject text inside titles is removed.
+
+## 2. Layout: one dashboard, one rail, no tab wall
+
+Main navigation drops to four tabs: **Feed · Calendar · Timetable · Attendance**.
 
 ```text
-Build "TAPMI Zenith" — a dark, modern academic operations portal for a university batch (starting with MAHE → TAPMI → IPM → IPM-1), with Lovable Cloud for auth, database and backend logic.
-
-TECH + STYLE
-- TanStack Start (React 19, TanStack Router file routes, Tailwind v4, shadcn/ui, Framer Motion, TanStack Query).
-- Dark MAHE design language: deep navy surfaces, orange/gold accents, Montserrat headings, Source Sans 3 body, IBM Plex Mono for numbers. All colors as semantic tokens in src/styles.css — never hardcoded utilities. Lots of tasteful motion: page/tab transitions, staggered lists, animated drawers, skeletons, empty states.
-
-HIERARCHY + ACCESS
-- Fully expandable hierarchy: institution → school → programme → batch → section. Admins can create new institutions/schools/programmes/batches from cascading selectors with "+ New" options.
-- Roles: student, moderator, admin, stored in a separate user_roles table with a security-definer has_role() function (never roles on profiles).
-- Signup restricted to @learner.manipal.edu with email verification; user picks their batch at signup and gets an auto membership for it. No self-service "request access" button — admins/moderators grant or elevate access from a Members tab.
-- Everything batch-sensitive is invisible when signed out: signed-out visitors only ever see a rich animated marketing landing page (hero, feature sections, list of famous MAHE institutions, CTA). All Supabase access must be guarded so a missing backend config renders "signed out" instead of throwing.
-
-TABS (batch-scoped, realtime)
-1. Feed — announcements strip, today's timetable card, ongoing/upcoming/completed deadline columns, "Day Pulse" animated progress of the day's classes with hours/minutes remaining, animated break banner when a gap is running, and per-class "Mark absent" buttons.
-2. Calendar — month/week/agenda views, event-type filters + search + add, distinct shapes per type (circle = class, hexagon = holiday, others for quiz/assignment/presentation/exam), click a date to focus its agenda, animated event drawer, moderator/admin edit + delete for every entry, ICS + Google Calendar export.
-3. Timetable — monthly prev/next/Today navigation (no week shifting), auto-derived subject list per batch with collision-free distinct colors spread around the hue wheel, lecture labels as S{session number} from the source data, filter chips per deadline type that grey out when empty, multi-select rows with bulk mark-absent / clear / delete.
-4. Attendance — donut chart for overall attendance plus subject-wise meters; bands: ≥85% green (hue scales with %), 70–85% amber, <70% red; planned totals configurable per subject with fallback to actual scheduled classes; absent-only marking (clicking an active mark clears it); mobile-friendly subject formatting; CSV export.
-5. Announcements — batch announcements with a recent strip on Feed.
-6. Members — roster visible to approved members; grant/elevate controls for moderators and admins.
-7. Notifications — derived activity feed (joins, announcements, new deadlines).
-8. Feedback — bugs, suggestions and feature requests sent to admins.
-9. Profile (/profile) — editable details (name, avatar, bio, links, timezone, reminder lead time) with some permanent fields locked, completeness ring, dirty-state save/reset bar, validation.
-
-DATA IMPORT
-- Moderators can paste a public .ics timetable URL per batch; the server fetches it with SSRF-safe validation (https only, no credentials, block localhost/private/link-local/metadata/CGNAT/multicast, validate every redirect hop), upserts sessions in chunks, tracks sync leases and failures, and derives course + faculty metadata automatically, assigning colors to unseen subjects.
-- Also expose a tokenized read-only ICS export endpoint under /api/public/ics/$token, with tokens stored in a backend-only table.
-
-SECURITY
-- RLS on every table with explicit GRANTs; permission helper functions live in a private schema, not executable by anon.
-- Profiles visible only to self, approved batchmates, and moderators/admins; user_roles readable only by self/admin.
-
-Also give every route unique SEO head metadata, a sitemap, and responsive mobile layouts throughout.
+┌──────────────────────────────────────────────────────────┐
+│ Zenith    batch selector        search   + Add   profile ▾│
+├──────────────────────────────────────────────────────────┤
+│  Feed | Calendar | Timetable | Attendance                 │
+├───────────────────────────────┬──────────────────────────┤
+│  Today (day pulse)            │  Announcements           │
+│  Ongoing / Upcoming / Done    │  Recent activity         │
+│  deadline cards               │  (sticky right rail)     │
+└───────────────────────────────┴──────────────────────────┘
 ```
 
-## Notes
+- **Right rail (Feed only, sticky, desktop):** Announcements and Activity live here permanently instead of being tabs. On mobile they stack below the feed.
+- **Header profile menu:** Members, Feedback, and — for moderators — Approvals (with pending count) and Inbox move into a dropdown next to the avatar, opening as focused overlays/panels rather than board tabs.
+- Buttons get one consistent system: a single primary style (solid orange), one secondary (outline), one quiet/icon style, consistent 10px radius and heights, so Add / Edit / Export / filters stop looking like five different kits.
+- Filter chips and search collapse into one toolbar shared by Feed and Calendar instead of each tab inventing its own row.
 
-- Paste it in one go; Lovable will build the foundation first, then you can refine tab by tab.
-- Trim the tabs you don't need — the hierarchy, roles and RLS paragraphs are the parts worth keeping verbatim.
+## 3. Zenith rebrand — orange and white
+
+- Rename throughout: header lockup, landing page, page titles and meta, footer become **Zenith** (with "TAPMI Manipal · MAHE" as the supporting line).
+- New palette: white / warm off-white surfaces, near-black ink text, one confident orange accent (sunrise orange) with a deeper amber for hover and pressed states; urgency colours re-tuned to read on light (red / amber / green stay, muted to fit).
+- The dark aurora blobs go; replaced with quiet warm gradient washes and hairline borders so the board looks composed rather than glowing.
+- Landing page rebuilt for Zenith: bold split hero ("Zenith — every deadline, class and attendance mark at its peak"), clean feature grid, the MAHE institutions section and the three-step onboarding kept but re-laid out on the new light system, single orange CTA.
+- Typography stays Montserrat / Source Sans 3 / IBM Plex Mono; weights and sizes tightened for the light background.
+
+## Technical notes
+
+- One data migration to normalise `deadlines.title`; a `displayTitle(subject, title)` helper in `src/lib/deadlines.ts` used by `DeadlineRow`, `EventDrawer`, `CalendarPanel`, `DayPulsePanel`, `ActivityPanel`.
+- Colour work is entirely in `src/styles.css` tokens (`--ground`, `--surface`, `--ink`, `--accent`, event colours); components keep using semantic tokens, no hardcoded colours.
+- `src/routes/index.tsx` restructures to a two-column grid on Feed; `announcements/activity/members/feedback/approvals/inbox` leave `TabKey`. `MembersPanel`, `FeedbackPanel`, `ApprovalsPanel`, `EmailInboxPanel` render inside a dialog/sheet launched from `BoardHeader`.
+- Route `head()` metadata updated for the Zenith name on `/`, `/auth`, `/profile`, `/admin`.
+- No backend, RLS, or query logic changes beyond the title cleanup.
