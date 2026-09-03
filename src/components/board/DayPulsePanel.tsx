@@ -460,39 +460,71 @@ function StatusBlock({
   colorMap: Map<string, string>;
 }) {
   const target = live ?? next;
-  if (!target)
-    return (
-      <motion.p
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        className="font-display text-lg font-semibold"
-      >
-        Day wrapped 🎉
-      </motion.p>
-    );
-
-  const msLeft = live
-    ? new Date(target.end_at).getTime() - now
-    : new Date(target.start_at).getTime() - now;
-  const c = sessionColor(target, colorMap) ?? FALLBACK_COURSE_COLOR;
+  const c = target ? sessionColor(target, colorMap) ?? FALLBACK_COURSE_COLOR : "var(--cyan)";
 
   return (
     <motion.div
+      key={target ? (live ? `live-${target.id}` : `next-${target.id}`) : "wrapped"}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ type: "spring", stiffness: 160, damping: 20 }}
       className="min-w-0"
     >
+      {target ? <LiveStatus live={live} target={target} now={now} color={c} /> : <WrappedStatus color={c} />}
+      <AccentStrip color={c} />
+    </motion.div>
+  );
+}
+
+function WrappedStatus({ color }: { color: string }) {
+  return (
+    <>
       <p
         className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
-        style={{ color: c }}
+        style={{ color }}
+      >
+        <span
+          className="pulse-dot inline-block size-1.5 rounded-full"
+          style={{ backgroundColor: color }}
+        />
+        Done for the day
+      </p>
+      <p className="mt-1 truncate font-display text-base font-semibold leading-snug">
+        Day wrapped 🎉
+      </p>
+      <p className="mt-0.5 font-mono text-sm tabular-nums text-dim">
+        Relax — nothing left on the schedule
+      </p>
+    </>
+  );
+}
+
+function LiveStatus({
+  live,
+  target,
+  now,
+  color,
+}: {
+  live: ClassSession | null;
+  target: ClassSession;
+  now: number;
+  color: string;
+}) {
+  const msLeft = live
+    ? new Date(target.end_at).getTime() - now
+    : new Date(target.start_at).getTime() - now;
+
+  return (
+    <>
+      <p
+        className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em]"
+        style={{ color }}
       >
         {live && (
           <span
             className="pulse-dot inline-block size-1.5 rounded-full"
-            style={{ backgroundColor: c }}
+            style={{ backgroundColor: color }}
           />
         )}
         {live ? "Now in class" : "Up next"}
@@ -504,18 +536,22 @@ function StatusBlock({
         {live ? `${fmtLeft(msLeft)} left` : `starts in ${fmtLeft(msLeft)}`} ·{" "}
         {clock.format(new Date(target.start_at))}–{clock.format(new Date(target.end_at))}
       </p>
-      {/* animated accent ticks */}
-      <div className="mt-2.5 flex max-w-[220px] gap-0.5">
-        {Array.from({ length: 14 }).map((_, i) => (
-          <motion.span
-            key={i}
-            className="h-0.5 flex-1 rounded-full"
-            style={{ backgroundColor: c }}
-            animate={{ opacity: [0.15, 0.9, 0.15] }}
-            transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.09 }}
-          />
-        ))}
-      </div>
-    </motion.div>
+    </>
+  );
+}
+
+function AccentStrip({ color }: { color: string }) {
+  return (
+    <div className="mt-2.5 flex max-w-[220px] gap-0.5">
+      {Array.from({ length: 14 }).map((_, i) => (
+        <motion.span
+          key={i}
+          className="h-0.5 flex-1 rounded-full"
+          style={{ backgroundColor: color }}
+          animate={{ opacity: [0.15, 0.9, 0.15] }}
+          transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.09 }}
+        />
+      ))}
+    </div>
   );
 }
