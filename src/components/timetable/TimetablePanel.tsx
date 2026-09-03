@@ -333,15 +333,16 @@ export function TimetablePanel() {
         </button>
 
         <div className="ml-auto flex items-center gap-2">
-
+          {(isMember || canManage) && (
+            <button
+              onClick={() => setShowCustom((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
+            >
+              <Plus className="size-3.5" /> Custom class
+            </button>
+          )}
           {canManage && (
             <>
-              <button
-                onClick={() => setShowCustom((v) => !v)}
-                className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
-              >
-                <Plus className="size-3.5" /> Custom class
-              </button>
               <button
                 onClick={() => setShowSettings((v) => !v)}
                 className="flex items-center gap-1.5 rounded-lg bg-surface2 px-2.5 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border hover:text-ink"
