@@ -164,19 +164,26 @@ export function TimetablePanel() {
       map.set(k, cur);
       return cur;
     };
+    const subjFilter = selected.length > 0;
+    const typeFilter = types.length > 0;
     for (const s of sessions) {
       if (s.notes === "academic-calendar") continue;
+      // A pure event-type filter means the user asked for events only.
+      if (typeFilter && !subjFilter) continue;
       const start = new Date(s.start_at);
       if (start < monthStart || start >= monthEnd) continue;
-      if (selected.length > 0 && !selected.includes(sessionKey(s))) continue;
+      if (subjFilter && !selected.includes(sessionKey(s))) continue;
       bucket(start.toDateString()).sessions.push(s);
     }
     for (const d of deadlines) {
+      // A pure subject filter means the user asked for classes only.
+      if (subjFilter && !typeFilter) continue;
       const start = new Date(d.due_at);
       if (start < monthStart || start >= monthEnd) continue;
-      if (types.length > 0 && !types.includes(d.type)) continue;
+      if (typeFilter && !types.includes(d.type)) continue;
       bucket(start.toDateString()).events.push(d);
     }
+
     for (const v of map.values()) {
       v.sessions.sort((a, b) => a.start_at.localeCompare(b.start_at));
       v.events.sort((a, b) => a.due_at.localeCompare(b.due_at));
