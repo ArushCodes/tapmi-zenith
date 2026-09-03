@@ -125,7 +125,7 @@ export function SessionEditDialog({ session, creating = false, batchId, day, onC
 
   return (
     <AnimatePresence>
-      {session && (
+      {open && (
         <>
           <motion.div
             key="scrim"
