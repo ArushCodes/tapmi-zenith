@@ -425,14 +425,26 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                         </span>
                       </div>
                       <ThresholdBar pct={s.pct} />
-                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                        <span className={s.left < 0 ? "text-rose" : "text-dim"}>
-                          {s.absent} of {s.allowance} holiday{s.allowance === 1 ? "" : "s"} used
-                          {s.left >= 0
-                            ? ` · ${s.left} left this trimester`
-                            : ` · ${s.hardLeft >= 0 ? `${s.hardLeft} before the ${HARD_LINE}% line` : "past the hard line"}`}
-                        </span>
+                      <LeaveBudget pl={s.pl} il={s.il} absent={s.absent} caps={s.caps} />
+                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-dim">
+                        {s.absent} of {s.planned} missed ·{" "}
+                        {s.pct < HARD_LINE ? (
+                          <span className="text-rose">
+                            Incomplete (I) — repeat the course next year
+                          </span>
+                        ) : s.penalty > 0 ? (
+                          <span className="text-amber">
+                            −{s.penalty.toFixed(1)} grade points · {Math.max(0, s.eligibleLeft)}{" "}
+                            left before {HARD_LINE}%
+                          </span>
+                        ) : (
+                          <span className="text-evt-present">
+                            no penalty · {Math.max(0, s.safeLeft)} miss
+                            {s.safeLeft === 1 ? "" : "es"} left at {SAFE_LINE}%
+                          </span>
+                        )}
                       </p>
+
 
                     </motion.button>
                   );
