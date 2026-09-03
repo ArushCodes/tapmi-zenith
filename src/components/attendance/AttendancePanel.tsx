@@ -30,7 +30,7 @@ import {
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { SessionMeta } from "@/components/common/SessionMeta";
-import { sessionLabel } from "@/lib/courses";
+import { isTeachingClass, sessionLabel } from "@/lib/courses";
 
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
@@ -97,23 +97,11 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
   });
 
 
-  /** Attendance is only for actual classes — calendar milestones like
-   *  inductions, trimester start/end dates and exam windows carry no course
-   *  and must never appear as subjects, and neither do assessments such as
-   *  quizzes, tests or exams. */
-  const ASSESSMENT = /\b(quiz|test|exam|midterm|mid-?term|endterm|end-?term|viva|presentation)\b/i;
-  const classes = useMemo(
-    () =>
-      sessions.filter(
-        (s) =>
-          !s.is_holiday &&
-          (s.course_name || s.course_code) &&
-          !ASSESSMENT.test(s.title) &&
-          !ASSESSMENT.test(s.course_name ?? "") &&
-          !ASSESSMENT.test(s.short_name ?? ""),
-      ),
-    [sessions],
-  );
+  /** Attendance is only for actual classes — calendar milestones, holidays and
+   *  assessments such as quizzes or exams never appear as subjects. The rule
+   *  lives in lib/courses so every batch and every page agrees. */
+  const classes = useMemo(() => sessions.filter(isTeachingClass), [sessions]);
+
 
   /** Any class from the timetable, newest first, searchable. */
   const browsable = useMemo(() => {

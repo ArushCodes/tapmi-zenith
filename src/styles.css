@@ -201,3 +201,14 @@
 }
 
 @utility pulse-dot { animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+/* Filter chips and toolbar buttons keep their own ring styling — the browser
+   focus outline lingers after a click and reads as a stuck border. */
+@layer base {
+  button:focus,
+  button:focus-visible,
+  [role="tab"]:focus-visible,
+  [role="button"]:focus-visible {
+    outline: none;
+  }
+}
