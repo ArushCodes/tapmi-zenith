@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useMe } from "@/hooks/use-me";
 import { useTheme } from "@/hooks/use-theme";
 import { BatchSelector } from "@/components/board/BatchSelector";
+import { GlobalSearch } from "@/components/board/GlobalSearch";
 import {
   DropdownMenu,
   DropdownMenuContent,
