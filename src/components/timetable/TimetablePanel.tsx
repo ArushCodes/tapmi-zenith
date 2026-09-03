@@ -435,7 +435,7 @@ export function TimetablePanel() {
                   )
                 }
                 title={n === 0 ? `No ${t.label.toLowerCase()} this month` : `${n} scheduled`}
-                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-all ${
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] outline-none transition-all focus:outline-none focus-visible:outline-none ${
                   n === 0
                     ? "cursor-not-allowed bg-surface2 text-faint opacity-50 ring-1 ring-border"
                     : `${meta.chip} ${on ? "ring-2" : ""}`
