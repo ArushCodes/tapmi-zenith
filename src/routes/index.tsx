@@ -519,10 +519,10 @@ function Board() {
                     {(
                       [
                         ["Happening now", columns.ongoing, "text-cyan"],
-                        ["Upcoming", columns.upcoming, "text-amber"],
                         ["Completed", columns.completed, "text-evt-present"],
                       ] as const
                     ).map(([label, items, tone]) =>
+
                       items.length === 0 ? null : (
                         <motion.section
                           key={label}
