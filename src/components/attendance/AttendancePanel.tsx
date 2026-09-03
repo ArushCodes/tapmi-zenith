@@ -97,8 +97,11 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
   });
 
 
+  /** Attendance is only for actual classes — calendar milestones like
+   *  inductions, trimester start/end dates and exam windows carry no course
+   *  and must never appear as subjects. */
   const classes = useMemo(
-    () => sessions.filter((s) => !s.is_holiday),
+    () => sessions.filter((s) => !s.is_holiday && (s.course_name || s.course_code)),
     [sessions],
   );
 
