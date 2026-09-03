@@ -28,6 +28,7 @@ import {
   sessionColor,
   sessionKey,
   sessionLabel,
+  sessionFullName,
   sessionShortLabel,
   abbrevSubject,
 } from "@/lib/courses";
