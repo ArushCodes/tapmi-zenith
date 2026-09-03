@@ -63,23 +63,17 @@ export function BoardHeader({ menuItems = [], onMenuSelect }: Props) {
       className="sticky top-0 z-30 border-b border-border bg-ground/80 backdrop-blur-xl"
     >
       <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between gap-3 px-5 sm:gap-4 sm:px-8">
-        <Link to="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3">
-          <motion.div
-            whileHover={{ rotate: -6, scale: 1.06 }}
-            transition={spring}
-            className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan text-[15px] font-semibold text-white shadow-[0_6px_18px_-8px_var(--cyan)]"
-          >
-            <span className="font-display">Z</span>
-          </motion.div>
-          <div className="min-w-0 leading-tight">
-            <p className="truncate font-display text-[15px] font-semibold tracking-tight sm:text-base">
+        <Link to="/" className="group flex min-w-0 items-center">
+          <motion.div whileHover={{ scale: 1.03 }} transition={spring} className="min-w-0 leading-none">
+            <p className="truncate font-display text-2xl font-extrabold uppercase italic tracking-[-0.03em] text-cyan sm:text-[28px]">
               Zenith
             </p>
-            <p className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:block">
+            <p className="mt-0.5 hidden font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:block">
               TAPMI Manipal · MAHE
             </p>
-          </div>
+          </motion.div>
         </Link>
+
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
           <BatchSelector />

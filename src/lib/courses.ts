@@ -194,15 +194,15 @@ export function sessionFullName(s: ClassSession) {
   );
 }
 
-/** Small detail chips: session no., code, faculty, section, room. */
+/** Small detail chips: session no., code, faculty, room. */
 export function sessionMeta(s: ClassSession) {
   const out: string[] = [];
   const n = sessionNumberOf(s);
   if (n) out.push(`S${n}`);
   if (s.course_code) out.push(s.course_code);
   if (s.faculty_name) out.push(s.faculty_name);
-  if (s.section) out.push(s.section);
   if (s.classroom) out.push(s.classroom);
+
   return out;
 }
 

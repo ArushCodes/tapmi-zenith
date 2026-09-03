@@ -226,10 +226,10 @@ function Board() {
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
     { key: "quizzes", label: "Quizzes", icon: <FileQuestion className="size-4" /> },
     { key: "exams", label: "Exams", icon: <GraduationCap className="size-4" /> },
     { key: "projects", label: "Projects", icon: <BookOpen className="size-4" /> },
-    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
 
@@ -281,17 +281,6 @@ function Board() {
             )}
           </div>
 
-          <p className="font-mono text-xs text-faint">
-            {new Intl.DateTimeFormat("en-GB", {
-              weekday: "short",
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            }).format(new Date(now))}
-          </p>
         </motion.div>
 
         <nav

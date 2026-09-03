@@ -799,9 +799,7 @@ function CourseCatalogue({
         />
       </div>
 
-      <p className="mt-2 font-mono text-[10px] normal-case text-faint">
-        No selection = every class shown. Tap to add a class, tap again to deselect it.
-      </p>
+
 
       <div className="mt-3 flex flex-wrap gap-2">
         {shown.map((o) => {
