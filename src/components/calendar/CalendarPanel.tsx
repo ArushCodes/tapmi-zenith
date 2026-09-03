@@ -815,6 +815,7 @@ function WeekTimeline({
 function Agenda({
   focusDay,
   onClearFocus,
+  backLabel = "the whole month",
   cursor,
   deadlines,
   classes,
@@ -830,6 +831,8 @@ function Agenda({
 }: {
   focusDay: string | null;
   onClearFocus: () => void;
+  backLabel?: string;
+
   cursor: Date;
   deadlines: Deadline[];
   classes: ClassSession[];
