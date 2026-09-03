@@ -726,7 +726,6 @@ function WeekTimeline({
           })}
         </div>
 
-        </div>
 
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
           <span />
