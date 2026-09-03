@@ -44,6 +44,7 @@ import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
 import { MembersPanel } from "@/components/board/MembersPanel";
 import { FeedbackPanel } from "@/components/board/FeedbackPanel";
 import { coursesQuery, sessionsQuery } from "@/lib/batches";
+import { Marker, shapeForDeadline } from "@/lib/shapes";
 import {
   FILTERS,
   deadlinesQueryFor,
