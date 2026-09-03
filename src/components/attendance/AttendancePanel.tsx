@@ -19,6 +19,8 @@ import {
   CONTINUOUS_ABSENCE_DAYS,
   HARD_LINE,
   LEAVE_COPY,
+  PENALTY_PER_SESSION,
+  PL_CAP_PCT,
   SAFE_LINE,
   TOTAL_CAP_PCT,
   bandFor,
@@ -524,7 +526,7 @@ function LeaveBudget({
         return (
           <span
             key={it.key}
-            title={LEAVE_COPY[it.key].help}
+            title={LEAVE_COPY[it.key].detail}
             className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
               over ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
             }`}
@@ -786,7 +788,7 @@ function LeaveButtons({
           <button
             key={t}
             onClick={() => onPick(t)}
-            title={on ? "Tap again to clear" : LEAVE_COPY[t].help}
+            title={on ? "Tap again to clear" : LEAVE_COPY[t].detail}
             className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none ${
               on
                 ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
