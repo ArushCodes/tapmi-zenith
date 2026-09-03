@@ -101,6 +101,9 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
   /** Same definition of "a class" as the timetable and attendance pages. */
   const classes = today.filter(isTeachingClass);
   const dayOff = isDayOff(new Date(now));
+  /** Free stretches between classes read as break time on the timeline. */
+  const breaks = useMemo(() => breakMap(classes), [classes]);
+
 
 
   const stats = useMemo(() => {
