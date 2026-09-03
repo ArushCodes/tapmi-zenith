@@ -876,9 +876,10 @@ function Agenda({
       onClick={onClearFocus}
       className="self-start rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-cyan ring-1 ring-cyan/30"
     >
-      ← Back to the whole month
+      ← Back to {backLabel}
     </motion.button>
   ) : null;
+
 
   if (rows.length === 0)
     return (
