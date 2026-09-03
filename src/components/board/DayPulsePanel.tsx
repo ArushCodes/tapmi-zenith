@@ -191,7 +191,6 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
         <Sun className="size-3.5 text-amber" />
         <p className="min-w-0 flex-1 truncate font-mono text-[10px] uppercase tracking-[0.2em] text-amber">
           {dayLabel}
-          <span className="ml-2 text-faint">{dayFmt.format(viewDate)}</span>
         </p>
         <div className="flex shrink-0 items-center gap-1">
           <button

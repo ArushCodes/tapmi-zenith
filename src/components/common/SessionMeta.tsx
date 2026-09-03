@@ -17,7 +17,7 @@ export function sessionMetaChips(s: ClassSession, opts?: { withFullName?: boolea
     chips.push({ key: "name", text: full });
   }
   if (s.faculty_name) chips.push({ key: "fac", text: s.faculty_name });
-  if (s.section) chips.push({ key: "sec", text: `Sec ${s.section}` });
+  
   if (s.classroom) chips.push({ key: "room", text: s.classroom, mono: true });
   return chips;
 }
