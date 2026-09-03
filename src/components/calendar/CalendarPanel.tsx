@@ -236,6 +236,26 @@ export function CalendarPanel({
 
         <h2 className="font-display text-lg font-semibold tracking-tight">{heading}</h2>
 
+        {canManage && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                setCreateDay(focusDay);
+                setCreating(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold text-ground"
+            >
+              <Plus className="size-3.5" /> Add event
+            </button>
+            <button
+              onClick={() => setMarkDay(focusDay ?? dayKey(new Date(now)))}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
+            >
+              <Palette className="size-3.5" /> Style day
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
           {SUB_VIEWS.map((v) => (
             <button
@@ -277,6 +297,9 @@ export function CalendarPanel({
                 classesByDay={classesByDay}
                 academicByDay={academicByDay}
                 colorMap={colorMap}
+                marks={marks}
+                canManage={canManage}
+                onStyleDay={setMarkDay}
                 now={now}
                 onSelect={onSelect}
               />
@@ -292,6 +315,7 @@ export function CalendarPanel({
                 classesByDay={classesByDay}
                 academicByDay={academicByDay}
                 colorMap={colorMap}
+                marks={marks}
                 now={now}
                 onSelect={onSelect}
               />
@@ -305,17 +329,40 @@ export function CalendarPanel({
                 classes={visibleClasses}
                 academic={academic}
                 colorMap={colorMap}
+                marks={marks}
                 now={now}
                 onSelect={onSelect}
                 canManage={canManage}
                 onEditSession={setEditing}
+                onStyleDay={setMarkDay}
+                onAddOnDay={(k) => {
+                  setCreateDay(k);
+                  setCreating(true);
+                }}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <SessionEditDialog session={editing} onClose={() => setEditing(null)} />
+      <SessionEditDialog
+        session={editing}
+        creating={creating}
+        batchId={batchId}
+        day={createDay}
+        onClose={() => {
+          setEditing(null);
+          setCreating(false);
+        }}
+      />
+
+      <DayMarkDialog
+        day={markDay}
+        batchId={batchId}
+        mark={markDay ? (marks.get(markDay) ?? null) : null}
+        onClose={() => setMarkDay(null)}
+      />
+
 
       <Legend />
     </section>
