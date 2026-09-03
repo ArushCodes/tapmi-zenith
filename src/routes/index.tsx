@@ -228,11 +228,11 @@ function Board() {
     [approved],
   );
   const nextExams = useMemo(
-    () => exams.filter((d) => phaseOf(d, now) !== "completed").slice(0, 4),
+    () => exams.filter((d) => phaseOf(d, now) !== "completed").slice(0, 40),
     [exams, now],
   );
   const nextProjects = useMemo(
-    () => projects.filter((d) => phaseOf(d, now) !== "completed").slice(0, 4),
+    () => projects.filter((d) => phaseOf(d, now) !== "completed").slice(0, 40),
     [projects, now],
   );
 
