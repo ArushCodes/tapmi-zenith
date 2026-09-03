@@ -265,24 +265,16 @@ export function TimetablePanel() {
   /** Unique colour per subject in this batch, catalogued or feed-discovered. */
   const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
-  /** Every class that appears anywhere in the feed, plus catalogued courses.
-   *  All holidays collapse into a single "Holidays" filter. */
+  /** Only the subjects actually taught in this batch — catalogue entries with
+   *  no lectures never become filters. All holidays collapse into one chip. */
   const options = useMemo(() => {
     const m = new Map<
       string,
       { key: string; label: string; sub: string; color: string; count: number }
     >();
-    for (const c of courses) {
-      m.set(courseKey(c), {
-        key: courseKey(c),
-        label: c.short_name || c.code,
-        sub: [c.code, c.faculty_name].filter(Boolean).join(" · "),
-        color: colorMap.get(courseKey(c)) ?? c.color ?? FALLBACK_COURSE_COLOR,
-        count: 0,
-      });
-    }
     for (const s of sessions) {
       if (isAcademicEvent(s)) continue;
+      if (!s.is_holiday && !isTeachingClass(s)) continue;
       const key = sessionKey(s);
       const existing = m.get(key);
       if (existing) {
@@ -302,7 +294,7 @@ export function TimetablePanel() {
       if (b.key === HOLIDAY_KEY) return -1;
       return a.label.localeCompare(b.label);
     });
-  }, [courses, sessions, colorMap]);
+  }, [sessions, colorMap]);
 
   const colorOf = (s: ClassSession) => sessionColor(s, colorMap);
 
