@@ -100,6 +100,38 @@ export function isHoliday(s: ClassSession) {
   return s.is_holiday;
 }
 
+/** Assessments (quizzes, tests, exams…) live on the timetable but are never
+ *  taught classes, so attendance must ignore them. */
+const ASSESSMENT_RE =
+  /\b(quiz|test|exam|midterm|mid-?term|endterm|end-?term|viva|presentation)\b/i;
+
+export function isAssessmentSession(s: ClassSession) {
+  return (
+    ASSESSMENT_RE.test(s.title) ||
+    ASSESSMENT_RE.test(s.course_name ?? "") ||
+    ASSESSMENT_RE.test(s.short_name ?? "")
+  );
+}
+
+/** A real, attendance-bearing class: not a holiday, not an academic-calendar
+ *  milestone, not an assessment, and tied to an actual course. Used by every
+ *  surface (feed, timetable, attendance, calendar) so all batches behave the
+ *  same way. */
+export function isTeachingClass(s: ClassSession) {
+  return (
+    !s.is_holiday &&
+    !isAcademicEvent(s) &&
+    !isAssessmentSession(s) &&
+    Boolean(s.course_name || s.course_code)
+  );
+}
+
+/** Sundays are off across the whole institute — one rule, every batch. */
+export function isDayOff(d: Date | string) {
+  return new Date(d).getDay() === 0;
+}
+
+
 /** Clean display name — drops the "- S10 - Faculty" tail feeds tack on. */
 export function sessionLabel(s: ClassSession) {
   const base = s.is_holiday ? s.title : (s.short_name ?? s.course_name ?? s.title);
