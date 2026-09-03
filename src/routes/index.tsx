@@ -345,25 +345,51 @@ function Board() {
         </div>
 
         {tab === "calendar" && (
-          <div className="mb-4 flex flex-wrap items-center gap-1">
-            {FILTERS.map((f) => (
+          <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
+            <div className="flex w-full flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              <span>
+                Events · {approved.length}
+                {filter !== "all" ? " · filtered" : ""}
+              </span>
+              <span className="h-px flex-1 bg-border" />
               <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
-                  filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
-                }`}
+                onClick={() => setFilter("all")}
+                disabled={filter === "all"}
+                className="text-faint normal-case hover:text-ink disabled:opacity-40"
               >
-                {filter === f.key && (
-                  <motion.span
-                    layoutId="filter-pill"
-                    className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
-                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                  />
-                )}
-                <span className="relative whitespace-nowrap">{f.label}</span>
+                Reset
               </button>
-            ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {FILTERS.map((f) => {
+                const type = (f.types?.[0] ?? "other") as DeadlineType;
+                const meta = eventMeta(type);
+                const on = filter === f.key;
+                const n = filterByKey(approved, f.key, "").length;
+                return (
+                  <motion.button
+                    key={f.key}
+                    layout
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => setFilter(f.key)}
+                    className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] outline-none transition-all focus:outline-none focus-visible:outline-none ${
+                      f.key === "all"
+                        ? `bg-cyan/12 text-cyan ring-1 ring-cyan/30 ${on ? "ring-2" : ""}`
+                        : `${meta.chip} ${on ? "ring-2" : ""} ${filter === "all" || on ? "opacity-100" : "opacity-40"}`
+                    }`}
+                  >
+                    <Marker
+                      shape={f.key === "all" ? "circle" : shapeForDeadline(type)}
+                      color="currentColor"
+                      size={8}
+                    />
+                    {f.label}
+                    <span className="opacity-70">{n}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
           </div>
         )}
 
