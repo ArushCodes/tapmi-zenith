@@ -1,9 +1,21 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  ListOrdered,
+  Palette,
+  Plus,
+} from "lucide-react";
 import { dayKey, displayTitle, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
+import { DayMarkDialog } from "@/components/calendar/DayMarkDialog";
+import { dayMarkMap, dayMarksQuery, markTint, type DayMark } from "@/lib/day-marks";
+
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
 import { SessionMeta } from "@/components/common/SessionMeta";
 import {
