@@ -88,17 +88,17 @@ function IndexPage() {
   return <Board />;
 }
 
-type TabKey =
-  | "feed"
-  | "announcements"
-  | "calendar"
-  | "timetable"
-  | "attendance"
-  | "activity"
-  | "approvals"
-  | "inbox"
-  | "members"
-  | "feedback";
+type TabKey = "feed" | "calendar" | "timetable" | "attendance";
+
+/** Secondary sections — opened as overlays from the account menu, not tabs. */
+type PanelKey = "members" | "feedback" | "approvals" | "inbox";
+
+const PANEL_TITLES: Record<PanelKey, string> = {
+  members: "Batch members",
+  feedback: "Feedback",
+  approvals: "Pending approvals",
+  inbox: "Email inbox",
+};
 
 
 function Board() {
