@@ -237,3 +237,51 @@ export function formatDuration(minutes: number) {
 export function sessionDuration(s: ClassSession) {
   return formatDuration((new Date(s.end_at).getTime() - new Date(s.start_at).getTime()) / 60000);
 }
+
+
+/** Short subject abbreviations for tight calendar pills: Socio, Psych, AI... */
+const ABBREV: [RegExp, string][] = [
+  [/sociolog/i, "Socio"],
+  [/psycholog/i, "Psych"],
+  [/english|communicat/i, "English"],
+  [/mathemat|maths/i, "Math"],
+  [/statistic/i, "Stats"],
+  [/artificial intelligence|\bai\b/i, "AI"],
+  [/spreadsheet/i, "Sheets"],
+  [/team build/i, "Team"],
+  [/behaviou?ral econom/i, "Beh Econ"],
+  [/econom/i, "Econ"],
+  [/account/i, "Acct"],
+  [/operations research/i, "Ops Res"],
+  [/marketing/i, "Mktg"],
+  [/finance|financial/i, "Fin"],
+  [/computer|programming/i, "CS"],
+  [/political/i, "Pol Sci"],
+  [/philosoph/i, "Philo"],
+  [/histor/i, "History"],
+  [/physic/i, "Physics"],
+  [/chemistr/i, "Chem"],
+  [/biolog/i, "Bio"],
+  [/environment/i, "Env"],
+  [/law|legal/i, "Law"],
+];
+
+export function abbrevSubject(name: string) {
+  const clean = name.trim();
+  if (!clean) return clean;
+  for (const [re, short] of ABBREV) if (re.test(clean)) return short;
+  const words = clean.split(/[\s/&-]+/).filter(Boolean);
+  if (words.length > 1) {
+    return words
+      .filter((w) => !/^(of|the|and|to|in|for|a|an)$/i.test(w))
+      .map((w) => w[0]!.toUpperCase())
+      .join("")
+      .slice(0, 4);
+  }
+  return clean.length > 8 ? `${clean.slice(0, 6)}.` : clean;
+}
+
+/** Abbreviated label for a class session, full name kept for tooltips. */
+export function sessionShortLabel(s: ClassSession) {
+  return s.is_holiday ? s.title : abbrevSubject(sessionFullName(s));
+}
