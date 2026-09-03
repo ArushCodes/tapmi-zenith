@@ -28,6 +28,8 @@ import {
   sessionColor,
   sessionKey,
   sessionLabel,
+  sessionShortLabel,
+  abbrevSubject,
 } from "@/lib/courses";
 
 type SubView = "month" | "week" | "agenda";
@@ -108,7 +110,7 @@ export function CalendarPanel({
       const key = courseKey(c);
       out.set(key, {
         key,
-        label: c.short_name || c.code,
+        label: abbrevSubject(c.name || c.short_name || c.code),
         color: c.color ?? colorMap.get(key) ?? FALLBACK_COURSE_COLOR,
         title: [c.name, c.faculty_name].filter(Boolean).join(" · "),
       });
@@ -119,7 +121,7 @@ export function CalendarPanel({
       if (out.has(key)) continue;
       out.set(key, {
         key,
-        label: sessionLabel(s),
+        label: abbrevSubject(sessionFullName(s)),
         color: sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR,
         title: [s.course_name, s.faculty_name].filter(Boolean).join(" · "),
       });
@@ -779,7 +781,7 @@ function WeekTimeline({
                               className="size-1.5 shrink-0 rounded-full"
                               style={{ backgroundColor: color }}
                             />
-                            <span className="truncate">{sessionLabel(s)}</span>
+                            <span className="truncate">{sessionShortLabel(s)}</span>
                           </span>
                         );
                       })}
