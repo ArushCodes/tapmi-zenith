@@ -263,7 +263,7 @@ function Board() {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-end justify-between gap-4 pb-7 pt-1"
+          className="flex flex-wrap items-end justify-between gap-4 pb-4 pt-0"
         >
           <div className="space-y-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
@@ -283,34 +283,52 @@ function Board() {
 
         </motion.div>
 
-        <nav
-          aria-label="Board sections"
-          className="mb-6 flex w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] [scrollbar-width:none] sm:w-fit [&::-webkit-scrollbar]:hidden"
-        >
-          {tabs.map((t) => (
+        <div className="mb-4 flex items-center gap-2">
+          <nav
+            aria-label="Board sections"
+            className="flex flex-1 items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {tabs.map((t) => (
+              <motion.button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                whileTap={{ scale: 0.96 }}
+                aria-current={tab === t.key ? "page" : undefined}
+                className={`relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-colors ${
+                  tab === t.key ? "text-white" : "text-dim hover:text-ink"
+                }`}
+              >
+                {tab === t.key && (
+                  <motion.span
+                    layoutId="tab-pill"
+                    className="absolute inset-0 rounded-xl bg-cyan"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="relative flex items-center gap-2">
+                  {t.icon}
+                  <span className="whitespace-nowrap">{t.label}</span>
+                </span>
+              </motion.button>
+            ))}
+          </nav>
+
+          {isMod && (
             <motion.button
-              key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+              whileHover={{ y: -1 }}
               whileTap={{ scale: 0.96 }}
-              aria-current={tab === t.key ? "page" : undefined}
-              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-colors ${
-                tab === t.key ? "text-white" : "text-dim hover:text-ink"
-              }`}
+              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
             >
-              {tab === t.key && (
-                <motion.span
-                  layoutId="tab-pill"
-                  className="absolute inset-0 rounded-xl bg-cyan"
-                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                />
-              )}
-              <span className="relative flex items-center gap-2">
-                {t.icon}
-                <span className="whitespace-nowrap">{t.label}</span>
-              </span>
+              <Plus className="size-4" />
+              <span className="hidden sm:inline">Add event</span>
             </motion.button>
-          ))}
-        </nav>
+          )}
+        </div>
 
         {tab === "calendar" && (
           <div className="sticky top-16 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
