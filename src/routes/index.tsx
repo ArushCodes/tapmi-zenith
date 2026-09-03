@@ -616,6 +616,8 @@ function Board() {
             {tab === "calendar" && (
               <CalendarPanel
                 canManage={isMod}
+                batchId={batchId}
+
                 deadlines={filtered}
                 sessions={sessions}
                 courses={courses}
