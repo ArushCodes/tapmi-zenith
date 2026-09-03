@@ -673,7 +673,9 @@ function SessionCard({
     status: AttendanceMark["status"] | null,
     userId: string,
     source: AttendanceMark["mark_source"],
+    leave?: LeaveType,
   ) => void;
+
 
   meId: string;
 }) {
