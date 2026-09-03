@@ -682,6 +682,7 @@ function WeekTimeline({
   classesByDay,
   academicByDay,
   colorMap,
+  marks,
   now,
   onSelect,
 }: {
@@ -691,6 +692,7 @@ function WeekTimeline({
   classesByDay: Map<string, ClassSession[]>;
   academicByDay: Map<string, ClassSession[]>;
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
@@ -702,21 +704,28 @@ function WeekTimeline({
       <div className="min-w-[720px]">
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
           <span />
-          {days.map((d) => (
-            <button
-              key={d.toISOString()}
-              onClick={() => onPickDay(dayKey(d))}
-              className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
-                dayKey(d) === todayKey
-                  ? "text-cyan"
-                  : isDayOff(d)
-                    ? "text-amber"
-                    : "text-faint"
-              }`}
-            >
-              {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
-            </button>
-          ))}
+          {days.map((d) => {
+            const mark = marks.get(dayKey(d)) ?? null;
+            return (
+              <button
+                key={d.toISOString()}
+                onClick={() => onPickDay(dayKey(d))}
+                title={mark?.label ?? undefined}
+                style={mark ? { color: mark.color } : undefined}
+                className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
+                  dayKey(d) === todayKey
+                    ? "text-cyan"
+                    : isDayOff(d)
+                      ? "text-amber"
+                      : "text-faint"
+                }`}
+              >
+                {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
+              </button>
+            );
+          })}
+        </div>
+
         </div>
 
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
