@@ -287,13 +287,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
     URL.revokeObjectURL(url);
   }
 
-  if (!isMember)
-    return (
-      <p className="mt-10 text-center font-mono text-xs text-faint">
-        {me.name ? `${me.name}, attendance` : "Attendance"} is visible to approved batch members.
-        Request access from the batch selector.
-      </p>
-    );
+  const focused = focus ? stats.find((s) => s.course === focus) : null;
 
   return (
     <section className="mt-4">
@@ -311,151 +305,133 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
         )}
       </div>
 
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
+        {conflicts.length > 0 && canManage && (
+          <p className="flex items-center gap-2 rounded-lg bg-evt-quiz/10 px-3 py-2 font-mono text-[11px] text-evt-quiz ring-1 ring-evt-quiz/30">
+            <AlertTriangle className="size-3.5" /> {conflicts.length} record(s) where a self-mark and
+            a rep mark disagree.
+          </p>
+        )}
 
-          {conflicts.length > 0 && canManage && (
+        {stats.length === 0 ? (
+          <p className="mt-6 text-center font-mono text-xs text-faint">
+            {me.name ? `${me.name}, no classes on record yet.` : "No classes on record yet."}
+          </p>
+        ) : (
+          <>
+            {/* ---------------- Hero ---------------- */}
+            <div className="rounded-2xl bg-surface p-5 ring-1 ring-border">
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+                <div className="shrink-0">
+                  <Donut
+                    value={overall.pct}
+                    color={meterColor(overall.pct)}
+                    size={156}
+                    thresholds={[HARD_LINE, SAFE_LINE]}
+                    label={`${overall.pct}%`}
+                    sub={focused ? shortSubject(focused.course, 14) : "attended"}
+                  />
+                </div>
 
-            <p className="flex items-center gap-2 rounded-lg bg-evt-quiz/10 px-3 py-2 font-mono text-[11px] text-evt-quiz ring-1 ring-evt-quiz/30">
-              <AlertTriangle className="size-3.5" /> {conflicts.length} record(s) where a self-mark
-              and a rep mark disagree.
-            </p>
-          )}
-          {stats.length === 0 ? (
-            <p className="mt-6 text-center font-mono text-xs text-faint">
-              {me.name ? `${me.name}, no classes on record yet.` : "No classes on record yet."}
-            </p>
-          ) : (
-            <>
-              <div className="flex flex-col items-center gap-5 rounded-2xl bg-surface p-4 ring-1 ring-border sm:flex-row sm:items-center">
-                <Donut
-                  value={overall.pct}
-                  color={meterColor(overall.pct)}
-                  size={150}
-                  thresholds={[HARD_LINE, SAFE_LINE]}
-                  label={`${overall.pct}%`}
-                  sub={focus ? shortSubject(focus, 16) : "overall"}
-                />
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-base font-semibold">
-                    {focus ? shortSubject(focus, 28) : "All subjects"}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-xl font-semibold leading-tight">
+                      {focused ? shortSubject(focused.course, 28) : "All subjects"}
+                    </h3>
+                    <BandChip pct={overall.pct} />
+                    {focused && (
+                      <button
+                        onClick={() => setFocus(null)}
+                        className="ml-auto rounded-lg px-2 py-1 font-mono text-[10px] text-faint ring-1 ring-border hover:text-ink"
+                      >
+                        Show all
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="mt-2 text-sm leading-relaxed text-dim">
+                    {overall.safeLeft >= 0 ? (
+                      <>
+                        You can still miss{" "}
+                        <span className="font-semibold text-ink">{overall.safeLeft}</span>{" "}
+                        {overall.safeLeft === 1 ? "class" : "classes"} before grade cuts begin.
+                      </>
+                    ) : overall.eligibleLeft >= 0 ? (
+                      <>
+                        <span className="font-semibold text-amber">
+                          −{overall.penalty.toFixed(1)} grade points
+                        </span>{" "}
+                        so far · {overall.eligibleLeft} more{" "}
+                        {overall.eligibleLeft === 1 ? "miss" : "misses"} before you lose exam
+                        eligibility.
+                      </>
+                    ) : (
+                      <span className="font-semibold text-rose">
+                        Below the {HARD_LINE}% eligibility line — Incomplete (I).
+                      </span>
+                    )}
                   </p>
-                  <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
-                    {overall.absent} of {overall.planned} sessions missed ·{" "}
-                    {overall.safeLeft >= 0
-                      ? `${overall.safeLeft} more before grade cuts start`
-                      : overall.eligibleLeft >= 0
-                        ? `${overall.eligibleLeft} more before you lose exam eligibility`
-                        : "past the 70% eligibility line"}
-                  </p>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <StatTile label="Attended" value={overall.planned - overall.absent} />
+                    <StatTile label="Missed" value={overall.absent} />
+                    <StatTile label="Scheduled" value={overall.planned} />
+                  </div>
+
+                  <Rail pct={overall.pct} labels />
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <LeaveBar type="personal" used={overall.pl} cap={overall.caps.personal} />
+                    <LeaveBar
+                      type="institutional"
+                      used={overall.il}
+                      cap={overall.caps.institutional}
+                    />
+                  </div>
+
                   {termEnd && (
-                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-faint">
-                      Leave budget runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
+                    <p className="mt-3 font-mono text-[10px] leading-relaxed text-faint">
+                      Budget runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
                       {untilReset(termEnd, now)}
                     </p>
                   )}
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <BandChip pct={overall.pct} />
-                    <PenaltyChip pct={overall.pct} penalty={overall.penalty} />
-                  </div>
-                  <ThresholdBar pct={overall.pct} />
-                  <LeaveBudget
-                    pl={overall.pl}
-                    il={overall.il}
-                    absent={overall.absent}
-                    caps={overall.caps}
-                  />
+
                   {longestRun.days > CONTINUOUS_ABSENCE_DAYS && (
-                    <p className="mt-2 flex items-start gap-2 rounded-lg bg-rose/10 px-2.5 py-2 font-mono text-[10px] leading-relaxed text-rose ring-1 ring-rose/30">
+                    <p className="mt-3 flex items-start gap-2 rounded-lg bg-rose/10 px-2.5 py-2 font-mono text-[10px] leading-relaxed text-rose ring-1 ring-rose/30">
                       <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
-                      {longestRun.days} continuous calendar days absent (
+                      {longestRun.days} continuous days absent (
                       {termFmt.format(new Date(longestRun.from))} –{" "}
-                      {termFmt.format(new Date(longestRun.to))}). Anything over{" "}
-                      {CONTINUOUS_ABSENCE_DAYS} days without the Director's approval means
-                      withdrawal from the programme.
+                      {termFmt.format(new Date(longestRun.to))}). Over {CONTINUOUS_ABSENCE_DAYS} days
+                      without the Director's approval means withdrawal.
                     </p>
                   )}
-
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    <button
-                      onClick={() => setFocus(null)}
-                      className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
-                        focus === null ? "bg-surface2 text-ink ring-cyan/40" : "text-dim ring-border"
-                      }`}
-                    >
-                      Overall
-                    </button>
-                    {stats.map((s) => (
-                      <button
-                        key={s.course}
-                        onClick={() => setFocus(focus === s.course ? null : s.course)}
-                        className={`rounded-lg px-2.5 py-1 font-mono text-[10px] ring-1 ${
-                          focus === s.course
-                            ? "bg-surface2 text-ink ring-cyan/40"
-                            : "text-dim ring-border hover:text-ink"
-                        }`}
-                      >
-                        {shortSubject(s.course, 14)}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
+            </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
-
-                {stats.map((s) => {
-                  const color = meterColor(s.pct);
-                  return (
-                    <motion.button
-                      key={s.course}
-                      layout
-                      onClick={() => setFocus(focus === s.course ? null : s.course)}
-                      whileHover={{ scale: 1.01, y: -2 }}
-                      whileTap={{ scale: 0.99 }}
-                      className={`rounded-xl bg-surface p-3 text-left ring-1 ${
-                        focus === s.course ? "ring-cyan/40" : "ring-border"
-                      }`}
-                      style={{ boxShadow: `inset 0 0 0 1px ${color}44` }}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="min-w-0 truncate font-display text-sm font-semibold">
-                          {shortSubject(s.course, 22)}
-                        </span>
-                        <span className="shrink-0 font-mono text-sm" style={{ color }}>
-                          {s.pct}%
-                        </span>
-                      </div>
-                      <ThresholdBar pct={s.pct} />
-                      <LeaveBudget pl={s.pl} il={s.il} absent={s.absent} caps={s.caps} />
-                      <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-dim">
-                        {s.absent} of {s.planned} missed ·{" "}
-                        {s.pct < HARD_LINE ? (
-                          <span className="text-rose">
-                            Incomplete (I) — repeat the course next year
-                          </span>
-                        ) : s.penalty > 0 ? (
-                          <span className="text-amber">
-                            −{s.penalty.toFixed(1)} grade points · {Math.max(0, s.eligibleLeft)}{" "}
-                            left before {HARD_LINE}%
-                          </span>
-                        ) : (
-                          <span className="text-evt-present">
-                            no penalty · {Math.max(0, s.safeLeft)} miss
-                            {s.safeLeft === 1 ? "" : "es"} left at {SAFE_LINE}%
-                          </span>
-                        )}
-                      </p>
-
-
-                    </motion.button>
-                  );
-                })}
+            {/* ---------------- Subject list ---------------- */}
+            <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+              <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
+                  By subject
+                </p>
+                <p className="ml-auto font-mono text-[10px] text-faint">
+                  {HARD_LINE}% eligibility · {SAFE_LINE}% no penalty
+                </p>
               </div>
-            </>
-          )}
+              {stats.map((s) => (
+                <SubjectRow
+                  key={s.course}
+                  row={s}
+                  active={focus === s.course}
+                  onClick={() => setFocus(focus === s.course ? null : s.course)}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
-          {!compact && (
+        {!compact && (
           <section className="rounded-2xl bg-surface p-4 ring-1 ring-border">
             <button
               onClick={() => setBrowse((v) => !v)}
@@ -494,14 +470,52 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
               </div>
             )}
           </section>
-          )}
+        )}
 
-          {!compact && <PolicyCard />}
-        </div>
-
+        {!compact && <PolicyCard />}
+      </div>
     </section>
   );
 }
+
+/** Small labelled number used in the hero. */
+function StatTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-xl bg-surface2/60 px-3 py-2 ring-1 ring-border">
+      <p className="font-display text-lg font-semibold leading-none">{value}</p>
+      <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.14em] text-faint">{label}</p>
+    </div>
+  );
+}
+
+/** One leave type as a slim used/cap bar. */
+function LeaveBar({ type, used, cap }: { type: LeaveType; used: number; cap: number }) {
+  const over = used > cap;
+  const fill = cap > 0 ? Math.min(100, (used / cap) * 100) : used > 0 ? 100 : 0;
+  return (
+    <div title={LEAVE_COPY[type].detail}>
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+          {LEAVE_COPY[type].label}
+        </span>
+        <span
+          className={`ml-auto font-mono text-[11px] ${over ? "text-rose" : "text-dim"}`}
+        >
+          {used}/{cap}
+        </span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface2">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${fill}%` }}
+          transition={{ type: "spring", stiffness: 120, damping: 24 }}
+          className={`h-full rounded-full ${over ? "bg-rose" : "bg-cyan/70"}`}
+        />
+      </div>
+    </div>
+  );
+}
+
 
 /** Personal / Institutional leave usage against their handbook caps. */
 function LeaveBudget({
