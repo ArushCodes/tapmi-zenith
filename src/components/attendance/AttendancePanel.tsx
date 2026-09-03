@@ -525,71 +525,6 @@ function LeaveBar({ type, used, cap }: { type: LeaveType; used: number; cap: num
 }
 
 
-/** Personal / Institutional leave usage against their handbook caps. */
-function LeaveBudget({
-  pl,
-  il,
-  absent,
-  caps,
-}: {
-  pl: number;
-  il: number;
-  absent: number;
-  caps: { total: number; personal: number; institutional: number };
-}) {
-  const items: Array<{ key: LeaveType; used: number; cap: number }> = [
-    { key: "personal", used: pl, cap: caps.personal },
-    { key: "institutional", used: il, cap: caps.institutional },
-  ];
-  return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {items.map((it) => {
-        const over = it.used > it.cap;
-        return (
-          <span
-            key={it.key}
-            title={LEAVE_COPY[it.key].detail}
-            className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
-              over ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
-            }`}
-          >
-            {LEAVE_COPY[it.key].short} {it.used}/{it.cap}
-          </span>
-        );
-      })}
-      <span
-        title={`Absolute wall — beyond ${TOTAL_CAP_PCT}% of sessions the course is Incomplete`}
-        className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
-          absent > caps.total ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
-        }`}
-      >
-        Total {absent}/{caps.total}
-      </span>
-    </div>
-  );
-}
-
-/** Shows the 0.5-per-session grade cut once past the 85% safe line. */
-function PenaltyChip({ pct, penalty }: { pct: number; penalty: number }) {
-  if (pct < HARD_LINE)
-    return (
-      <span className="rounded-lg bg-rose/10 px-2 py-1 font-mono text-[10px] text-rose ring-1 ring-rose/30">
-        Below {HARD_LINE}% · Incomplete
-      </span>
-    );
-  if (penalty <= 0)
-    return (
-      <span className="rounded-lg px-2 py-1 font-mono text-[10px] text-evt-present ring-1 ring-evt-present/30">
-        No grade penalty
-      </span>
-    );
-  return (
-    <span className="rounded-lg bg-amber/10 px-2 py-1 font-mono text-[10px] text-amber ring-1 ring-amber/30">
-      −{penalty.toFixed(1)} grade points
-    </span>
-  );
-}
-
 /** The handbook rules, spelled out so nobody has to open the PDF. */
 function PolicyCard() {
   return (
@@ -622,38 +557,40 @@ function PolicyCard() {
   );
 }
 
-/** Percentage bar with the 70% hard line and 85% safe line marked on it. */
-function ThresholdBar({ pct }: { pct: number }) {
+/** Percentage rail with subtle ticks at the 70% and 85% policy lines. */
+function Rail({ pct, labels = false }: { pct: number; labels?: boolean }) {
   return (
-    <div className="mt-2">
+    <div className={labels ? "mt-4" : ""}>
       <div className="relative h-2 overflow-hidden rounded-full bg-surface2">
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${Math.min(100, pct)}%` }}
-        transition={{ type: "spring", stiffness: 120, damping: 22 }}
-        className="h-full rounded-full"
-        style={{ backgroundColor: meterColor(pct) }}
-      />
-      {[HARD_LINE, SAFE_LINE].map((line) => (
-        <span
-          key={line}
-          title={`${line}% line`}
-          className="absolute top-0 h-full w-px bg-ink/45"
-          style={{ left: `${line}%` }}
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${Math.min(100, pct)}%` }}
+          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+          className="h-full rounded-full"
+          style={{ backgroundColor: meterColor(pct) }}
         />
-      ))}
-      </div>
-      <div className="relative mt-1 h-3">
         {[HARD_LINE, SAFE_LINE].map((line) => (
           <span
             key={line}
-            className="absolute font-mono text-[9px] leading-none text-faint"
-            style={{ left: `${line}%`, transform: "translateX(-50%)" }}
-          >
-            {line}%
-          </span>
+            title={`${line}% line`}
+            className="absolute top-0 h-full w-px bg-ink/35"
+            style={{ left: `${line}%` }}
+          />
         ))}
       </div>
+      {labels && (
+        <div className="relative mt-1 h-3">
+          {[HARD_LINE, SAFE_LINE].map((line) => (
+            <span
+              key={line}
+              className="absolute font-mono text-[9px] leading-none text-faint"
+              style={{ left: `${line}%`, transform: "translateX(-50%)" }}
+            >
+              {line}%
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -670,12 +607,84 @@ function BandChip({ pct }: { pct: number }) {
   return (
     <span
       title={BAND_COPY[band].detail}
-      className={`mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${tone}`}
+      className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${tone}`}
     >
       {BAND_COPY[band].label}
     </span>
   );
 }
+
+type SubjectStat = {
+  course: string;
+  planned: number;
+  pl: number;
+  il: number;
+  absent: number;
+  penalty: number;
+  safeLeft: number;
+  eligibleLeft: number;
+  pct: number;
+};
+
+/** One subject as a calm list row: name, plain-English status, meter, number. */
+function SubjectRow({
+  row,
+  active,
+  onClick,
+}: {
+  row: SubjectStat;
+  active: boolean;
+  onClick: () => void;
+}) {
+  const color = meterColor(row.pct);
+  const status =
+    row.pct < HARD_LINE
+      ? { text: "Incomplete — repeat next year", tone: "text-rose" }
+      : row.penalty > 0
+        ? {
+            text: `−${row.penalty.toFixed(1)} grade points · ${Math.max(0, row.eligibleLeft)} left before ${HARD_LINE}%`,
+            tone: "text-amber",
+          }
+        : {
+            text: `Safe · ${Math.max(0, row.safeLeft)} ${Math.max(0, row.safeLeft) === 1 ? "miss" : "misses"} left`,
+            tone: "text-evt-present",
+          };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center gap-4 border-b border-border px-4 py-3 text-left last:border-b-0 transition-colors ${
+        active ? "bg-surface2/70" : "hover:bg-surface2/40"
+      }`}
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-display text-sm font-semibold">
+          {shortSubject(row.course, 26)}
+        </span>
+        <span className={`mt-0.5 block font-mono text-[10px] leading-relaxed ${status.tone}`}>
+          {status.text}
+        </span>
+      </span>
+
+      <span className="hidden w-28 shrink-0 sm:block">
+        <Rail pct={row.pct} />
+        <span className="mt-1 block font-mono text-[9px] text-faint">
+          {row.absent} of {row.planned} missed
+        </span>
+      </span>
+
+      <span className="shrink-0 text-right">
+        <span className="block font-display text-lg font-semibold leading-none" style={{ color }}>
+          {row.pct}%
+        </span>
+        <span className="mt-1 block font-mono text-[9px] text-faint">
+          PL {row.pl} · IL {row.il}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 
 function SessionCard({
   session,
