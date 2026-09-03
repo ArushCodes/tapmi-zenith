@@ -275,12 +275,12 @@ function Board() {
 
       <BoardHeader menuItems={menuItems} onMenuSelect={(k) => setPanel(k as PanelKey)} />
 
-      <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-24 sm:px-8">
+      <main className="relative z-10 mx-auto max-w-[1180px] px-5 pt-6 pb-24 sm:px-8">
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex flex-wrap items-end justify-between gap-4 pb-4 pt-0"
+          className="flex flex-wrap items-end justify-between gap-4 pb-8 pt-2"
         >
           <div className="space-y-2">
             <h1 className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-4xl">
