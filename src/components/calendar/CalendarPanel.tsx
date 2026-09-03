@@ -258,19 +258,6 @@ export function CalendarPanel({
         <h2 className="font-display text-lg font-semibold tracking-tight">{heading}</h2>
 
         <div className="ml-auto flex items-center gap-2">
-          {canManage && (
-            <button
-              onClick={() => {
-                setCreateDay(focusDay);
-                setCreating(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-ground transition-colors hover:brightness-110"
-            >
-              <Plus className="size-3.5" /> Add event
-            </button>
-          )}
-
-
           <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
           {SUB_VIEWS.map((v) => (
             <button
@@ -290,6 +277,18 @@ export function CalendarPanel({
             </button>
           ))}
           </div>
+
+          {canManage && (
+            <button
+              onClick={() => {
+                setCreateDay(focusDay);
+                setCreating(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-ground transition-colors hover:brightness-110"
+            >
+              <Plus className="size-3.5" /> Add event
+            </button>
+          )}
         </div>
       </div>
 

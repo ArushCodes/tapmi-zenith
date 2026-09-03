@@ -322,7 +322,7 @@ function Board() {
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 30 }}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
             >
               <Plus className="size-4" />
               <span className="hidden sm:inline">Add event</span>
