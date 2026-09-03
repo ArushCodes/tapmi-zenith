@@ -19,8 +19,6 @@ import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
   autoColor,
-  breakMap,
-  formatBreak,
   buildColorMap,
   sessionLabel,
   sessionNumberOf,
@@ -552,7 +550,6 @@ export function TimetablePanel() {
             .filter(([day]) => !dayFocus || day === dayFocus)
             .map(([day, list]) => {
               const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
-              const dayBreaks = breakMap(list.sessions.filter(isTeachingClass));
               const allPicked =
                 dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
               const total = list.sessions.length + list.events.length;
