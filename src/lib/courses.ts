@@ -281,7 +281,11 @@ export function abbrevSubject(name: string) {
   return clean.length > 8 ? `${clean.slice(0, 6)}.` : clean;
 }
 
-/** Abbreviated label for a class session, full name kept for tooltips. */
+/** Abbreviated label for a class session: "Socio-S4" (subject + lecture no.). */
 export function sessionShortLabel(s: ClassSession) {
-  return s.is_holiday ? s.title : abbrevSubject(sessionFullName(s));
+  if (s.is_holiday) return s.title;
+  const subject = abbrevSubject(sessionFullName(s));
+  const n = sessionNumberOf(s);
+  return n ? `${subject}-S${n}` : subject;
 }
+
