@@ -1,9 +1,21 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  ListOrdered,
+  Palette,
+  Plus,
+} from "lucide-react";
 import { dayKey, displayTitle, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
+import { DayMarkDialog } from "@/components/calendar/DayMarkDialog";
+import { dayMarkMap, dayMarksQuery, markTint, type DayMark } from "@/lib/day-marks";
+
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
 import { SessionMeta } from "@/components/common/SessionMeta";
 import {
@@ -56,6 +68,7 @@ type Props = {
   courses?: Course[];
   now: number;
   canManage?: boolean;
+  batchId?: string | null;
   onSelect: (d: Deadline) => void;
 };
 
@@ -65,9 +78,13 @@ export function CalendarPanel({
   courses = [],
   now,
   canManage = false,
+  batchId = null,
   onSelect,
 }: Props) {
   const [editing, setEditing] = useState<ClassSession | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createDay, setCreateDay] = useState<string | null>(null);
+  const [markDay, setMarkDay] = useState<string | null>(null);
   const [subView, setSubView] = useState<SubView>("month");
   /** Clicking a date drills into that single day's agenda. */
   const [focusDay, setFocusDay] = useState<string | null>(null);
@@ -75,6 +92,11 @@ export function CalendarPanel({
   const [direction, setDirection] = useState(1);
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
+
+  const { data: dayMarks = [] } = useQuery(dayMarksQuery(batchId));
+  const marks = useMemo(() => dayMarkMap(dayMarks), [dayMarks]);
+
+
 
   const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
@@ -214,6 +236,26 @@ export function CalendarPanel({
 
         <h2 className="font-display text-lg font-semibold tracking-tight">{heading}</h2>
 
+        {canManage && (
+          <div className="flex gap-1">
+            <button
+              onClick={() => {
+                setCreateDay(focusDay);
+                setCreating(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold text-ground"
+            >
+              <Plus className="size-3.5" /> Add event
+            </button>
+            <button
+              onClick={() => setMarkDay(focusDay ?? dayKey(new Date(now)))}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
+            >
+              <Palette className="size-3.5" /> Style day
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
           {SUB_VIEWS.map((v) => (
             <button
@@ -255,6 +297,9 @@ export function CalendarPanel({
                 classesByDay={classesByDay}
                 academicByDay={academicByDay}
                 colorMap={colorMap}
+                marks={marks}
+                canManage={canManage}
+                onStyleDay={setMarkDay}
                 now={now}
                 onSelect={onSelect}
               />
@@ -270,6 +315,7 @@ export function CalendarPanel({
                 classesByDay={classesByDay}
                 academicByDay={academicByDay}
                 colorMap={colorMap}
+                marks={marks}
                 now={now}
                 onSelect={onSelect}
               />
@@ -283,17 +329,40 @@ export function CalendarPanel({
                 classes={visibleClasses}
                 academic={academic}
                 colorMap={colorMap}
+                marks={marks}
                 now={now}
                 onSelect={onSelect}
                 canManage={canManage}
                 onEditSession={setEditing}
+                onStyleDay={setMarkDay}
+                onAddOnDay={(k) => {
+                  setCreateDay(k);
+                  setCreating(true);
+                }}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <SessionEditDialog session={editing} onClose={() => setEditing(null)} />
+      <SessionEditDialog
+        session={editing}
+        creating={creating}
+        batchId={batchId}
+        day={createDay}
+        onClose={() => {
+          setEditing(null);
+          setCreating(false);
+        }}
+      />
+
+      <DayMarkDialog
+        day={markDay}
+        batchId={batchId}
+        mark={markDay ? (marks.get(markDay) ?? null) : null}
+        onClose={() => setMarkDay(null)}
+      />
+
 
       <Legend />
     </section>
@@ -473,6 +542,9 @@ function MonthGrid({
   classesByDay,
   academicByDay,
   colorMap,
+  marks,
+  canManage,
+  onStyleDay,
   now,
   onSelect,
 }: {
@@ -482,9 +554,13 @@ function MonthGrid({
   classesByDay: Map<string, ClassSession[]>;
   academicByDay: Map<string, ClassSession[]>;
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
+  canManage: boolean;
+  onStyleDay: (dayKey: string) => void;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
+
   const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const gridStart = startOfWeek(first);
   const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
@@ -511,6 +587,7 @@ function MonthGrid({
           const events = byDay.get(k) ?? [];
           const classes = classesByDay.get(k) ?? [];
           const acad = academicByDay.get(k) ?? [];
+          const mark = marks.get(k) ?? null;
           const inMonth = date.getMonth() === cursor.getMonth();
           const isToday = k === todayKey;
           return (
@@ -524,10 +601,11 @@ function MonthGrid({
               }}
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className={`min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
+              style={mark ? markTint(mark.color) : {}}
+              className={`group relative min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} ${
-                isDayOff(date) ? "bg-amber/8" : ""
+                !mark && isDayOff(date) ? "bg-amber/8" : ""
               } hover:shadow-lg hover:shadow-black/30`}
             >
               <div className="flex items-center justify-between">
@@ -535,13 +613,37 @@ function MonthGrid({
                   className={`font-mono text-sm ${
                     isToday ? "text-cyan" : inMonth ? "text-dim" : "text-faint"
                   }`}
+                  style={mark ? { color: mark.color } : undefined}
                 >
                   {date.getDate()}
                 </span>
                 {classes.length > 0 && (
                   <span className="font-mono text-[10px] text-faint">{classes.length}c</span>
                 )}
+                {canManage && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onStyleDay(k);
+                    }}
+                    aria-label="Style this day"
+                    className="absolute right-1 top-1 rounded-md bg-surface2/90 p-1 text-dim opacity-0 ring-1 ring-border transition-opacity hover:text-cyan group-hover:opacity-100"
+                  >
+                    <Palette className="size-3" />
+                  </button>
+                )}
               </div>
+
+              {mark?.label && (
+                <p
+                  className="mt-1 truncate rounded px-1 py-0.5 font-mono text-[10px]"
+                  style={{ color: mark.color, backgroundColor: `${mark.color}1f` }}
+                  title={mark.note ?? mark.label}
+                >
+                  {mark.label}
+                </p>
+              )}
+
 
               {acad.length > 0 && (
                 <div className="mt-1 flex flex-col gap-0.5">
@@ -580,6 +682,7 @@ function WeekTimeline({
   classesByDay,
   academicByDay,
   colorMap,
+  marks,
   now,
   onSelect,
 }: {
@@ -589,6 +692,7 @@ function WeekTimeline({
   classesByDay: Map<string, ClassSession[]>;
   academicByDay: Map<string, ClassSession[]>;
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
   now: number;
   onSelect: (d: Deadline) => void;
 }) {
@@ -600,22 +704,28 @@ function WeekTimeline({
       <div className="min-w-[720px]">
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
           <span />
-          {days.map((d) => (
-            <button
-              key={d.toISOString()}
-              onClick={() => onPickDay(dayKey(d))}
-              className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
-                dayKey(d) === todayKey
-                  ? "text-cyan"
-                  : isDayOff(d)
-                    ? "text-amber"
-                    : "text-faint"
-              }`}
-            >
-              {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
-            </button>
-          ))}
+          {days.map((d) => {
+            const mark = marks.get(dayKey(d)) ?? null;
+            return (
+              <button
+                key={d.toISOString()}
+                onClick={() => onPickDay(dayKey(d))}
+                title={mark?.label ?? undefined}
+                style={mark ? { color: mark.color } : undefined}
+                className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
+                  dayKey(d) === todayKey
+                    ? "text-cyan"
+                    : isDayOff(d)
+                      ? "text-amber"
+                      : "text-faint"
+                }`}
+              >
+                {WEEKDAYS[(d.getDay() + 6) % 7]} {d.getDate()}
+              </button>
+            );
+          })}
         </div>
+
 
         <div className="grid grid-cols-[52px_repeat(7,minmax(0,1fr))] gap-1 pb-1">
           <span />
@@ -641,13 +751,16 @@ function WeekTimeline({
                 const classes = (classesByDay.get(dayKey(d)) ?? []).filter(
                   (s) => new Date(s.start_at).getHours() === hour,
                 );
+                const mark = marks.get(dayKey(d)) ?? null;
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
+                    style={mark ? { backgroundColor: `${mark.color}14` } : undefined}
                     className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
-                      isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
+                      mark ? "" : isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
                     }`}
                   >
+
                     <div className="flex flex-col gap-1">
                       {classes.map((s) => {
                         const color = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
@@ -691,10 +804,13 @@ function Agenda({
   classes,
   academic,
   colorMap,
+  marks,
   now,
   onSelect,
   canManage,
   onEditSession,
+  onStyleDay,
+  onAddOnDay,
 }: {
   focusDay: string | null;
   onClearFocus: () => void;
@@ -703,11 +819,15 @@ function Agenda({
   classes: ClassSession[];
   academic: ClassSession[];
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
   now: number;
   onSelect: (d: Deadline) => void;
   canManage: boolean;
   onEditSession: (s: ClassSession) => void;
+  onStyleDay: (dayKey: string) => void;
+  onAddOnDay: (dayKey: string) => void;
 }) {
+
   const inMonth = (iso: string) => {
     if (focusDay) return dayKey(iso) === focusDay;
     const d = new Date(iso);
@@ -748,6 +868,14 @@ function Agenda({
     return (
       <div className="flex flex-col gap-4">
         {backBar}
+        {canManage && focusDay && (
+          <DayModBar
+            dayKey={focusDay}
+            mark={marks.get(focusDay) ?? null}
+            onStyleDay={onStyleDay}
+            onAddOnDay={onAddOnDay}
+          />
+        )}
         <p className="py-10 text-center font-mono text-xs text-faint">
           Nothing scheduled {focusDay ? "on this day" : "this month"}.
         </p>
@@ -757,12 +885,34 @@ function Agenda({
   return (
     <div className="flex flex-col gap-4">
       {backBar}
-      {[...groups.entries()].map(([key, list]) => (
+      {[...groups.entries()].map(([key, list]) => {
+        const mark = marks.get(key) ?? null;
+        return (
         <div key={key}>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-            {agendaFmt.format(new Date(list[0]!.at))}
-          </p>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              {agendaFmt.format(new Date(list[0]!.at))}
+            </p>
+            {mark && (
+              <span
+                className="rounded-md px-2 py-0.5 font-mono text-[10px]"
+                style={{ color: mark.color, backgroundColor: `${mark.color}1f` }}
+                title={mark.note ?? undefined}
+              >
+                {mark.label ?? (mark.is_off ? "Day off" : "Marked")}
+              </span>
+            )}
+            {canManage && (
+              <DayModBar
+                dayKey={key}
+                mark={mark}
+                onStyleDay={onStyleDay}
+                onAddOnDay={onAddOnDay}
+              />
+            )}
+          </div>
           <div className="flex flex-col gap-2">
+
             {list.map((row) => {
               if (row.kind === "deadline") {
                 const d = row.deadline;
@@ -839,10 +989,41 @@ function Agenda({
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+function DayModBar({
+  dayKey: k,
+  mark,
+  onStyleDay,
+  onAddOnDay,
+}: {
+  dayKey: string;
+  mark: DayMark | null;
+  onStyleDay: (dayKey: string) => void;
+  onAddOnDay: (dayKey: string) => void;
+}) {
+  return (
+    <span className="flex gap-1">
+      <button
+        onClick={() => onAddOnDay(k)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-cyan"
+      >
+        <Plus className="size-3" /> Event
+      </button>
+      <button
+        onClick={() => onStyleDay(k)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-cyan"
+      >
+        <Palette className="size-3" /> {mark ? "Edit day" : "Style day"}
+      </button>
+    </span>
+  );
+}
+
 
 function EditSessionButton({ onClick }: { onClick: () => void }) {
   return (

@@ -15,14 +15,20 @@ function toLocalInput(iso: string) {
 
 type Props = {
   session: ClassSession | null;
+  /** When true the dialog creates a new batch-wide event instead of editing. */
+  creating?: boolean;
+  batchId?: string | null;
+  /** Prefilled day (YYYY-MM-DD) when creating from a calendar cell. */
+  day?: string | null;
   onClose: () => void;
 };
 
 /** Moderator/admin editor for any calendar entry that comes from the
  *  timetable: classes, custom events, holidays and academic entries. */
-export function SessionEditDialog({ session, onClose }: Props) {
+export function SessionEditDialog({ session, creating = false, batchId, day, onClose }: Props) {
   const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
+  const [course, setCourse] = useState("");
   const [faculty, setFaculty] = useState("");
   const [room, setRoom] = useState("");
   const [start, setStart] = useState("");
@@ -30,38 +36,74 @@ export function SessionEditDialog({ session, onClose }: Props) {
   const [holiday, setHoliday] = useState(false);
   const [busy, setBusy] = useState(false);
 
+  const open = creating || !!session;
+
   useEffect(() => {
-    if (!session) return;
-    setTitle(session.title);
-    setFaculty(session.faculty_name ?? "");
-    setRoom(session.classroom ?? "");
-    setStart(toLocalInput(session.start_at));
-    setEnd(toLocalInput(session.end_at));
-    setHoliday(session.is_holiday);
-  }, [session]);
+    if (!open) return;
+    if (session) {
+      setTitle(session.title);
+      setCourse(session.course_name ?? "");
+      setFaculty(session.faculty_name ?? "");
+      setRoom(session.classroom ?? "");
+      setStart(toLocalInput(session.start_at));
+      setEnd(toLocalInput(session.end_at));
+      setHoliday(session.is_holiday);
+      return;
+    }
+    const base = day ? new Date(`${day}T09:00:00`) : new Date();
+    if (!day) base.setMinutes(0, 0, 0);
+    const later = new Date(base.getTime() + 60 * 60 * 1000);
+    setTitle("");
+    setCourse("");
+    setFaculty("");
+    setRoom("");
+    setStart(toLocalInput(base.toISOString()));
+    setEnd(toLocalInput(later.toISOString()));
+    setHoliday(false);
+  }, [open, session, day]);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["class-sessions"] });
 
   async function save() {
-    if (!session) return;
+    if (!title.trim()) {
+      toast.error("Give the event a title");
+      return;
+    }
     setBusy(true);
-    const { error } = await supabase
-      .from("class_sessions")
-      .update({
-        title,
-        faculty_name: faculty || null,
-        classroom: room || null,
-        start_at: new Date(start).toISOString(),
-        end_at: new Date(end).toISOString(),
-        is_holiday: holiday,
-      })
-      .eq("id", session.id);
+    const payload = {
+      title: title.trim(),
+      course_name: course.trim() || null,
+      faculty_name: faculty || null,
+      classroom: room || null,
+      start_at: new Date(start).toISOString(),
+      end_at: new Date(end).toISOString(),
+      is_holiday: holiday,
+    };
+
+    let error: { message: string } | null = null;
+    if (session) {
+      ({ error } = await supabase.from("class_sessions").update(payload).eq("id", session.id));
+    } else {
+      if (!batchId) {
+        setBusy(false);
+        toast.error("Pick a batch first");
+        return;
+      }
+      const { data: auth } = await supabase.auth.getUser();
+      ({ error } = await supabase.from("class_sessions").insert({
+        ...payload,
+        batch_id: batchId,
+        source: "custom" as const,
+        visibility: "batch",
+        created_by: auth.user?.id ?? null,
+      }));
+    }
     setBusy(false);
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success("Event updated");
+    toast.success(session ? "Event updated" : "Event added for the batch");
     refresh();
     onClose();
   }
@@ -80,9 +122,10 @@ export function SessionEditDialog({ session, onClose }: Props) {
     onClose();
   }
 
+
   return (
     <AnimatePresence>
-      {session && (
+      {open && (
         <>
           <motion.div
             key="scrim"
@@ -106,10 +149,10 @@ export function SessionEditDialog({ session, onClose }: Props) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-                  Edit calendar event
+                  {session ? "Edit calendar event" : "New event · whole batch"}
                 </p>
                 <h2 className="mt-1 font-display text-lg font-semibold tracking-tight">
-                  {session.title}
+                  {session ? session.title : "Add to the batch calendar"}
                 </h2>
               </div>
               <button
@@ -129,6 +172,15 @@ export function SessionEditDialog({ session, onClose }: Props) {
                   className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
                 />
               </Field>
+              <Field label="Subject">
+                <input
+                  value={course}
+                  onChange={(e) => setCourse(e.target.value)}
+                  placeholder="Optional — groups it with a subject colour"
+                  className="w-full rounded-lg bg-surface2 px-3 py-2 text-sm ring-1 ring-border outline-none focus:ring-cyan/40"
+                />
+              </Field>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Starts">
                   <input
@@ -179,11 +231,14 @@ export function SessionEditDialog({ session, onClose }: Props) {
             <div className="mt-5 flex items-center justify-between gap-3">
               <button
                 onClick={remove}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] text-rose ring-1 ring-rose/30 transition-colors hover:bg-rose/10 disabled:opacity-60"
+                disabled={busy || !session}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] text-rose ring-1 ring-rose/30 transition-colors hover:bg-rose/10 disabled:opacity-60 ${
+                  session ? "" : "invisible"
+                }`}
               >
                 <Trash2 className="size-3.5" /> Remove
               </button>
+
               <div className="flex gap-2">
                 <button
                   onClick={onClose}
