@@ -631,6 +631,7 @@ function Board() {
                 items={exams}
                 now={now}
                 canManage={isMod}
+                typeFilters={EXAM_TYPES}
                 onEdit={openEdit}
                 onDelete={(x) => remove.mutate(x)}
                 onOpen={setSelected}
