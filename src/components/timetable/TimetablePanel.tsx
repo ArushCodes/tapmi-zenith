@@ -565,7 +565,7 @@ export function TimetablePanel() {
                 <div className="mb-2 flex items-center gap-3">
                   <button
                     onClick={() => setDayFocus((d) => (d === day ? null : day))}
-                    className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-colors hover:text-ink ${
+                    className={`flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:text-ink ${
                       isDayOff(day) ? "text-amber" : "text-cyan"
                     }`}
                   >
