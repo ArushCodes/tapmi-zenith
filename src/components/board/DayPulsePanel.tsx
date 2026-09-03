@@ -11,10 +11,13 @@ import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches
 import {
   buildColorMap,
   isAcademicEvent,
+  isDayOff,
+  isTeachingClass,
   sessionColor,
   sessionFullName,
   sessionMeta,
 } from "@/lib/courses";
+
 import { coursesQuery } from "@/lib/batches";
 import { FALLBACK_COURSE_COLOR } from "@/lib/courses";
 import { Donut } from "@/components/ui/donut";
@@ -93,7 +96,10 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
       .sort((a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime());
   }, [sessions, now]);
 
-  const classes = today.filter((s) => !s.is_holiday);
+  /** Same definition of "a class" as the timetable and attendance pages. */
+  const classes = today.filter(isTeachingClass);
+  const dayOff = isDayOff(new Date(now));
+
 
   const stats = useMemo(() => {
     let total = 0;
