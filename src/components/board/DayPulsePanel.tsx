@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, CircleSlash, Clock3, Sun } from "lucide-react";
@@ -204,7 +204,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                 const gap = breaks.get(s.id);
                 const gapLive = gap ? now >= gap.start && now < gap.end : false;
                 return (
-                  <>
+                  <Fragment key={s.id}>
                   {gap && (
                     <li
                       key={`break-${s.id}`}
