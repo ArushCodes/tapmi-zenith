@@ -226,10 +226,10 @@ function Board() {
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
-    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
     { key: "quizzes", label: "Quizzes", icon: <FileQuestion className="size-4" /> },
     { key: "exams", label: "Exams", icon: <GraduationCap className="size-4" /> },
     { key: "projects", label: "Projects", icon: <BookOpen className="size-4" /> },
+    { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
 
