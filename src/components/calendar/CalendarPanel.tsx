@@ -751,13 +751,16 @@ function WeekTimeline({
                 const classes = (classesByDay.get(dayKey(d)) ?? []).filter(
                   (s) => new Date(s.start_at).getHours() === hour,
                 );
+                const mark = marks.get(dayKey(d)) ?? null;
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
+                    style={mark ? { backgroundColor: `${mark.color}14` } : undefined}
                     className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
-                      isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
+                      mark ? "" : isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
                     }`}
                   >
+
                     <div className="flex flex-col gap-1">
                       {classes.map((s) => {
                         const color = sessionColor(s, colorMap) ?? FALLBACK_COURSE_COLOR;
