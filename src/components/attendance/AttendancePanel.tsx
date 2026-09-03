@@ -338,19 +338,40 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                     {focus ? shortSubject(focus, 28) : "All subjects"}
                   </p>
                   <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
-                    {overall.absent} missed of {overall.planned} planned ·{" "}
-                    {overall.left >= 0
-                      ? `${overall.left} holiday${overall.left === 1 ? "" : "s"} left`
-                      : `${-overall.left} over budget`}
+                    {overall.absent} of {overall.planned} sessions missed ·{" "}
+                    {overall.safeLeft >= 0
+                      ? `${overall.safeLeft} more before grade cuts start`
+                      : overall.eligibleLeft >= 0
+                        ? `${overall.eligibleLeft} more before you lose exam eligibility`
+                        : "past the 70% eligibility line"}
                   </p>
                   {termEnd && (
                     <p className="mt-1 font-mono text-[10px] leading-relaxed text-faint">
-                      Quota runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
+                      Leave budget runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
                       {untilReset(termEnd, now)}
                     </p>
                   )}
-                  <BandChip pct={overall.pct} />
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <BandChip pct={overall.pct} />
+                    <PenaltyChip pct={overall.pct} penalty={overall.penalty} />
+                  </div>
                   <ThresholdBar pct={overall.pct} />
+                  <LeaveBudget
+                    pl={overall.pl}
+                    il={overall.il}
+                    absent={overall.absent}
+                    caps={overall.caps}
+                  />
+                  {longestRun.days > CONTINUOUS_ABSENCE_DAYS && (
+                    <p className="mt-2 flex items-start gap-2 rounded-lg bg-rose/10 px-2.5 py-2 font-mono text-[10px] leading-relaxed text-rose ring-1 ring-rose/30">
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                      {longestRun.days} continuous calendar days absent (
+                      {termFmt.format(new Date(longestRun.from))} –{" "}
+                      {termFmt.format(new Date(longestRun.to))}). Anything over{" "}
+                      {CONTINUOUS_ABSENCE_DAYS} days without the Director's approval means
+                      withdrawal from the programme.
+                    </p>
+                  )}
 
 
                   <div className="mt-3 flex flex-wrap gap-1.5">
