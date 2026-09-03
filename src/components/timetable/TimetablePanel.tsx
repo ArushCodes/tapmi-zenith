@@ -557,7 +557,7 @@ export function TimetablePanel() {
                 key={day}
                 layout
                 className={
-                  new Date(day).getDay() === 0
+                  isDayOff(day)
                     ? "rounded-2xl bg-amber/8 p-3 ring-1 ring-amber/20"
                     : undefined
                 }
@@ -566,11 +566,11 @@ export function TimetablePanel() {
                   <button
                     onClick={() => setDayFocus((d) => (d === day ? null : day))}
                     className={`flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] transition-colors hover:text-ink ${
-                      new Date(day).getDay() === 0 ? "text-amber" : "text-cyan"
+                      isDayOff(day) ? "text-amber" : "text-cyan"
                     }`}
                   >
                     {dayFmt.format(new Date(day))}
-                    {new Date(day).getDay() === 0 && (
+                    {isDayOff(day) && (
                       <span className="normal-case tracking-normal text-amber">· Sunday off</span>
                     )}
                     <span className="normal-case tracking-normal text-faint">
@@ -610,7 +610,7 @@ export function TimetablePanel() {
                               : "ring-border"
                         }`}
                       >
-                        {!s.is_holiday && (isMember || canManage) ? (
+                        {isTeachingClass(s) && (isMember || canManage) ? (
                           <button
                             onClick={() => togglePick(s.id)}
                             title="Select for mass actions"
@@ -651,7 +651,7 @@ export function TimetablePanel() {
                             {s.course_code}
                           </span>
                         )}
-                        {!s.is_holiday && isMember && user && (
+                        {isTeachingClass(s) && isMember && user && (
                           <motion.button
                             whileTap={{ scale: 0.94 }}
                             onClick={() =>

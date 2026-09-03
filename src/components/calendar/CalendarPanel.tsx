@@ -12,6 +12,7 @@ import {
   buildColorMap,
   courseKey,
   isAcademicEvent,
+  isDayOff,
   sessionColor,
   sessionKey,
   sessionLabel,
@@ -526,7 +527,7 @@ function MonthGrid({
               className={`min-h-[74px] cursor-pointer rounded-lg p-1.5 text-left ring-1 transition-shadow sm:min-h-[118px] ${
                 inMonth ? "bg-surface ring-border" : "bg-surface/40 ring-transparent"
               } ${isToday ? "ring-cyan/50" : ""} ${
-                date.getDay() === 0 ? "bg-amber/8" : ""
+                isDayOff(date) ? "bg-amber/8" : ""
               } hover:shadow-lg hover:shadow-black/30`}
             >
               <div className="flex items-center justify-between">
@@ -606,7 +607,7 @@ function WeekTimeline({
               className={`text-center font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:text-ink ${
                 dayKey(d) === todayKey
                   ? "text-cyan"
-                  : d.getDay() === 0
+                  : isDayOff(d)
                     ? "text-amber"
                     : "text-faint"
               }`}
@@ -644,7 +645,7 @@ function WeekTimeline({
                   <div
                     key={`${dayKey(d)}-${hour}`}
                     className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
-                      d.getDay() === 0 ? "bg-amber/8" : "bg-surface/60"
+                      isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
                     }`}
                   >
                     <div className="flex flex-col gap-1">
