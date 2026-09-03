@@ -24,6 +24,8 @@ import {
   sessionNumberOf,
   courseKey,
   isAcademicEvent,
+  isDayOff,
+  isTeachingClass,
   sessionColor,
   sessionKey,
 } from "@/lib/courses";
@@ -193,11 +195,16 @@ export function TimetablePanel() {
     );
   }, [sessions, deadlines, monthStart, monthEnd, selected, types]);
 
-  /** Every markable class currently on screen — the pool for mass actions. */
+  /** Every markable class currently on screen — the pool for mass actions.
+   *  Only real classes count (no holidays, milestones or assessments). */
   const visibleSessions = useMemo(
-    () => grouped.flatMap(([day, v]) => (!dayFocus || day === dayFocus ? v.sessions : [])).filter((s) => !s.is_holiday),
+    () =>
+      grouped
+        .flatMap(([day, v]) => (!dayFocus || day === dayFocus ? v.sessions : []))
+        .filter(isTeachingClass),
     [grouped, dayFocus],
   );
+
   const pickedSet = useMemo(() => new Set(picked), [picked]);
   const togglePick = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
