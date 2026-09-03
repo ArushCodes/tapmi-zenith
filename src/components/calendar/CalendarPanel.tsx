@@ -989,10 +989,41 @@ function Agenda({
             })}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+function DayModBar({
+  dayKey: k,
+  mark,
+  onStyleDay,
+  onAddOnDay,
+}: {
+  dayKey: string;
+  mark: DayMark | null;
+  onStyleDay: (dayKey: string) => void;
+  onAddOnDay: (dayKey: string) => void;
+}) {
+  return (
+    <span className="flex gap-1">
+      <button
+        onClick={() => onAddOnDay(k)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-cyan"
+      >
+        <Plus className="size-3" /> Event
+      </button>
+      <button
+        onClick={() => onStyleDay(k)}
+        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[10px] text-dim ring-1 ring-border transition-colors hover:text-cyan"
+      >
+        <Palette className="size-3" /> {mark ? "Edit day" : "Style day"}
+      </button>
+    </span>
+  );
+}
+
 
 function EditSessionButton({ onClick }: { onClick: () => void }) {
   return (
