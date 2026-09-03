@@ -706,18 +706,20 @@ function SessionCard({
           <SessionMeta session={session} />
 
         </span>
-        <button
-          onClick={() => onMark(myMark?.status === "absent" ? null : "absent", meId, "self")}
-          title={myMark?.status === "absent" ? "Tap again to clear" : "Mark absent"}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none sm:justify-start ${
-            myMark?.status === "absent"
-              ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
-              : "text-dim ring-border hover:text-ink"
-          }`}
-        >
-          <CircleSlash className="size-3.5" />{" "}
-          {myMark?.status === "absent" ? "Marked absent" : "Absent"}
-        </button>
+        <LeaveButtons
+          current={myMark?.status === "absent" ? ((myMark.leave_type ?? "personal") as LeaveType) : null}
+          onPick={(leave) =>
+            onMark(
+              myMark?.status === "absent" && (myMark.leave_type ?? "personal") === leave
+                ? null
+                : "absent",
+              meId,
+              "self",
+              leave,
+            )
+          }
+        />
+
 
 
         {canManage && (
