@@ -132,6 +132,33 @@ export function fullDeadlineLabel(d: Pick<Deadline, "subject" | "title">) {
   return d.subject ? `${d.subject} — ${t}` : t;
 }
 
+/** Compact suffix per event type, used on calendar pills: "Socio-Quiz". */
+export const TYPE_SHORT: Record<DeadlineType, string> = {
+  quiz: "Quiz",
+  assignment: "Assign",
+  presentation: "Present",
+  midterm: "Midterm",
+  endterm: "Endterm",
+  guest_lecture: "Lecture",
+  other: "Event",
+};
+
+/**
+ * Calendar pill copy for any event: "<Subject abbrev>-<Type>", e.g.
+ * "Socio-Quiz", "Stats-Midterm". Falls back to the title when no subject.
+ */
+export function deadlineShortLabel(
+  d: Pick<Deadline, "subject" | "subject_code" | "title" | "type">,
+  abbrev: (name: string) => string = (s) => s,
+) {
+  const subject = (d.subject || d.subject_code || "").trim();
+  const suffix = TYPE_SHORT[d.type] ?? TYPE_SHORT.other;
+  if (subject) return `${abbrev(subject)}-${suffix}`;
+  const t = displayTitle(null, d.title).trim();
+  return t ? `${abbrev(t)}-${suffix}` : suffix;
+}
+
+
 
 export type Urgency = "past" | "critical" | "soon" | "later";
 

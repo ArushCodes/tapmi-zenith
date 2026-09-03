@@ -10,7 +10,16 @@ import {
   Palette,
   Plus,
 } from "lucide-react";
-import { dayKey, displayTitle, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
+import {
+  dayKey,
+  deadlineShortLabel,
+  displayTitle,
+  eventMeta,
+  fullDeadlineLabel,
+  urgencyOf,
+  type Deadline,
+} from "@/lib/deadlines";
+
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { DayMarkDialog } from "@/components/calendar/DayMarkDialog";
@@ -91,10 +100,19 @@ export function CalendarPanel({
   const [subView, setSubView] = useState<SubView>("month");
   /** Clicking a date drills into that single day's agenda. */
   const [focusDay, setFocusDay] = useState<string | null>(null);
+  /** View to come back to when leaving a single-day agenda. */
+  const [returnView, setReturnView] = useState<SubView>("month");
   const [cursor, setCursor] = useState(() => new Date());
   const [direction, setDirection] = useState(1);
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
+
+  function pickDay(k: string) {
+    setReturnView(subView === "agenda" ? returnView : subView);
+    setFocusDay(k);
+    setSubView("agenda");
+  }
+
 
   const { data: dayMarks = [] } = useQuery(dayMarksQuery(batchId));
   const marks = useMemo(() => dayMarkMap(dayMarks), [dayMarks]);
@@ -241,24 +259,17 @@ export function CalendarPanel({
 
         <div className="ml-auto flex items-center gap-2">
           {canManage && (
-            <>
-              <button
-                onClick={() => {
-                  setCreateDay(focusDay);
-                  setCreating(true);
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-ground transition-colors hover:brightness-110"
-              >
-                <Plus className="size-3.5" /> Add event
-              </button>
-              <button
-                onClick={() => setMarkDay(focusDay ?? dayKey(new Date(now)))}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
-              >
-                <Palette className="size-3.5" /> Style day
-              </button>
-            </>
+            <button
+              onClick={() => {
+                setCreateDay(focusDay);
+                setCreating(true);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-ground transition-colors hover:brightness-110"
+            >
+              <Plus className="size-3.5" /> Add event
+            </button>
           )}
+
 
           <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
           {SUB_VIEWS.map((v) => (
@@ -293,10 +304,7 @@ export function CalendarPanel({
           >
             {subView === "month" && (
               <MonthGrid
-                onPickDay={(k) => {
-                  setFocusDay(k);
-                  setSubView("agenda");
-                }}
+                onPickDay={pickDay}
                 cursor={cursor}
                 byDay={byDay}
                 classesByDay={classesByDay}
@@ -311,10 +319,7 @@ export function CalendarPanel({
             )}
             {subView === "week" && (
               <WeekTimeline
-                onPickDay={(k) => {
-                  setFocusDay(k);
-                  setSubView("agenda");
-                }}
+                onPickDay={pickDay}
                 weekStart={weekStart}
                 byDay={byDay}
                 classesByDay={classesByDay}
@@ -328,7 +333,13 @@ export function CalendarPanel({
             {subView === "agenda" && (
               <Agenda
                 focusDay={focusDay}
-                onClearFocus={() => setFocusDay(null)}
+                onClearFocus={() => {
+                  setFocusDay(null);
+                  setSubView(returnView);
+                }}
+                backLabel={returnView === "week" ? "the week" : "the whole month"}
+
+
                 cursor={cursor}
                 deadlines={deadlines}
                 classes={visibleClasses}
@@ -486,6 +497,7 @@ function EventPill({
         onSelect(deadline);
       }}
       className={`flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-1 text-left font-mono text-[10px] ${m.chip} ${critical ? m.glow : ""}`}
+      title={fullDeadlineLabel(deadline)}
     >
       <Marker
         shape={shapeForDeadline(deadline.type)}
@@ -493,7 +505,8 @@ function EventPill({
         className={`${m.dot} ${critical && deadline.is_major ? "pulse-dot" : ""}`}
       />
       {showTime && <span className="shrink-0 opacity-80">{timeFmt.format(new Date(deadline.due_at))}</span>}
-      <span className="truncate">{deadline.subject || deadline.subject_code || displayTitle(null, deadline.title)}</span>
+      <span className="truncate">{deadlineShortLabel(deadline, abbrevSubject)}</span>
+
     </motion.button>
   );
 }
@@ -714,10 +727,11 @@ function WeekTimeline({
             return (
               <button
                 key={d.toISOString()}
+                type="button"
                 onClick={() => onPickDay(dayKey(d))}
-                title={mark?.label ?? undefined}
+                title={mark?.label ?? "Open this day"}
                 style={mark ? { color: mark.color } : undefined}
-                className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
+                className={`rounded-md px-1 py-1.5 text-center font-mono text-xs uppercase tracking-[0.14em] ring-1 ring-transparent transition-colors hover:bg-surface2 hover:text-ink hover:ring-cyan/40 ${
                   dayKey(d) === todayKey
                     ? "text-cyan"
                     : isDayOff(d)
@@ -729,6 +743,7 @@ function WeekTimeline({
               </button>
             );
           })}
+
         </div>
 
 
@@ -760,11 +775,18 @@ function WeekTimeline({
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onPickDay(dayKey(d))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") onPickDay(dayKey(d));
+                    }}
                     style={mark ? { backgroundColor: `${mark.color}14` } : undefined}
-                    className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
+                    className={`min-h-[36px] cursor-pointer rounded-md p-1 ring-1 ring-border/60 transition-shadow hover:ring-cyan/40 ${
                       mark ? "" : isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
                     }`}
                   >
+
 
                     <div className="flex flex-col gap-1">
                       {classes.map((s) => {
@@ -804,6 +826,7 @@ function WeekTimeline({
 function Agenda({
   focusDay,
   onClearFocus,
+  backLabel = "the whole month",
   cursor,
   deadlines,
   classes,
@@ -819,6 +842,8 @@ function Agenda({
 }: {
   focusDay: string | null;
   onClearFocus: () => void;
+  backLabel?: string;
+
   cursor: Date;
   deadlines: Deadline[];
   classes: ClassSession[];
@@ -865,9 +890,10 @@ function Agenda({
       onClick={onClearFocus}
       className="self-start rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] text-cyan ring-1 ring-cyan/30"
     >
-      ← Back to the whole month
+      ← Back to {backLabel}
     </motion.button>
   ) : null;
+
 
   if (rows.length === 0)
     return (
