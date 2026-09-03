@@ -11,6 +11,7 @@ export function Donut({
   label,
   sub,
   segments,
+  thresholds,
 }: {
   value?: number;
   color?: string;
@@ -19,6 +20,8 @@ export function Donut({
   label?: string;
   sub?: string;
   segments?: DonutSegment[];
+  /** Percentages to mark on the ring, e.g. [70, 85]. */
+  thresholds?: number[];
 }) {
   const r = (size - thickness) / 2;
   const c = 2 * Math.PI * r;
@@ -75,7 +78,42 @@ export function Donut({
                 transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
               />
             )}
+        {thresholds?.map((t) => {
+          const a = (t / 100) * 2 * Math.PI;
+          const inner = r - thickness / 2 - 1;
+          const outer = r + thickness / 2 + 1;
+          const cx = size / 2;
+          const cy = size / 2;
+          return (
+            <line
+              key={t}
+              x1={cx + inner * Math.cos(a)}
+              y1={cy + inner * Math.sin(a)}
+              x2={cx + outer * Math.cos(a)}
+              y2={cy + outer * Math.sin(a)}
+              className="stroke-ink/60"
+              strokeWidth={2}
+            />
+          );
+        })}
       </svg>
+      {thresholds?.map((t) => {
+        const a = (t / 100) * 2 * Math.PI - Math.PI / 2;
+        const rad = r + thickness / 2 + 9;
+        return (
+          <span
+            key={t}
+            className="pointer-events-none absolute font-mono text-[8px] leading-none text-faint"
+            style={{
+              left: size / 2 + rad * Math.cos(a),
+              top: size / 2 + rad * Math.sin(a),
+              transform: "translate(-50%, -50%)",
+            }}
+          >
+            {t}
+          </span>
+        );
+      })}
       <div className="absolute inset-0 grid place-content-center text-center">
         {label && (
           <motion.span
