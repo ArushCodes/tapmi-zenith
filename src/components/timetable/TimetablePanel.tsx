@@ -471,7 +471,11 @@ export function TimetablePanel() {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-surface2 px-3 py-2 ring-1 ring-border"
+            className={`mb-4 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 ring-1 ring-border ${
+              picked.length > 0
+                ? "sticky top-20 z-40 bg-surface2/95 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.6)] backdrop-blur"
+                : "bg-surface2"
+            }`}
           >
             <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
               {picked.length > 0 ? `${picked.length} selected` : "Multi-select"}
