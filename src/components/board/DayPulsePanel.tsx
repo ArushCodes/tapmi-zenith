@@ -23,7 +23,6 @@ import {
   isDayOff,
   isTeachingClass,
   sessionColor,
-  sessionDuration,
   sessionFullName,
   sessionMeta,
 } from "@/lib/courses";
@@ -374,7 +373,6 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
 
                           <span className="text-right font-mono text-xs tabular-nums text-faint">
                             {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
-                            <span className="ml-1.5 text-dim">{sessionDuration(s)}</span>
                           </span>
                           {isMember && user && (
                             <motion.button
