@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, CircleSlash, Clock3, Sun } from "lucide-react";
@@ -9,7 +9,9 @@ import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
 import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches";
 import {
+  breakMap,
   buildColorMap,
+  formatBreak,
   isAcademicEvent,
   isDayOff,
   isTeachingClass,
@@ -99,6 +101,9 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
   /** Same definition of "a class" as the timetable and attendance pages. */
   const classes = today.filter(isTeachingClass);
   const dayOff = isDayOff(new Date(now));
+  /** Free stretches between classes read as break time on the timeline. */
+  const breaks = useMemo(() => breakMap(classes), [classes]);
+
 
 
   const stats = useMemo(() => {
@@ -196,7 +201,38 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                 const isDone = p === 100;
                 const absent = myMarks.get(s.id) === "absent";
                 const meta = sessionMeta(s);
+                const gap = breaks.get(s.id);
+                const gapLive = gap ? now >= gap.start && now < gap.end : false;
                 return (
+                  <Fragment key={s.id}>
+                  {gap && (
+                    <li
+                      key={`break-${s.id}`}
+                      className="relative flex gap-4 pb-3"
+                      aria-label="Break time"
+                    >
+                      <span className="absolute left-[7px] top-0 h-full w-px bg-border/70" />
+                      <span className="relative z-10 mt-3 size-[15px] shrink-0 rounded-full bg-surface2 ring-4 ring-surface" />
+                      <div
+                        className={`min-w-0 flex-1 rounded-xl border border-dashed px-3.5 py-2 ${
+                          gapLive ? "border-amber/50 bg-amber/8" : "border-border/70"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p
+                            className={`font-mono text-[10px] uppercase tracking-[0.2em] ${
+                              gapLive ? "text-amber" : "text-faint"
+                            }`}
+                          >
+                            {formatBreak(gap.minutes)}
+                          </p>
+                          <span className="font-mono text-xs tabular-nums text-faint">
+                            {clock.format(new Date(gap.start))}–{clock.format(new Date(gap.end))}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  )}
                   <motion.li
                     key={s.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -285,6 +321,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                       </div>
                     </div>
                   </motion.li>
+                  </Fragment>
                 );
               })}
             </ol>

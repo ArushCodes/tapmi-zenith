@@ -595,6 +595,57 @@ export type Database = {
           },
         ]
       }
+      exam_marks: {
+        Row: {
+          batch_id: string
+          created_at: string
+          deadline_id: string
+          id: string
+          score: number
+          total: number
+          updated_at: string
+          user_id: string
+          weightage: number
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          deadline_id: string
+          id?: string
+          score?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+          weightage?: number
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          deadline_id?: string
+          id?: string
+          score?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+          weightage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_marks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_marks_deadline_id_fkey"
+            columns: ["deadline_id"]
+            isOneToOne: false
+            referencedRelation: "deadlines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           admin_note: string | null

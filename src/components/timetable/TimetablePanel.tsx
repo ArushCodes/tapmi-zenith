@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
@@ -19,6 +19,8 @@ import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
   autoColor,
+  breakMap,
+  formatBreak,
   buildColorMap,
   sessionLabel,
   sessionNumberOf,
@@ -553,6 +555,7 @@ export function TimetablePanel() {
             .filter(([day]) => !dayFocus || day === dayFocus)
             .map(([day, list]) => {
               const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
+              const dayBreaks = breakMap(list.sessions.filter(isTeachingClass));
               const allPicked =
                 dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
               const total = list.sessions.length + list.events.length;
@@ -600,9 +603,20 @@ export function TimetablePanel() {
                   {list.sessions.map((s) => {
                     const color = s.is_holiday ? HOLIDAY_COLOR : colorOf(s);
                     const isPicked = pickedSet.has(s.id);
+                    const gap = dayBreaks.get(s.id);
                     return (
+                      <Fragment key={s.id}>
+                      {gap && (
+                        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border/70 px-3 py-1.5">
+                          <span className="font-mono text-[11px] tabular-nums text-faint">
+                            {timeFmt.format(new Date(gap.start))}–{timeFmt.format(new Date(gap.end))}
+                          </span>
+                          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
+                            {formatBreak(gap.minutes)}
+                          </span>
+                        </div>
+                      )}
                       <motion.div
-                        key={s.id}
                         layout
                         whileHover={{ scale: 1.01, y: -2 }}
                         style={{ borderLeftColor: color ?? "transparent" }}
@@ -679,6 +693,7 @@ export function TimetablePanel() {
                         )}
 
                       </motion.div>
+                      </Fragment>
                     );
                   })}
 

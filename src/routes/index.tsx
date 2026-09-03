@@ -30,6 +30,7 @@ import {
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { Landing } from "@/components/landing/Landing";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
+import { ExamMarks } from "@/components/board/ExamMarks";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
 import { EventDrawer } from "@/components/board/EventDrawer";
 import { ApprovalsPanel } from "@/components/board/ApprovalsPanel";
@@ -632,6 +633,7 @@ function Board() {
                 now={now}
                 canManage={isMod}
                 typeFilters={EXAM_TYPES}
+                showMarks
                 onEdit={openEdit}
                 onDelete={(x) => remove.mutate(x)}
                 onOpen={setSelected}
@@ -736,6 +738,7 @@ function DeadlineBoard({
   now,
   canManage,
   typeFilters,
+  showMarks = false,
   onEdit,
   onDelete,
   onOpen,
@@ -745,6 +748,7 @@ function DeadlineBoard({
   now: number;
   canManage: boolean;
   typeFilters?: readonly DeadlineType[];
+  showMarks?: boolean;
   onEdit: (d: Deadline) => void;
   onDelete: (d: Deadline) => void;
   onOpen: (d: Deadline) => void;
@@ -823,15 +827,17 @@ function DeadlineBoard({
                 </div>
                 <div className={`flex flex-col gap-4 ${label === "Completed" ? "opacity-70" : ""}`}>
                   {list.map((d) => (
-                    <DeadlineRow
-                      key={d.id}
-                      deadline={d}
-                      now={now}
-                      canManage={canManage}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onOpen={onOpen}
-                    />
+                    <div key={d.id}>
+                      <DeadlineRow
+                        deadline={d}
+                        now={now}
+                        canManage={canManage}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onOpen={onOpen}
+                      />
+                      {showMarks && <ExamMarks deadline={d} />}
+                    </div>
                   ))}
                 </div>
               </div>
