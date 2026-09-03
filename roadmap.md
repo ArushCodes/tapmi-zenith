@@ -15,4 +15,4 @@
 - [x] Shared "what counts as a class" rule (no holidays, academic milestones or assessments) applied on feed, timetable, attendance and calendar for every batch
 - [x] Sunday-off treatment unified across feed, timetable and calendar
 - [x] Global focus-outline reset so filter chips don't keep a stuck border
-- [ ] Add test users abhinav@me.com and abhijeet@me.com (password: password)
+- [x] Add test users abhinav@me.com and abhijeet@me.com (password: password)
