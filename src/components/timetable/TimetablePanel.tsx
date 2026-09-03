@@ -901,11 +901,22 @@ function IcsSettings({
   );
 }
 
-function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => void }) {
+function CustomClassForm({
+  batchId,
+  canManage,
+  userId,
+  onDone,
+}: {
+  batchId: string;
+  canManage: boolean;
+  userId: string | null;
+  onDone: () => void;
+}) {
   const [title, setTitle] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
   const [room, setRoom] = useState("");
+  const [scope, setScope] = useState<"batch" | "private">(canManage ? "batch" : "private");
   const [busy, setBusy] = useState(false);
 
   return (
@@ -923,11 +934,17 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
           start_at: new Date(start).toISOString(),
           end_at: new Date(end).toISOString(),
           classroom: room || null,
+          visibility: canManage ? scope : "private",
+          created_by: userId,
         });
         setBusy(false);
         if (error) toast.error(error.message);
         else {
-          toast.success("Custom class added");
+          toast.success(
+            (canManage ? scope : "private") === "batch"
+              ? "Class added for the whole batch"
+              : "Class added — only you can see it",
+          );
           onDone();
         }
       }}
@@ -936,6 +953,33 @@ function CustomClassForm({ batchId, onDone }: { batchId: string; onDone: () => v
       <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
         Add a class the calendar feed does not have
       </p>
+      {canManage ? (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(
+            [
+              { key: "batch", label: "Everyone in this batch" },
+              { key: "private", label: "Only me" },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              onClick={() => setScope(o.key)}
+              className={`rounded-lg px-3 py-1.5 font-mono text-[11px] outline-none transition-colors focus:outline-none ${
+                scope === o.key
+                  ? "bg-cyan/15 text-cyan ring-1 ring-cyan/40"
+                  : "bg-surface2 text-dim ring-1 ring-border hover:text-ink"
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <p className="mb-3 font-mono text-[10px] text-faint">
+          Personal class — only you will see it.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-4">
         <input
           value={title}
