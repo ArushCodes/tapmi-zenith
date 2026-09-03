@@ -275,6 +275,7 @@ export function CalendarPanel({
               {v.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
