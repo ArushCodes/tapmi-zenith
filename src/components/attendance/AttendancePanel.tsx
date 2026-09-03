@@ -768,3 +768,35 @@ function SessionCard({
     </motion.div>
   );
 }
+
+/** Two-way absence marker: Personal leave or Institutional leave. */
+function LeaveButtons({
+  current,
+  onPick,
+}: {
+  current: LeaveType | null;
+  onPick: (leave: LeaveType) => void;
+}) {
+  const types: LeaveType[] = ["personal", "institutional"];
+  return (
+    <div className="flex flex-1 items-center gap-1.5 sm:flex-none">
+      {types.map((t) => {
+        const on = current === t;
+        return (
+          <button
+            key={t}
+            onClick={() => onPick(t)}
+            title={on ? "Tap again to clear" : LEAVE_COPY[t].help}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[11px] ring-1 sm:flex-none ${
+              on
+                ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
+                : "text-dim ring-border hover:text-ink"
+            }`}
+          >
+            <CircleSlash className="size-3.5" /> {LEAVE_COPY[t].short}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
