@@ -501,6 +501,103 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
   );
 }
 
+/** Personal / Institutional leave usage against their handbook caps. */
+function LeaveBudget({
+  pl,
+  il,
+  absent,
+  caps,
+}: {
+  pl: number;
+  il: number;
+  absent: number;
+  caps: { total: number; personal: number; institutional: number };
+}) {
+  const items: Array<{ key: LeaveType; used: number; cap: number }> = [
+    { key: "personal", used: pl, cap: caps.personal },
+    { key: "institutional", used: il, cap: caps.institutional },
+  ];
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {items.map((it) => {
+        const over = it.used > it.cap;
+        return (
+          <span
+            key={it.key}
+            title={LEAVE_COPY[it.key].help}
+            className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+              over ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
+            }`}
+          >
+            {LEAVE_COPY[it.key].short} {it.used}/{it.cap}
+          </span>
+        );
+      })}
+      <span
+        title={`Absolute wall — beyond ${TOTAL_CAP_PCT}% of sessions the course is Incomplete`}
+        className={`rounded-lg px-2 py-1 font-mono text-[10px] ring-1 ${
+          absent > caps.total ? "bg-rose/10 text-rose ring-rose/30" : "text-dim ring-border"
+        }`}
+      >
+        Total {absent}/{caps.total}
+      </span>
+    </div>
+  );
+}
+
+/** Shows the 0.5-per-session grade cut once past the 85% safe line. */
+function PenaltyChip({ pct, penalty }: { pct: number; penalty: number }) {
+  if (pct < HARD_LINE)
+    return (
+      <span className="rounded-lg bg-rose/10 px-2 py-1 font-mono text-[10px] text-rose ring-1 ring-rose/30">
+        Below {HARD_LINE}% · Incomplete
+      </span>
+    );
+  if (penalty <= 0)
+    return (
+      <span className="rounded-lg px-2 py-1 font-mono text-[10px] text-evt-present ring-1 ring-evt-present/30">
+        No grade penalty
+      </span>
+    );
+  return (
+    <span className="rounded-lg bg-amber/10 px-2 py-1 font-mono text-[10px] text-amber ring-1 ring-amber/30">
+      −{penalty.toFixed(1)} grade points
+    </span>
+  );
+}
+
+/** The handbook rules, spelled out so nobody has to open the PDF. */
+function PolicyCard() {
+  return (
+    <div className="rounded-2xl bg-surface p-4 font-mono text-[10px] leading-relaxed text-faint ring-1 ring-border">
+      <p className="font-display text-sm font-semibold text-ink">How attendance is scored</p>
+      <ul className="mt-2 flex flex-col gap-1">
+        <li>
+          <span className="text-dim">{SAFE_LINE}% and above</span> — clean, no penalty.
+        </li>
+        <li>
+          <span className="text-dim">
+            {HARD_LINE}–{SAFE_LINE}%
+          </span>{" "}
+          — {PENALTY_PER_SESSION} grade points lost per session missed past the {SAFE_LINE}% line.
+        </li>
+        <li>
+          <span className="text-dim">Below {HARD_LINE}%</span> — Incomplete (I): the course has to be
+          repeated.
+        </li>
+        <li>
+          {LEAVE_COPY.personal.label} and {LEAVE_COPY.institutional.label} are capped at{" "}
+          {PL_CAP_PCT}% each, and {TOTAL_CAP_PCT}% combined, of a course's sessions.
+        </li>
+        <li>
+          More than {CONTINUOUS_ABSENCE_DAYS} continuous days absent without the Director's approval
+          means withdrawal from the programme.
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 /** Percentage bar with the 70% hard line and 85% safe line marked on it. */
 function ThresholdBar({ pct }: { pct: number }) {
   return (
