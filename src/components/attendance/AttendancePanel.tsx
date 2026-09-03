@@ -140,11 +140,20 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
     return map;
   }, [marks, user?.id]);
 
-  /** Per-course stats: attendance is measured against the planned trimester
-   *  session count, so every unexcused absence eats into the percentage. */
+  /** Marks that count as a leave, resolved rep-over-self, keyed by session. */
+  const resolvedMine = useMemo(() => resolveMarks(marks, user?.id), [marks, user?.id]);
+
+  const absentIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const [id, m] of resolvedMine) if (m.status === "absent") set.add(id);
+    return set;
+  }, [resolvedMine]);
+
+  /** Per-course stats following the IPM handbook: leaves are split into
+   *  Personal and Institutional, each capped at 15% of the course's sessions,
+   *  with 30% as the absolute combined wall. */
   const stats = useMemo(() => {
     const sessionById = new Map(classes.map((s) => [s.id, s]));
-    const resolved = resolveMarks(marks, user?.id);
 
     const scheduled = new Map<string, number>();
     for (const s of classes) {
@@ -152,62 +161,86 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
       scheduled.set(key, (scheduled.get(key) ?? 0) + 1);
     }
 
-    const rows = new Map<string, { held: number; absent: number; present: number }>();
-    for (const key of scheduled.keys()) rows.set(key, { held: 0, absent: 0, present: 0 });
+    type Row = { held: number; pl: number; il: number; present: number };
+    const rows = new Map<string, Row>();
+    for (const key of scheduled.keys()) rows.set(key, { held: 0, pl: 0, il: 0, present: 0 });
     for (const s of classes) {
       if (new Date(s.end_at).getTime() > now) continue;
-      const row = rows.get(sessionSubject(s))!;
-      row.held += 1;
+      rows.get(sessionSubject(s))!.held += 1;
     }
-    for (const [sessionId, m] of resolved) {
+    for (const [sessionId, m] of resolvedMine) {
       const s = sessionById.get(sessionId);
       if (!s) continue;
       const row = rows.get(sessionSubject(s));
       if (!row) continue;
-      if (m.status === "absent") row.absent += 1;
-      else row.present += 1;
+      if (m.status !== "absent") {
+        row.present += 1;
+        continue;
+      }
+      if (m.leave_type === "institutional") row.il += 1;
+      else row.pl += 1;
     }
 
     return [...rows.entries()]
       .map(([course, v]) => {
         const planned = plannedFor(course, scheduled.get(course) ?? v.held);
-        const attended = Math.max(0, planned - v.absent);
-        const allowance = allowanceFor(planned);
+        const absent = v.pl + v.il;
+        const attended = Math.max(0, planned - absent);
+        const caps = leaveCaps(planned, v.pl);
+        const pct = planned ? Math.round((attended / planned) * 100) : 100;
         return {
           course,
           planned,
-          absent: v.absent,
+          pl: v.pl,
+          il: v.il,
+          absent,
           present: v.present,
           held: v.held,
           attended,
-          credits: creditsFor(planned),
-          allowance,
-          left: allowance - v.absent,
-          hardLeft: hardAllowanceFor(planned) - v.absent,
-          pct: planned ? Math.round((attended / planned) * 100) : 100,
+          caps,
+          plLeft: caps.personal - v.pl,
+          ilLeft: caps.institutional - v.il,
+          totalLeft: caps.total - absent,
+          safeLeft: safeMisses(planned) - absent,
+          eligibleLeft: eligibilityMisses(planned) - absent,
+          penalty: gradePenalty(planned, absent),
+          pct,
         };
       })
       .sort((a, b) => a.pct - b.pct);
-  }, [marks, classes, user?.id, now]);
+  }, [resolvedMine, classes, now]);
 
-  const threshold = Number(batch?.attendance_threshold ?? 75);
-
-  /** The holiday budget belongs to the current trimester — its end is the last
-   *  class on the calendar, and the quota resets after it. */
+  /** The leave budget belongs to the current trimester — its end is the last
+   *  class on the calendar, and the budget resets after it. */
   const termEnd = useMemo(() => trimesterEnd(classes, now), [classes, now]);
+
+  /** More than 13 continuous calendar days absent forces a withdrawal. */
+  const longestRun = useMemo(
+    () => longestAbsenceRun(classes, (s) => absentIds.has(s.id), now),
+    [classes, absentIds, now],
+  );
 
   /** Donut source: one subject when focused, else the whole trimester. */
   const overall = useMemo(() => {
     const rows = focus ? stats.filter((s) => s.course === focus) : stats;
     const planned = rows.reduce((a, s) => a + s.planned, 0);
-    const absent = rows.reduce((a, s) => a + s.absent, 0);
+    const pl = rows.reduce((a, s) => a + s.pl, 0);
+    const il = rows.reduce((a, s) => a + s.il, 0);
+    const absent = pl + il;
     const attended = Math.max(0, planned - absent);
-    const allowance = rows.reduce((a, s) => a + s.allowance, 0);
+    const caps = leaveCaps(planned, pl);
     return {
       planned,
+      pl,
+      il,
       absent,
-      allowance,
-      left: allowance - absent,
+      caps,
+      plLeft: caps.personal - pl,
+      ilLeft: caps.institutional - il,
+      totalLeft: caps.total - absent,
+      safeLeft: safeMisses(planned) - absent,
+      eligibleLeft: eligibilityMisses(planned) - absent,
+      penalty: gradePenalty(planned, absent),
       pct: planned ? Math.round((attended / planned) * 100) : 100,
     };
   }, [stats, focus]);
