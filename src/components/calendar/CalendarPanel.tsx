@@ -236,27 +236,28 @@ export function CalendarPanel({
 
         <h2 className="font-display text-lg font-semibold tracking-tight">{heading}</h2>
 
-        {canManage && (
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => {
-                setCreateDay(focusDay);
-                setCreating(true);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold text-ground"
-            >
-              <Plus className="size-3.5" /> Add event
-            </button>
-            <button
-              onClick={() => setMarkDay(focusDay ?? dayKey(new Date(now)))}
-              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
-            >
-              <Palette className="size-3.5" /> Style day
-            </button>
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {canManage && (
+            <>
+              <button
+                onClick={() => {
+                  setCreateDay(focusDay);
+                  setCreating(true);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-cyan px-3 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide text-ground transition-colors hover:brightness-110"
+              >
+                <Plus className="size-3.5" /> Add event
+              </button>
+              <button
+                onClick={() => setMarkDay(focusDay ?? dayKey(new Date(now)))}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
+              >
+                <Palette className="size-3.5" /> Style day
+              </button>
+            </>
+          )}
 
-        <div className="ml-auto flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
+          <div className="flex rounded-lg bg-surface2/70 p-0.5 ring-1 ring-border">
           {SUB_VIEWS.map((v) => (
             <button
               key={v.key}
