@@ -287,6 +287,14 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
     URL.revokeObjectURL(url);
   }
 
+  if (!isMember)
+    return (
+      <p className="mt-10 text-center font-mono text-xs text-faint">
+        {me.name ? `${me.name}, attendance` : "Attendance"} is visible to approved batch members.
+        Request access from the batch selector.
+      </p>
+    );
+
   const focused = focus ? stats.find((s) => s.course === focus) : null;
 
   return (
