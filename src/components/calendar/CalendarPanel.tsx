@@ -68,6 +68,7 @@ type Props = {
   courses?: Course[];
   now: number;
   canManage?: boolean;
+  batchId?: string | null;
   onSelect: (d: Deadline) => void;
 };
 
@@ -77,9 +78,13 @@ export function CalendarPanel({
   courses = [],
   now,
   canManage = false,
+  batchId = null,
   onSelect,
 }: Props) {
   const [editing, setEditing] = useState<ClassSession | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createDay, setCreateDay] = useState<string | null>(null);
+  const [markDay, setMarkDay] = useState<string | null>(null);
   const [subView, setSubView] = useState<SubView>("month");
   /** Clicking a date drills into that single day's agenda. */
   const [focusDay, setFocusDay] = useState<string | null>(null);
@@ -87,6 +92,11 @@ export function CalendarPanel({
   const [direction, setDirection] = useState(1);
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
+
+  const { data: dayMarks = [] } = useQuery(dayMarksQuery(batchId));
+  const marks = useMemo(() => dayMarkMap(dayMarks), [dayMarks]);
+
+
 
   const colorMap = useMemo(() => buildColorMap(courses, sessions), [courses, sessions]);
 
