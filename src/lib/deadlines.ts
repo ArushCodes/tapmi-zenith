@@ -112,6 +112,27 @@ export function typeLabel(type: DeadlineType) {
   return eventMeta(type).label;
 }
 
+/** Titles sometimes repeat their subject ("Sociology Quiz" under Sociology).
+ *  Trim that repetition so rows read "Sociology — Quiz". */
+export function displayTitle(subject: string | null | undefined, title: string) {
+  const s = (subject ?? "").trim();
+  if (!s) return title;
+  const esc = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const cleaned = title
+    .replace(new RegExp(`^\\s*${esc}\\s*[-—–:]*\\s*`, "i"), "")
+    .replace(new RegExp(`\\s*[-—–:]\\s*${esc}\\s*$`, "i"), "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || title;
+}
+
+/** "Subject — Title" with the subject stripped out of the title first. */
+export function fullDeadlineLabel(d: Pick<Deadline, "subject" | "title">) {
+  const t = displayTitle(d.subject, d.title);
+  return d.subject ? `${d.subject} — ${t}` : t;
+}
+
+
 export type Urgency = "past" | "critical" | "soon" | "later";
 
 export function urgencyOf(dueAt: string, now: number): Urgency {

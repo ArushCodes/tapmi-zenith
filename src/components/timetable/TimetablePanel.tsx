@@ -36,6 +36,7 @@ import {
   formatDeadlineWhen,
   type Deadline,
   type DeadlineType,
+  displayTitle,
 } from "@/lib/deadlines";
 import { saveIcsUrl, syncTimetableNow } from "@/lib/timetable.functions";
 import { SessionMeta } from "@/components/common/SessionMeta";
@@ -661,7 +662,7 @@ export function TimetablePanel() {
                           {formatDeadlineWhen(d)}
                         </span>
                         <span className="min-w-0 flex-1 basis-full truncate font-display text-sm font-semibold sm:basis-auto">
-                          {d.title}
+                          {displayTitle(d.subject, d.title)}
                         </span>
                         <span className={`shrink-0 rounded-md px-2 py-1 font-mono text-[10px] ${meta.chip}`}>
                           {meta.label}

@@ -7,21 +7,27 @@ import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { DeadlineDialog } from "@/components/board/DeadlineDialog";
-import { deadlinesQueryFor, formatDue, typeLabel, type Deadline } from "@/lib/deadlines";
+import {
+  deadlinesQueryFor,
+  formatDue,
+  fullDeadlineLabel,
+  typeLabel,
+  type Deadline,
+} from "@/lib/deadlines";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Moderator console — TAPMI IPM Deadline Board" },
+      { title: "Moderator console — Zenith" },
       {
         name: "description",
         content:
-          "Moderator console for managing TAPMI IPM deadlines: subjects, due dates, submission links and group tags.",
+          "Moderator console for managing Zenith deadlines: subjects, due dates, submission links and group tags.",
       },
-      { property: "og:title", content: "Moderator console — TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Moderator console — Zenith" },
       {
         property: "og:description",
-        content: "Manage upcoming deadlines for the TAPMI IPM 2026–2031 batch.",
+        content: "Manage upcoming deadlines for your batch on Zenith.",
       },
     ],
   }),
@@ -124,7 +130,7 @@ function AdminPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {d.subject} — {d.title}
+                      {fullDeadlineLabel(d)}
                     </p>
                     <p className="truncate font-mono text-[11px] text-faint">
                       {[d.subject_code, d.work_mode === "group" ? `Group${d.group_size ? ` · ${d.group_size}` : ""}` : "Individual", d.submission_link]

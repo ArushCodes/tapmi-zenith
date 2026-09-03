@@ -9,8 +9,6 @@ import {
   Mail,
   Plus,
   Search,
-  Bell,
-  Megaphone,
   MessageSquare,
   ShieldCheck,
   UserCheck,
@@ -21,6 +19,12 @@ import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { Landing } from "@/components/landing/Landing";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
@@ -52,17 +56,17 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TAPMI IPM Deadline Board — Quizzes, Assignments & Exams" },
+      { title: "Zenith — Deadlines, Timetable & Attendance for TAPMI Manipal" },
       {
         name: "description",
         content:
-          "Live deadline board and interactive calendar for the TAPMI IPM 2026–2031 batch: quizzes, assignments, presentations and exams sorted by time remaining.",
+          "Zenith is the student board for TAPMI Manipal: quizzes, assignments and exams sorted by time left, a live timetable, and your attendance percentage in one place.",
       },
-      { property: "og:title", content: "TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Zenith — the TAPMI Manipal student board" },
       {
         property: "og:description",
         content:
-          "Every quiz, assignment, presentation and exam for the IPM 2026–2031 batch, in a feed and an interactive calendar.",
+          "Every deadline, class and attendance mark for your batch, kept accurate by your class reps.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://tapmi-zenith.lovable.app/" },
@@ -88,17 +92,17 @@ function IndexPage() {
   return <Board />;
 }
 
-type TabKey =
-  | "feed"
-  | "announcements"
-  | "calendar"
-  | "timetable"
-  | "attendance"
-  | "activity"
-  | "approvals"
-  | "inbox"
-  | "members"
-  | "feedback";
+type TabKey = "feed" | "calendar" | "timetable" | "attendance";
+
+/** Secondary sections — opened as overlays from the account menu, not tabs. */
+type PanelKey = "members" | "feedback" | "approvals" | "inbox";
+
+const PANEL_TITLES: Record<PanelKey, string> = {
+  members: "Batch members",
+  feedback: "Feedback",
+  approvals: "Pending approvals",
+  inbox: "Email inbox",
+};
 
 
 function Board() {
@@ -120,6 +124,7 @@ function Board() {
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [panel, setPanel] = useState<PanelKey | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -145,8 +150,8 @@ function Board() {
   }, [queryClient, batchId]);
 
   useEffect(() => {
-    if (!isMod && (tab === "approvals" || tab === "inbox")) setTab("feed");
-  }, [isMod, tab]);
+    if (!isMod && (panel === "approvals" || panel === "inbox")) setPanel(null);
+  }, [isMod, panel]);
 
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
@@ -214,73 +219,39 @@ function Board() {
     setDialogOpen(true);
   }
 
-  type TabDef = { key: TabKey; label: string; icon: React.ReactNode; badge?: number | undefined };
+  type TabDef = { key: TabKey; label: string; icon: React.ReactNode };
 
-  const workTabs: TabDef[] = [
+  const tabs: TabDef[] = [
     { key: "feed", label: "Feed", icon: <ListFilter className="size-4" /> },
     { key: "calendar", label: "Calendar", icon: <CalendarRange className="size-4" /> },
     { key: "timetable", label: "Timetable", icon: <CalendarClock className="size-4" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
   ];
 
-  const batchTabs: TabDef[] = [
-    { key: "announcements", label: "Announcements", icon: <Megaphone className="size-4" /> },
-    { key: "activity", label: "Activity", icon: <Bell className="size-4" /> },
+  const menuItems = [
     { key: "members", label: "Members", icon: <Users className="size-4" /> },
     { key: "feedback", label: "Feedback", icon: <MessageSquare className="size-4" /> },
     ...(isMod
       ? [
           {
-            key: "approvals" as TabKey,
+            key: "approvals",
             label: "Approvals",
             icon: <ShieldCheck className="size-4" />,
             badge: pendingCount || undefined,
           },
-          { key: "inbox" as TabKey, label: "Inbox", icon: <Mail className="size-4" /> },
+          { key: "inbox", label: "Inbox", icon: <Mail className="size-4" /> },
         ]
       : []),
   ];
 
-  const renderTab = (t: TabDef) => (
-    <motion.button
-      key={t.key}
-      onClick={() => setTab(t.key)}
-      whileTap={{ scale: 0.96 }}
-      aria-current={tab === t.key ? "page" : undefined}
-      className={`relative flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors sm:px-3.5 ${
-        tab === t.key ? "text-ink" : "text-dim hover:text-ink"
-      }`}
-    >
-      {tab === t.key && (
-        <motion.span
-          layoutId="tab-pill"
-          className="absolute inset-0 rounded-xl bg-surface ring-1 ring-cyan/30"
-          transition={{ type: "spring", stiffness: 400, damping: 32 }}
-        />
-      )}
-      <span className="relative flex items-center gap-2">
-        {t.icon}
-        <span className="whitespace-nowrap">{t.label}</span>
-        {t.badge ? (
-          <span className="rounded-full bg-cyan/20 px-1.5 py-0.5 font-mono text-[10px] leading-none text-cyan">
-            {t.badge}
-          </span>
-        ) : null}
-      </span>
-    </motion.button>
-  );
-
-
-
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="aurora-a absolute -left-16 -top-24 h-[380px] w-[520px] rounded-full bg-cyan/20 blur-[120px]" />
-        <div className="aurora-c absolute right-[-60px] top-[220px] h-[360px] w-[480px] rounded-full bg-violet/20 blur-[130px]" />
-        <div className="aurora-b absolute bottom-[-120px] left-[35%] h-[420px] w-[560px] rounded-full bg-magenta/15 blur-[140px]" />
+        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/12 blur-[130px]" />
+        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/12 blur-[140px]" />
       </div>
 
-      <BoardHeader />
+      <BoardHeader menuItems={menuItems} onMenuSelect={(k) => setPanel(k as PanelKey)} />
 
       <main className="relative z-10 mx-auto max-w-[1180px] px-5 pb-24 sm:px-8">
         <motion.div
@@ -318,20 +289,37 @@ function Board() {
           </p>
         </motion.div>
 
-        {/* Primary navigation — one bar, two logical clusters, no hidden menus */}
         <nav
           aria-label="Board sections"
-          className="mb-7 flex items-center gap-1 overflow-x-auto rounded-2xl bg-surface2/60 p-1.5 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mb-6 flex w-full items-center gap-1 overflow-x-auto rounded-2xl border border-border bg-surface p-1.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] [scrollbar-width:none] sm:w-fit [&::-webkit-scrollbar]:hidden"
         >
-          {workTabs.map(renderTab)}
-          <span aria-hidden className="mx-1.5 h-6 w-px shrink-0 bg-border" />
-          {batchTabs.map(renderTab)}
+          {tabs.map((t) => (
+            <motion.button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              whileTap={{ scale: 0.96 }}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={`relative flex shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-[13px] font-medium transition-colors ${
+                tab === t.key ? "text-white" : "text-dim hover:text-ink"
+              }`}
+            >
+              {tab === t.key && (
+                <motion.span
+                  layoutId="tab-pill"
+                  className="absolute inset-0 rounded-xl bg-cyan"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                />
+              )}
+              <span className="relative flex items-center gap-2">
+                {t.icon}
+                <span className="whitespace-nowrap">{t.label}</span>
+              </span>
+            </motion.button>
+          ))}
         </nav>
 
-
-
-        {tab === "calendar" && (
-          <div className="sticky top-0 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
+        {(tab === "feed" || tab === "calendar") && (
+          <div className="sticky top-16 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {/* Segmented type filter */}
               <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl bg-surface2/70 p-1 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -376,7 +364,7 @@ function Board() {
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-ground shadow-[0_0_28px_-8px_var(--cyan)]"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
                   >
                     <Plus className="size-4" />
                     <span className="hidden sm:inline">Add</span>
@@ -397,11 +385,11 @@ function Board() {
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === "feed" && (
-              <>
-                <div className="mb-8 grid gap-4 lg:grid-cols-2">
-                  <DayPulsePanel now={now} compact />
-                  <AnnouncementsPanel compact />
-                </div>
+              <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="min-w-0">
+                  <div className="mb-8">
+                    <DayPulsePanel now={now} compact />
+                  </div>
 
                 <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
@@ -513,10 +501,14 @@ function Board() {
                     ))}
                   </div>
                 )}
-              </>
-            )}
+                </div>
 
-            {tab === "announcements" && <AnnouncementsPanel />}
+                <aside className="flex flex-col gap-6 lg:sticky lg:top-32">
+                  <AnnouncementsPanel compact />
+                  <ActivityPanel compact />
+                </aside>
+              </div>
+            )}
 
 
             {tab === "calendar" && (
@@ -534,17 +526,6 @@ function Board() {
 
             {tab === "attendance" && <AttendancePanel now={now} />}
 
-            {tab === "approvals" && isMod && (
-              <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
-            )}
-
-            {tab === "inbox" && isMod && <EmailInboxPanel />}
-
-            {tab === "members" && <MembersPanel />}
-
-            {tab === "activity" && <ActivityPanel />}
-
-            {tab === "feedback" && <FeedbackPanel />}
           </motion.div>
         </AnimatePresence>
 
@@ -561,6 +542,22 @@ function Board() {
         onEdit={openEdit}
         onDelete={(d) => remove.mutate(d)}
       />
+
+      <Dialog open={panel !== null} onOpenChange={(o) => !o && setPanel(null)}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display tracking-tight">
+              {panel ? PANEL_TITLES[panel] : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {panel === "members" && <MembersPanel />}
+          {panel === "feedback" && <FeedbackPanel />}
+          {panel === "approvals" && isMod && (
+            <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
+          )}
+          {panel === "inbox" && isMod && <EmailInboxPanel />}
+        </DialogContent>
+      </Dialog>
 
       {isMod && (
         <DeadlineDialog open={dialogOpen} onOpenChange={setDialogOpen} deadline={editing} />

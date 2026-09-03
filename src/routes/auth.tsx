@@ -9,16 +9,16 @@ import { batchTreeQuery } from "@/lib/batches";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — TAPMI IPM Deadline Board" },
+      { title: "Sign in — Zenith" },
       {
         name: "description",
         content:
-          "Sign in to the TAPMI IPM deadline board. Moderators can add, edit and remove deadlines for the batch.",
+          "Sign in to Zenith, the TAPMI Manipal student board for deadlines, timetable and attendance.",
       },
-      { property: "og:title", content: "Sign in — TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Sign in — Zenith" },
       {
         property: "og:description",
-        content: "Moderator access to the TAPMI IPM 2026–2031 deadline board.",
+        content: "Access your batch board on Zenith — TAPMI Manipal.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

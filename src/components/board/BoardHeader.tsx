@@ -1,15 +1,36 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { LogOut, ShieldCheck, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useMe } from "@/hooks/use-me";
 import { BatchSelector } from "@/components/board/BatchSelector";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const spring = { type: "spring" as const, stiffness: 420, damping: 32 };
 
-export function BoardHeader() {
+export type HeaderMenuItem = {
+  key: string;
+  label: string;
+  icon: React.ReactNode;
+  badge?: number | undefined;
+};
+
+type Props = {
+  /** Secondary board sections surfaced from the profile menu instead of the tab bar. */
+  menuItems?: HeaderMenuItem[];
+  onMenuSelect?: (key: string) => void;
+};
+
+export function BoardHeader({ menuItems = [], onMenuSelect }: Props) {
   const { user, isModerator } = useAuth();
   const me = useMe();
   const navigate = useNavigate();
@@ -35,79 +56,95 @@ export function BoardHeader() {
       initial={{ opacity: 0, y: -14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-20"
+      className="sticky top-0 z-30 border-b border-border bg-ground/80 backdrop-blur-xl"
     >
-      <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-3 px-5 py-5 sm:gap-4 sm:px-8 sm:py-6">
-        <Link to="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3.5">
+      <div className="mx-auto flex h-16 max-w-[1180px] items-center justify-between gap-3 px-5 sm:gap-4 sm:px-8">
+        <Link to="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3">
           <motion.div
             whileHover={{ rotate: -6, scale: 1.06 }}
             transition={spring}
-            className="grid size-9 shrink-0 place-items-center rounded-xl bg-surface2 ring-1 ring-border group-hover:ring-cyan/40 sm:size-10"
+            className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan text-[15px] font-semibold text-white shadow-[0_6px_18px_-8px_var(--cyan)]"
           >
-            <span className="font-display text-xs font-semibold tracking-tight text-cyan sm:text-sm">
-              TM
-            </span>
+            <span className="font-display">Z</span>
           </motion.div>
           <div className="min-w-0 leading-tight">
-            <p className="truncate font-display text-sm font-semibold tracking-tight sm:text-base">
-              TAPMI Manipal
+            <p className="truncate font-display text-[15px] font-semibold tracking-tight sm:text-base">
+              Zenith
             </p>
-            <p className="hidden font-mono text-[11px] text-dim sm:block">
-              Deadlines · Timetable · Attendance
+            <p className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:block">
+              TAPMI Manipal · MAHE
             </p>
           </div>
         </Link>
 
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
           <BatchSelector />
-          {isModerator && (
-            <motion.div whileHover={{ y: -2 }} transition={spring}>
-              <Link
-                to="/admin"
-                className="hidden items-center gap-2 rounded-xl bg-surface2 px-3.5 py-2.5 text-sm font-medium text-ink ring-1 ring-border transition-colors hover:ring-cyan/40 sm:flex"
-              >
-                <ShieldCheck className="size-3.5 text-cyan" />
-                <span className="font-mono text-[11px] uppercase tracking-wide text-dim">
-                  Moderator console
-                </span>
-              </Link>
-            </motion.div>
-          )}
 
           {user ? (
-            <div className="flex items-center gap-2.5">
-              <motion.div whileHover={{ y: -2 }} transition={spring}>
-                <Link
-                  to="/profile"
-                  aria-label="Your profile"
-                  className="flex items-center gap-2.5 rounded-xl bg-surface2/70 py-1.5 pl-1.5 pr-3.5 ring-1 ring-border transition-colors hover:ring-cyan/40"
-                >
-                  <span className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-cyan/40 to-violet/40 font-display text-xs font-semibold">
-                    {initials || "IP"}
-                  </span>
-                  <span className="hidden font-mono text-[11px] uppercase tracking-wide text-dim sm:inline">
-                    {me.name || "Profile"}
-                  </span>
-                </Link>
-              </motion.div>
-              <button
-                onClick={signOut}
-                aria-label="Sign out"
-                className="flex items-center gap-1.5 rounded-xl px-3 py-2.5 font-mono text-[11px] text-dim ring-1 ring-border transition-colors hover:text-rose hover:ring-rose/30"
-              >
-                <LogOut className="size-3.5" />
-                <span className="hidden sm:inline">Sign out</span>
-              </button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl border border-border bg-surface py-1.5 pl-1.5 pr-2.5 transition-colors hover:border-cyan/40">
+                <span className="grid size-7 place-items-center rounded-lg bg-cyan/12 font-display text-[11px] font-semibold text-cyan">
+                  {initials || "Z"}
+                </span>
+                <span className="hidden max-w-[110px] truncate text-[13px] font-medium sm:inline">
+                  {me.name || "Account"}
+                </span>
+                <ChevronDown className="size-3.5 text-faint" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+                  Account
+                </DropdownMenuLabel>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="flex items-center gap-2">
+                    <UserRound className="size-4 text-dim" /> Profile
+                  </Link>
+                </DropdownMenuItem>
+                {isModerator && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="flex items-center gap-2">
+                      <ShieldCheck className="size-4 text-dim" /> Moderator console
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                {menuItems.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
+                      Batch
+                    </DropdownMenuLabel>
+                    {menuItems.map((m) => (
+                      <DropdownMenuItem
+                        key={m.key}
+                        onSelect={() => onMenuSelect?.(m.key)}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="text-dim">{m.icon}</span>
+                        {m.label}
+                        {m.badge ? (
+                          <span className="ml-auto rounded-full bg-cyan/15 px-1.5 py-0.5 font-mono text-[10px] leading-none text-cyan">
+                            {m.badge}
+                          </span>
+                        ) : null}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => void signOut()} className="flex items-center gap-2 text-rose">
+                  <LogOut className="size-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <motion.div whileHover={{ y: -2 }} transition={spring}>
-              <Link
-                to="/auth"
-                className="flex items-center gap-2 rounded-xl bg-surface2 px-3.5 py-2.5 font-mono text-[11px] uppercase tracking-wide text-dim ring-1 ring-border transition-colors hover:text-ink hover:ring-cyan/40"
-              >
-                <UserRound className="size-3.5" /> Sign in
-              </Link>
-            </motion.div>
+            <Link
+              to="/auth"
+              className="flex items-center gap-2 rounded-xl bg-cyan px-3.5 py-2 text-[13px] font-semibold text-white"
+            >
+              <UserRound className="size-3.5" /> Sign in
+            </Link>
           )}
         </div>
       </div>

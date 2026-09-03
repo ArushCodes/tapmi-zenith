@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CalendarDays, ChevronLeft, ChevronRight, LayoutGrid, ListOrdered } from "lucide-react";
-import { dayKey, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
+import { dayKey, displayTitle, eventMeta, urgencyOf, type Deadline } from "@/lib/deadlines";
 import type { ClassSession, Course } from "@/lib/batches";
 import { SessionEditDialog } from "@/components/calendar/SessionEditDialog";
 import { Marker, SHAPE_LABEL, shapeForDeadline, type MarkerShape } from "@/lib/shapes";
@@ -743,7 +743,7 @@ function Agenda({
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-display text-sm font-semibold">
-                        {d.title}
+                        {displayTitle(d.subject, d.title)}
                       </span>
                       <span className="block truncate font-mono text-[11px] text-dim">
                         {[d.subject_code, d.subject].filter(Boolean).join(" · ")}

@@ -38,13 +38,13 @@ import {
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "Your profile — MAHE Student Portal" },
+      { title: "Your profile — Zenith" },
       {
         name: "description",
         content:
           "Edit your MAHE portal profile: display name, pronouns, section, contact links and deadline reminder preferences.",
       },
-      { property: "og:title", content: "Your profile — MAHE Student Portal" },
+      { property: "og:title", content: "Your profile — Zenith" },
       {
         property: "og:description",
         content: "Personalise your MAHE portal account and reminder preferences.",
