@@ -455,6 +455,119 @@ export type Database = {
           },
         ]
       }
+      component_marks: {
+        Row: {
+          batch_id: string
+          component_id: string
+          created_at: string
+          id: string
+          score: number
+          total: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          batch_id: string
+          component_id: string
+          created_at?: string
+          id?: string
+          score?: number
+          total?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          batch_id?: string
+          component_id?: string
+          created_at?: string
+          id?: string
+          score?: number
+          total?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_marks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_marks_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "course_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_components: {
+        Row: {
+          batch_id: string
+          course_code: string
+          course_name: string
+          created_at: string
+          created_by: string | null
+          credits: number
+          id: string
+          is_mlc: boolean
+          is_provisional: boolean
+          kind: Database["public"]["Enums"]["component_kind"]
+          name: string
+          sequence: number
+          timing_note: string | null
+          updated_at: string
+          weightage: number
+          work_mode: Database["public"]["Enums"]["work_mode"]
+        }
+        Insert: {
+          batch_id: string
+          course_code: string
+          course_name: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          id?: string
+          is_mlc?: boolean
+          is_provisional?: boolean
+          kind?: Database["public"]["Enums"]["component_kind"]
+          name: string
+          sequence?: number
+          timing_note?: string | null
+          updated_at?: string
+          weightage?: number
+          work_mode?: Database["public"]["Enums"]["work_mode"]
+        }
+        Update: {
+          batch_id?: string
+          course_code?: string
+          course_name?: string
+          created_at?: string
+          created_by?: string | null
+          credits?: number
+          id?: string
+          is_mlc?: boolean
+          is_provisional?: boolean
+          kind?: Database["public"]["Enums"]["component_kind"]
+          name?: string
+          sequence?: number
+          timing_note?: string | null
+          updated_at?: string
+          weightage?: number
+          work_mode?: Database["public"]["Enums"]["work_mode"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_components_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           batch_id: string
@@ -951,6 +1064,16 @@ export type Database = {
     Enums: {
       app_role: "student" | "mod" | "admin"
       attendance_status: "present" | "absent" | "late" | "excused"
+      component_kind:
+        | "endterm"
+        | "midterm"
+        | "quiz"
+        | "project"
+        | "presentation"
+        | "assignment"
+        | "participation"
+        | "exam"
+        | "other"
       deadline_type:
         | "quiz"
         | "assignment"
@@ -1094,6 +1217,17 @@ export const Constants = {
     Enums: {
       app_role: ["student", "mod", "admin"],
       attendance_status: ["present", "absent", "late", "excused"],
+      component_kind: [
+        "endterm",
+        "midterm",
+        "quiz",
+        "project",
+        "presentation",
+        "assignment",
+        "participation",
+        "exam",
+        "other",
+      ],
       deadline_type: [
         "quiz",
         "assignment",
