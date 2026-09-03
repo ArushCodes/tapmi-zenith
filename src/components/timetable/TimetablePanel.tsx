@@ -786,13 +786,13 @@ function CourseCatalogue({
               whileTap={{ scale: 0.96 }}
               onClick={() => onToggle(o.key)}
               title={o.sub || o.label}
-              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] transition-opacity ${
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-mono text-[10px] outline-none transition-opacity focus:outline-none focus-visible:outline-none ${
                 dimmed ? "opacity-40" : "opacity-100"
               }`}
               style={{
                 color: o.color,
                 backgroundColor: `${o.color}1a`,
-                boxShadow: isOn ? `0 0 0 1px ${o.color}` : undefined,
+                boxShadow: isOn ? `0 0 0 1px ${o.color}` : "none",
               }}
             >
               {isOn ? (
