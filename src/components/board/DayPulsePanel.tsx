@@ -321,6 +321,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                       </div>
                     </div>
                   </motion.li>
+                  </Fragment>
                 );
               })}
             </ol>
