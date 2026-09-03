@@ -9,7 +9,9 @@ import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
 import { attendanceQuery, sessionsQuery, type ClassSession } from "@/lib/batches";
 import {
+  breakMap,
   buildColorMap,
+  formatBreak,
   isAcademicEvent,
   isDayOff,
   isTeachingClass,
