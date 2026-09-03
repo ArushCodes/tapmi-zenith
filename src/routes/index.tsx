@@ -331,10 +331,10 @@ function Board() {
         </div>
 
         {tab === "calendar" && (
-          <div className="sticky top-16 z-20 -mx-5 mb-7 border-b border-border/60 bg-ground/80 px-5 py-3.5 backdrop-blur-md sm:-mx-8 sm:px-8">
+          <div className="sticky top-16 z-20 -mx-5 mb-5 border-b border-border/60 bg-ground/80 px-5 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {/* Segmented type filter */}
-              <div className="flex shrink-0 items-center gap-1 overflow-x-auto rounded-xl bg-surface2/70 p-1 ring-1 ring-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex shrink-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {FILTERS.map((f) => (
                   <button
                     key={f.key}
@@ -355,33 +355,15 @@ function Board() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 sm:ml-auto">
-                <div className="relative flex-1 sm:flex-none">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search course or code…"
-                    aria-label="Search deadlines"
-                    className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
-                  />
-                </div>
-
-                {isMod && (
-                  <motion.button
-                    onClick={() => {
-                      setEditing(null);
-                      setDialogOpen(true);
-                    }}
-                    whileHover={{ y: -1 }}
-                    whileTap={{ scale: 0.96 }}
-                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
-                  >
-                    <Plus className="size-4" />
-                    <span className="hidden sm:inline">Add</span>
-                  </motion.button>
-                )}
+              <div className="relative flex-1 sm:ml-auto sm:flex-none">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search course or code…"
+                  aria-label="Search deadlines"
+                  className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
+                />
               </div>
             </div>
           </div>
@@ -399,23 +381,7 @@ function Board() {
             {tab === "feed" && (
               <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="min-w-0">
-                  {isMod && (
-                    <div className="mb-5 flex justify-end">
-                      <motion.button
-                        onClick={() => {
-                          setEditing(null);
-                          setDialogOpen(true);
-                        }}
-                        whileHover={{ y: -1 }}
-                        whileTap={{ scale: 0.96 }}
-                        className="flex items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
-                      >
-                        <Plus className="size-4" /> Add event
-                      </motion.button>
-                    </div>
-                  )}
-
-                  <div className="mb-10">
+                  <div className="mb-8">
                     <DayPulsePanel now={now} compact />
                   </div>
 
