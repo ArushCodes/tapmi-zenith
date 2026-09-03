@@ -109,7 +109,7 @@ function Body({ deadline, now, canManage, onClose, onEdit, onDelete }: Props & {
           {[deadline.subject_code, deadline.subject].filter(Boolean).join(" — ")}
         </p>
         <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-balance">
-          {deadline.title}
+          {displayTitle(deadline.subject, deadline.title)}
         </h2>
       </div>
 
