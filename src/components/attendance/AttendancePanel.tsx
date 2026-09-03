@@ -16,19 +16,25 @@ import {
 } from "@/lib/batches";
 import {
   BAND_COPY,
+  CONTINUOUS_ABSENCE_DAYS,
   HARD_LINE,
+  LEAVE_COPY,
   SAFE_LINE,
-  allowanceFor,
+  TOTAL_CAP_PCT,
   bandFor,
-  creditsFor,
-  hardAllowanceFor,
+  eligibilityMisses,
+  gradePenalty,
+  leaveCaps,
+  longestAbsenceRun,
   meterColor,
   plannedFor,
   resolveMarks,
+  safeMisses,
   sessionSubject,
   shortSubject,
   trimesterEnd,
   untilReset,
+  type LeaveType,
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { SessionMeta } from "@/components/common/SessionMeta";
