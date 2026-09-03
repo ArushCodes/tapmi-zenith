@@ -419,7 +419,7 @@ function EventPill({
         className={`${m.dot} ${critical && deadline.is_major ? "pulse-dot" : ""}`}
       />
       {showTime && <span className="shrink-0 opacity-80">{timeFmt.format(new Date(deadline.due_at))}</span>}
-      <span className="truncate">{deadline.subject_code ?? deadline.subject}</span>
+      <span className="truncate">{deadline.subject || deadline.subject_code || displayTitle(null, deadline.title)}</span>
     </motion.button>
   );
 }
