@@ -775,11 +775,18 @@ function WeekTimeline({
                 return (
                   <div
                     key={`${dayKey(d)}-${hour}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onPickDay(dayKey(d))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") onPickDay(dayKey(d));
+                    }}
                     style={mark ? { backgroundColor: `${mark.color}14` } : undefined}
-                    className={`min-h-[36px] rounded-md p-1 ring-1 ring-border/60 ${
+                    className={`min-h-[36px] cursor-pointer rounded-md p-1 ring-1 ring-border/60 transition-shadow hover:ring-cyan/40 ${
                       mark ? "" : isDayOff(d) ? "bg-amber/8" : "bg-surface/60"
                     }`}
                   >
+
 
                     <div className="flex flex-col gap-1">
                       {classes.map((s) => {
