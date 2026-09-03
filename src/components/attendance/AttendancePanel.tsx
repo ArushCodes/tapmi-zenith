@@ -499,7 +499,7 @@ function SessionCard({
           <span className="block truncate font-display text-sm font-semibold leading-tight">
             {shortSubject(sessionLabel(session), 40)}
           </span>
-          <span className="block font-mono text-[10px] leading-relaxed text-dim sm:text-[11px]">
+          <span className="block font-mono text-xs leading-relaxed text-dim sm:text-sm">
             {timeFmt.format(new Date(session.start_at))}
           </span>
           <SessionMeta session={session} />

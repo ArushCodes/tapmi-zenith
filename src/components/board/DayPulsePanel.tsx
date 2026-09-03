@@ -229,7 +229,7 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
                           {sessionFullName(s)}
                         </p>
                         <div className="flex shrink-0 items-center gap-2">
-                          <span className="font-mono text-[10px] tabular-nums text-faint">
+                          <span className="font-mono text-xs tabular-nums text-faint">
                             {clock.format(new Date(s.start_at))}–{clock.format(new Date(s.end_at))}
                           </span>
                           {isMember && user && (
@@ -355,7 +355,7 @@ function StatusBlock({
       <p className="mt-1 truncate font-display text-base font-semibold leading-snug">
         {sessionFullName(target)}
       </p>
-      <p className="mt-0.5 font-mono text-[11px] tabular-nums text-dim">
+      <p className="mt-0.5 font-mono text-sm tabular-nums text-dim">
         {live ? `${fmtLeft(msLeft)} left` : `starts in ${fmtLeft(msLeft)}`} ·{" "}
         {clock.format(new Date(target.start_at))}–{clock.format(new Date(target.end_at))}
       </p>

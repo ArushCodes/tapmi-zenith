@@ -496,7 +496,7 @@ function MonthGrid({
         {WEEKDAYS.map((w) => (
           <span
             key={w}
-            className={`text-center font-mono text-[10px] uppercase tracking-[0.18em] ${
+            className={`text-center font-mono text-xs uppercase tracking-[0.14em] ${
               w === "Sun" ? "text-amber" : "text-faint"
             }`}
           >
@@ -532,14 +532,14 @@ function MonthGrid({
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`font-mono text-[11px] ${
+                  className={`font-mono text-sm ${
                     isToday ? "text-cyan" : inMonth ? "text-dim" : "text-faint"
                   }`}
                 >
                   {date.getDate()}
                 </span>
                 {classes.length > 0 && (
-                  <span className="font-mono text-[9px] text-faint">{classes.length}c</span>
+                  <span className="font-mono text-[10px] text-faint">{classes.length}c</span>
                 )}
               </div>
 
@@ -604,7 +604,7 @@ function WeekTimeline({
             <button
               key={d.toISOString()}
               onClick={() => onPickDay(dayKey(d))}
-              className={`text-center font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:text-ink ${
+              className={`text-center font-mono text-xs uppercase tracking-[0.14em] transition-colors hover:text-ink ${
                 dayKey(d) === todayKey
                   ? "text-cyan"
                   : isDayOff(d)
