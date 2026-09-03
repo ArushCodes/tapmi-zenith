@@ -9,8 +9,6 @@ import {
   Mail,
   Plus,
   Search,
-  Bell,
-  Megaphone,
   MessageSquare,
   ShieldCheck,
   UserCheck,
