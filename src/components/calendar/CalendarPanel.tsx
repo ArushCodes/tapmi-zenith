@@ -495,6 +495,7 @@ function EventPill({
         onSelect(deadline);
       }}
       className={`flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-1 text-left font-mono text-[10px] ${m.chip} ${critical ? m.glow : ""}`}
+      title={fullDeadlineLabel(deadline)}
     >
       <Marker
         shape={shapeForDeadline(deadline.type)}
@@ -502,7 +503,8 @@ function EventPill({
         className={`${m.dot} ${critical && deadline.is_major ? "pulse-dot" : ""}`}
       />
       {showTime && <span className="shrink-0 opacity-80">{timeFmt.format(new Date(deadline.due_at))}</span>}
-      <span className="truncate">{deadline.subject || deadline.subject_code || displayTitle(null, deadline.title)}</span>
+      <span className="truncate">{deadlineShortLabel(deadline, abbrevSubject)}</span>
+
     </motion.button>
   );
 }
