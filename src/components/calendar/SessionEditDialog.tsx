@@ -231,11 +231,14 @@ export function SessionEditDialog({ session, creating = false, batchId, day, onC
             <div className="mt-5 flex items-center justify-between gap-3">
               <button
                 onClick={remove}
-                disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] text-rose ring-1 ring-rose/30 transition-colors hover:bg-rose/10 disabled:opacity-60"
+                disabled={busy || !session}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 font-mono text-[11px] text-rose ring-1 ring-rose/30 transition-colors hover:bg-rose/10 disabled:opacity-60 ${
+                  session ? "" : "invisible"
+                }`}
               >
                 <Trash2 className="size-3.5" /> Remove
               </button>
+
               <div className="flex gap-2">
                 <button
                   onClick={onClose}
