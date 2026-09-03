@@ -237,7 +237,7 @@ export function CalendarPanel({
         <h2 className="font-display text-lg font-semibold tracking-tight">{heading}</h2>
 
         {canManage && (
-          <div className="flex gap-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 setCreateDay(focusDay);
