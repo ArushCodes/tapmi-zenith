@@ -131,6 +131,46 @@ export function isDayOff(d: Date | string) {
   return new Date(d).getDay() === 0;
 }
 
+/** A free stretch between two classes on the same day. */
+export type Gap = {
+  /** Id of the class that starts right after this gap — used as a render key. */
+  beforeId: string;
+  start: number;
+  end: number;
+  minutes: number;
+};
+
+/** Gaps between consecutive classes are break time. Anything shorter than
+ *  `minMinutes` is just a corridor walk and is ignored. */
+export function breaksBetween(list: ClassSession[], minMinutes = 10): Gap[] {
+  const sorted = [...list].sort(
+    (a, b) => new Date(a.start_at).getTime() - new Date(b.start_at).getTime(),
+  );
+  const gaps: Gap[] = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1]!;
+    const next = sorted[i]!;
+    const start = new Date(prev.end_at).getTime();
+    const end = new Date(next.start_at).getTime();
+    const minutes = Math.round((end - start) / 60000);
+    if (minutes >= minMinutes) gaps.push({ beforeId: next.id, start, end, minutes });
+  }
+  return gaps;
+}
+
+/** Break gaps keyed by the class that follows them. */
+export function breakMap(list: ClassSession[], minMinutes = 10) {
+  return new Map(breaksBetween(list, minMinutes).map((g) => [g.beforeId, g]));
+}
+
+export function formatBreak(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0) return m > 0 ? `${h}h ${m}m break` : `${h}h break`;
+  return `${m}m break`;
+}
+
+
 
 /** Clean display name — drops the "- S10 - Faculty" tail feeds tack on. */
 export function sessionLabel(s: ClassSession) {
