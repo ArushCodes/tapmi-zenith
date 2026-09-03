@@ -743,18 +743,22 @@ function SessionCard({
                   <span className="min-w-0 flex-1 truncate text-sm">
                     {m.profiles?.full_name ?? m.profiles?.email ?? m.user_id}
                   </span>
-                  <button
-                    onClick={() =>
-                      onMark(mk?.status === "absent" ? null : "absent", m.user_id, "rep")
+                  <LeaveButtons
+                    current={
+                      mk?.status === "absent" ? ((mk.leave_type ?? "personal") as LeaveType) : null
                     }
-                    className={`rounded-md px-2 py-1 font-mono text-[10px] ring-1 ${
-                      mk?.status === "absent"
-                        ? "bg-evt-exam/20 text-evt-exam ring-evt-exam/40"
-                        : "text-dim ring-border"
-                    }`}
-                  >
-                    Absent
-                  </button>
+                    onPick={(leave) =>
+                      onMark(
+                        mk?.status === "absent" && (mk.leave_type ?? "personal") === leave
+                          ? null
+                          : "absent",
+                        m.user_id,
+                        "rep",
+                        leave,
+                      )
+                    }
+                  />
+
 
                 </div>
               );
