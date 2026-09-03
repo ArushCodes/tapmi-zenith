@@ -115,8 +115,7 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
               .filter(Boolean)
               .some((v) => String(v).toLowerCase().includes(needle)),
       )
-      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())
-      .slice(0, 60);
+      .sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime());
   }, [classes, q]);
 
   const myMarks = useMemo(() => {
