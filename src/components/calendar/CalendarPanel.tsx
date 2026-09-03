@@ -91,10 +91,19 @@ export function CalendarPanel({
   const [subView, setSubView] = useState<SubView>("month");
   /** Clicking a date drills into that single day's agenda. */
   const [focusDay, setFocusDay] = useState<string | null>(null);
+  /** View to come back to when leaving a single-day agenda. */
+  const [returnView, setReturnView] = useState<SubView>("month");
   const [cursor, setCursor] = useState(() => new Date());
   const [direction, setDirection] = useState(1);
   const [activeSubjects, setActiveSubjects] = useState<string[]>([]);
   const [showClasses, setShowClasses] = useState(true);
+
+  function pickDay(k: string) {
+    setReturnView(subView === "agenda" ? returnView : subView);
+    setFocusDay(k);
+    setSubView("agenda");
+  }
+
 
   const { data: dayMarks = [] } = useQuery(dayMarksQuery(batchId));
   const marks = useMemo(() => dayMarkMap(dayMarks), [dayMarks]);
