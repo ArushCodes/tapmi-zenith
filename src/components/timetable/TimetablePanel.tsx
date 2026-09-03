@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CheckSquare, CircleSlash, Plus, RefreshCw, Search, Settings2, Square, Trash2, X } from "lucide-react";
+import { Check, CheckSquare, CircleSlash, Plus, RefreshCw, Settings2, Square, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
@@ -746,16 +746,9 @@ function CourseCatalogue({
   onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
   if (options.length === 0) return null;
 
-  const query = q.trim().toLowerCase();
-  const shown = query
-    ? options.filter(
-        (o) =>
-          o.label.toLowerCase().includes(query) || o.sub.toLowerCase().includes(query),
-      )
-    : options;
+  const shown = options;
 
   return (
     <div className="mb-5 rounded-xl bg-surface p-4 ring-1 ring-border">
@@ -780,15 +773,6 @@ function CourseCatalogue({
         </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <Search className="size-3.5 shrink-0 text-faint" />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search a class, code or faculty…"
-          className="w-full rounded-lg bg-surface2 px-3 py-1.5 font-mono text-[11px] ring-1 ring-border outline-none focus:ring-cyan/40"
-        />
-      </div>
 
 
 
