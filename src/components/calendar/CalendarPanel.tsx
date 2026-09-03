@@ -337,6 +337,8 @@ export function CalendarPanel({
                   setFocusDay(null);
                   setSubView(returnView);
                 }}
+                backLabel={returnView === "week" ? "the week" : "the whole month"}
+
 
                 cursor={cursor}
                 deadlines={deadlines}
