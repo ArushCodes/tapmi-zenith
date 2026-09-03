@@ -1,5 +1,6 @@
 import {
   eventMeta,
+  fullDeadlineLabel,
   formatDeadlineWhen,
   phaseOf,
   timeLeft,
@@ -56,7 +57,7 @@ export function DeadlineRow({ deadline, now, canManage, onEdit, onDelete, onOpen
         className="min-w-0 pl-2 text-left"
       >
         <p className="truncate font-display text-[15px] font-semibold tracking-tight">
-          {deadline.subject} — {deadline.title}
+          {fullDeadlineLabel(deadline)}
         </p>
         <p className="truncate font-mono text-[11px] text-dim">
           {[formatDeadlineWhen(deadline), deadline.location].filter(Boolean).join(" · ")}

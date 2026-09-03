@@ -124,7 +124,7 @@ function AdminPage() {
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">
-                      {d.subject} — {d.title}
+                      {fullDeadlineLabel(d)}
                     </p>
                     <p className="truncate font-mono text-[11px] text-faint">
                       {[d.subject_code, d.work_mode === "group" ? `Group${d.group_size ? ` · ${d.group_size}` : ""}` : "Individual", d.submission_link]

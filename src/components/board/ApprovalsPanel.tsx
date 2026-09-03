@@ -52,7 +52,7 @@ export function ApprovalsPanel({ deadlines, onSelect }: Props) {
                   <span className={`h-8 w-0.5 rounded-full ${m.bar}`} />
                   <button onClick={() => onSelect(d)} className="min-w-0 flex-1 text-left">
                     <span className="block truncate font-display text-sm font-semibold">
-                      {d.subject} — {d.title}
+                      {fullDeadlineLabel(d)}
                     </span>
                     <span className="block truncate font-mono text-[11px] text-dim">
                       {formatDeadlineWhen(d)}
@@ -94,7 +94,7 @@ export function ApprovalsPanel({ deadlines, onSelect }: Props) {
                 className="flex items-center justify-between gap-3 rounded-xl bg-surface/60 px-4 py-2.5 ring-1 ring-border"
               >
                 <span className="truncate font-mono text-[11px] text-faint">
-                  {d.subject} — {d.title}
+                  {fullDeadlineLabel(d)}
                 </span>
                 <button
                   onClick={() => decide.mutate({ id: d.id, status: "approved" })}
