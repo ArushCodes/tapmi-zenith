@@ -331,41 +331,25 @@ function Board() {
         </div>
 
         {tab === "calendar" && (
-          <div className="sticky top-16 z-20 -mx-5 mb-5 border-b border-border/60 bg-ground/80 px-5 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {/* Segmented type filter */}
-              <div className="flex shrink-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setFilter(f.key)}
-                    className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
-                      filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
-                    }`}
-                  >
-                    {filter === f.key && (
-                      <motion.span
-                        layoutId="filter-pill"
-                        className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
-                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                      />
-                    )}
-                    <span className="relative whitespace-nowrap">{f.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="relative flex-1 sm:ml-auto sm:flex-none">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search course or code…"
-                  aria-label="Search deadlines"
-                  className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
-                />
-              </div>
-            </div>
+          <div className="mb-4 flex flex-wrap items-center gap-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+                  filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
+                }`}
+              >
+                {filter === f.key && (
+                  <motion.span
+                    layoutId="filter-pill"
+                    className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                  />
+                )}
+                <span className="relative whitespace-nowrap">{f.label}</span>
+              </button>
+            ))}
           </div>
         )}
 
