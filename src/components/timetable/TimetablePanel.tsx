@@ -24,7 +24,6 @@ import {
   buildColorMap,
   sessionLabel,
   sessionNumberOf,
-  courseKey,
   isAcademicEvent,
   isDayOff,
   isTeachingClass,
