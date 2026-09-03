@@ -64,9 +64,9 @@ export function creditsFor(planned: number) {
   return Math.max(1, Math.round(planned / 8));
 }
 
-/** Holidays you may take and still stay at or above 85%. */
+/** Holidays you may take: one per credit (8 sessions = 1 credit). */
 export function allowanceFor(planned: number) {
-  return Math.max(0, Math.floor(planned * (1 - SAFE_LINE / 100)));
+  return creditsFor(planned);
 }
 
 /** Absences you may take before dropping under the 70% hard line. */
