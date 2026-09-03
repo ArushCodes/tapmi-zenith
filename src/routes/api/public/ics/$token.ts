@@ -35,6 +35,7 @@ export const Route = createFileRoute("/api/public/ics/$token")({
             .from("class_sessions")
             .select("*")
             .eq("batch_id", batch.id)
+            .eq("visibility", "batch")
             .order("start_at"),
           supabaseAdmin
             .from("deadlines")
