@@ -804,10 +804,13 @@ function Agenda({
   classes,
   academic,
   colorMap,
+  marks,
   now,
   onSelect,
   canManage,
   onEditSession,
+  onStyleDay,
+  onAddOnDay,
 }: {
   focusDay: string | null;
   onClearFocus: () => void;
@@ -816,11 +819,15 @@ function Agenda({
   classes: ClassSession[];
   academic: ClassSession[];
   colorMap: Map<string, string>;
+  marks: Map<string, DayMark>;
   now: number;
   onSelect: (d: Deadline) => void;
   canManage: boolean;
   onEditSession: (s: ClassSession) => void;
+  onStyleDay: (dayKey: string) => void;
+  onAddOnDay: (dayKey: string) => void;
 }) {
+
   const inMonth = (iso: string) => {
     if (focusDay) return dayKey(iso) === focusDay;
     const d = new Date(iso);
