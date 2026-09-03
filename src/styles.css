@@ -104,10 +104,10 @@
   --foreground: var(--ink);
   --card: var(--surface);
   --card-foreground: var(--ink);
-  --popover: var(--surface2);
+  --popover: var(--surface);
   --popover-foreground: var(--ink);
   --primary: var(--cyan);
-  --primary-foreground: var(--ground);
+  --primary-foreground: oklch(1 0 0);
   --secondary: var(--surface2);
   --secondary-foreground: var(--ink);
   --muted: var(--surface2);
@@ -115,9 +115,9 @@
   --accent: var(--surface2);
   --accent-foreground: var(--ink);
   --destructive: var(--rose);
-  --destructive-foreground: var(--ground);
+  --destructive-foreground: oklch(1 0 0);
   --border: var(--hairline);
-  --input: oklch(1 0 0 / 12%);
+  --input: oklch(0.235 0.021 55 / 16%);
   --ring: var(--cyan);
 }
 
