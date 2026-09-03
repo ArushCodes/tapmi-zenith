@@ -82,17 +82,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TAPMI IPM Deadline Board" },
+      { title: "Zenith — TAPMI Manipal student board" },
       {
         name: "description",
         content:
-          "Academic deadline and quiz tracker for the TAPMI IPM 2026–2031 batch.",
+          "Zenith: deadlines, timetable and attendance for TAPMI Manipal batches.",
       },
-      { property: "og:title", content: "TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Zenith — TAPMI Manipal student board" },
       {
         property: "og:description",
         content:
-          "Academic deadline and quiz tracker for the TAPMI IPM 2026–2031 batch.",
+          "Zenith: deadlines, timetable and attendance for TAPMI Manipal batches.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

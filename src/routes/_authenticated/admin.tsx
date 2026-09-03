@@ -18,16 +18,16 @@ import {
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
-      { title: "Moderator console — TAPMI IPM Deadline Board" },
+      { title: "Moderator console — Zenith" },
       {
         name: "description",
         content:
-          "Moderator console for managing TAPMI IPM deadlines: subjects, due dates, submission links and group tags.",
+          "Moderator console for managing Zenith deadlines: subjects, due dates, submission links and group tags.",
       },
-      { property: "og:title", content: "Moderator console — TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Moderator console — Zenith" },
       {
         property: "og:description",
-        content: "Manage upcoming deadlines for the TAPMI IPM 2026–2031 batch.",
+        content: "Manage upcoming deadlines for your batch on Zenith.",
       },
     ],
   }),
