@@ -76,6 +76,7 @@ export function BoardHeader({ menuItems = [], onMenuSelect }: Props) {
 
 
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+          {user && <GlobalSearch />}
           <BatchSelector />
 
           <button
