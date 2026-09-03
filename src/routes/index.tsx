@@ -158,6 +158,25 @@ function Board() {
     if (!isMod && (panel === "approvals" || panel === "inbox")) setPanel(null);
   }, [isMod, panel]);
 
+  // The header search box reaches the board through window events so it can
+  // live outside this tree while still opening events and switching tabs.
+  useEffect(() => {
+    function openDeadline(e: Event) {
+      const id = (e as CustomEvent<string>).detail;
+      const hit = deadlines.find((d) => d.id === id);
+      if (hit) setSelected(hit);
+    }
+    function gotoTab(e: Event) {
+      setTab((e as CustomEvent<string>).detail as TabKey);
+    }
+    window.addEventListener("zenith:open-deadline", openDeadline);
+    window.addEventListener("zenith:goto-tab", gotoTab);
+    return () => {
+      window.removeEventListener("zenith:open-deadline", openDeadline);
+      window.removeEventListener("zenith:goto-tab", gotoTab);
+    };
+  }, [deadlines]);
+
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
       const { error } = await supabase.from("deadlines").delete().eq("id", deadline.id);
