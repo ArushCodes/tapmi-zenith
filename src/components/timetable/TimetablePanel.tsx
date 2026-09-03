@@ -19,8 +19,6 @@ import {
   FALLBACK_COURSE_COLOR,
   HOLIDAY_KEY,
   autoColor,
-  breakMap,
-  formatBreak,
   buildColorMap,
   sessionLabel,
   sessionNumberOf,
@@ -464,56 +462,62 @@ export function TimetablePanel() {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className={`mb-4 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2 ring-1 ring-border ${
+            className={`mb-4 rounded-xl px-3 py-2.5 ring-1 ring-border ${
               picked.length > 0
                 ? "sticky top-20 z-40 bg-surface2/95 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.6)] backdrop-blur"
                 : "bg-surface2"
             }`}
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-              {picked.length > 0 ? `${picked.length} selected` : "Multi-select"}
-            </span>
-            <button
-              onClick={() => setPicked(visibleSessions.map((s) => s.id))}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink"
-            >
-              <CheckSquare className="size-3.5" /> Select all ({visibleSessions.length})
-            </button>
-            <button
-              onClick={() => setPicked([])}
-              disabled={picked.length === 0}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
-            >
-              <X className="size-3.5" /> Clear selection
-            </button>
-            <div className="ml-auto flex flex-wrap items-center gap-2">
-              {isMember && user && (
-                <>
-                  <button
-                    onClick={() => bulk.mutate("absent")}
-                    disabled={picked.length === 0 || bulk.isPending}
-                    className="flex items-center gap-1.5 rounded-lg bg-evt-exam/15 px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/40 disabled:opacity-40"
-                  >
-                    <CircleSlash className="size-3.5" /> Mark absent
-                  </button>
-                  <button
-                    onClick={() => bulk.mutate("clear")}
-                    disabled={picked.length === 0 || bulk.isPending}
-                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
-                  >
-                    <Check className="size-3.5" /> Clear marks
-                  </button>
-                </>
-              )}
-              {canManage && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+                {picked.length > 0 ? `${picked.length} selected` : "Multi-select"}
+              </span>
+
+              <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={() => bulkDelete.mutate()}
-                  disabled={picked.length === 0 || bulkDelete.isPending}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[10px] text-evt-exam ring-1 ring-evt-exam/30 hover:bg-evt-exam/10 disabled:opacity-40"
+                  onClick={() => setPicked(visibleSessions.map((s) => s.id))}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 font-mono text-[10px] leading-none text-dim ring-1 ring-border hover:text-ink"
                 >
-                  <Trash2 className="size-3.5" /> Delete classes
+                  <CheckSquare className="size-3.5 shrink-0" /> Select all ({visibleSessions.length})
                 </button>
-              )}
+                <button
+                  onClick={() => setPicked([])}
+                  disabled={picked.length === 0}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 font-mono text-[10px] leading-none text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+                >
+                  <X className="size-3.5 shrink-0" /> Clear selection
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                {isMember && user && (
+                  <>
+                    <button
+                      onClick={() => bulk.mutate("absent")}
+                      disabled={picked.length === 0 || bulk.isPending}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-evt-exam/15 px-3 font-mono text-[10px] leading-none text-evt-exam ring-1 ring-evt-exam/40 disabled:opacity-40"
+                    >
+                      <CircleSlash className="size-3.5 shrink-0" /> Mark absent
+                    </button>
+                    <button
+                      onClick={() => bulk.mutate("clear")}
+                      disabled={picked.length === 0 || bulk.isPending}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 font-mono text-[10px] leading-none text-dim ring-1 ring-border hover:text-ink disabled:opacity-40"
+                    >
+                      <Check className="size-3.5 shrink-0" /> Clear marks
+                    </button>
+                  </>
+                )}
+                {canManage && (
+                  <button
+                    onClick={() => bulkDelete.mutate()}
+                    disabled={picked.length === 0 || bulkDelete.isPending}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg px-3 font-mono text-[10px] leading-none text-evt-exam ring-1 ring-evt-exam/30 hover:bg-evt-exam/10 disabled:opacity-40"
+                  >
+                    <Trash2 className="size-3.5 shrink-0" /> Delete classes
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -546,7 +550,6 @@ export function TimetablePanel() {
             .filter(([day]) => !dayFocus || day === dayFocus)
             .map(([day, list]) => {
               const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
-              const dayBreaks = breakMap(list.sessions.filter(isTeachingClass));
               const allPicked =
                 dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
               const total = list.sessions.length + list.events.length;
@@ -594,20 +597,9 @@ export function TimetablePanel() {
                   {list.sessions.map((s) => {
                     const color = s.is_holiday ? HOLIDAY_COLOR : colorOf(s);
                     const isPicked = pickedSet.has(s.id);
-                    const gap = dayBreaks.get(s.id);
-                    return (
-                      <Fragment key={s.id}>
-                      {gap && (
-                        <div className="flex items-center gap-3 rounded-xl border border-dashed border-border/70 px-3 py-1.5">
-                          <span className="font-mono text-[11px] tabular-nums text-faint">
-                            {timeFmt.format(new Date(gap.start))}–{timeFmt.format(new Date(gap.end))}
-                          </span>
-                          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
-                            {formatBreak(gap.minutes)}
-                          </span>
-                        </div>
-                      )}
-                      <motion.div
+                     return (
+                       <Fragment key={s.id}>
+                       <motion.div
                         layout
                         whileHover={{ scale: 1.01, y: -2 }}
                         style={{ borderLeftColor: color ?? "transparent" }}
