@@ -27,11 +27,19 @@ import {
   resolveMarks,
   sessionSubject,
   shortSubject,
+  trimesterEnd,
+  untilReset,
 } from "@/lib/attendance";
 import { Donut } from "@/components/ui/donut";
 import { SessionMeta } from "@/components/common/SessionMeta";
 import { isTeachingClass, sessionLabel } from "@/lib/courses";
 
+
+const termFmt = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
 
 const timeFmt = new Intl.DateTimeFormat("en-GB", {
   weekday: "short",
@@ -176,6 +184,10 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
 
   const threshold = Number(batch?.attendance_threshold ?? 75);
 
+  /** The holiday budget belongs to the current trimester — its end is the last
+   *  class on the calendar, and the quota resets after it. */
+  const termEnd = useMemo(() => trimesterEnd(classes, now), [classes, now]);
+
   /** Donut source: one subject when focused, else the whole trimester. */
   const overall = useMemo(() => {
     const rows = focus ? stats.filter((s) => s.course === focus) : stats;
@@ -286,11 +298,19 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                   <p className="mt-1 font-mono text-[11px] leading-relaxed text-dim">
                     {overall.absent} missed of {overall.planned} planned ·{" "}
                     {overall.left >= 0
-                      ? `${overall.left} holiday${overall.left === 1 ? "" : "s"} still in budget`
-                      : `${-overall.left} over the safe budget`}
+                      ? `${overall.left} holiday${overall.left === 1 ? "" : "s"} left`
+                      : `${-overall.left} over budget`}
                   </p>
+                  {termEnd && (
+                    <p className="mt-1 font-mono text-[10px] leading-relaxed text-faint">
+                      Quota runs to {termFmt.format(new Date(termEnd))} · resets in{" "}
+                      {untilReset(termEnd, now)}
+                    </p>
+                  )}
                   <BandChip pct={overall.pct} />
                   <ThresholdBar pct={overall.pct} />
+
+
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     <button
                       onClick={() => setFocus(null)}
@@ -343,16 +363,14 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                       </div>
                       <ThresholdBar pct={s.pct} />
                       <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-faint">
-                        {s.credits} credit · {s.planned} sessions · {s.held} held
-                        <br />
                         <span className={s.left < 0 ? "text-rose" : "text-dim"}>
                           {s.absent} of {s.allowance} holiday{s.allowance === 1 ? "" : "s"} used
                           {s.left >= 0
-                            ? ` · ${s.left} left`
+                            ? ` · ${s.left} left this trimester`
                             : ` · ${s.hardLeft >= 0 ? `${s.hardLeft} before the ${HARD_LINE}% line` : "past the hard line"}`}
                         </span>
                       </p>
-                      <BandChip pct={s.pct} />
+
                     </motion.button>
                   );
                 })}
@@ -401,10 +419,11 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
           </section>
           )}
 
-          <p className="font-mono text-[10px] leading-relaxed text-faint">
-            TAPMI policy · one holiday per 8 sessions (1 credit), 2 per 16, 3 per 24 ·
-            85%+ clear · 70–85% repeat exam only · below 70% fail.
-          </p>
+          {!compact && (
+            <p className="font-mono text-[10px] leading-relaxed text-faint">
+              One holiday per credit · 85%+ clear · 70–85% repeat exam only · below 70% fail.
+            </p>
+          )}
         </div>
 
     </section>

@@ -223,3 +223,17 @@ export function sessionKey(s: ClassSession) {
 export function courseKey(c: Course) {
   return c.code.toLowerCase();
 }
+
+/** "1h 15m" / "45m" — the hour+minute form used for class and break lengths. */
+export function formatDuration(minutes: number) {
+  const m = Math.max(0, Math.round(minutes));
+  const h = Math.floor(m / 60);
+  const rest = m % 60;
+  if (h > 0) return rest > 0 ? `${h}h ${rest}m` : `${h}h`;
+  return `${rest}m`;
+}
+
+/** Length of a session in the hour+minute form. */
+export function sessionDuration(s: ClassSession) {
+  return formatDuration((new Date(s.end_at).getTime() - new Date(s.start_at).getTime()) / 60000);
+}
