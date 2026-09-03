@@ -484,8 +484,8 @@ export function AttendancePanel({ now, compact = false }: { now: number; compact
                     members={members}
                     marks={marks}
                     meId={user!.id}
-                    onMark={(status, userId, source) =>
-                      mark.mutate({ session: s, userId, status, source })
+                    onMark={(status, userId, source, leave) =>
+                      mark.mutate({ session: s, userId, status, source, leave })
                     }
                   />
                 ))}
