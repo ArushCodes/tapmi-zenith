@@ -868,6 +868,14 @@ function Agenda({
     return (
       <div className="flex flex-col gap-4">
         {backBar}
+        {canManage && focusDay && (
+          <DayModBar
+            dayKey={focusDay}
+            mark={marks.get(focusDay) ?? null}
+            onStyleDay={onStyleDay}
+            onAddOnDay={onAddOnDay}
+          />
+        )}
         <p className="py-10 text-center font-mono text-xs text-faint">
           Nothing scheduled {focusDay ? "on this day" : "this month"}.
         </p>
@@ -877,12 +885,34 @@ function Agenda({
   return (
     <div className="flex flex-col gap-4">
       {backBar}
-      {[...groups.entries()].map(([key, list]) => (
+      {[...groups.entries()].map(([key, list]) => {
+        const mark = marks.get(key) ?? null;
+        return (
         <div key={key}>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
-            {agendaFmt.format(new Date(list[0]!.at))}
-          </p>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">
+              {agendaFmt.format(new Date(list[0]!.at))}
+            </p>
+            {mark && (
+              <span
+                className="rounded-md px-2 py-0.5 font-mono text-[10px]"
+                style={{ color: mark.color, backgroundColor: `${mark.color}1f` }}
+                title={mark.note ?? undefined}
+              >
+                {mark.label ?? (mark.is_off ? "Day off" : "Marked")}
+              </span>
+            )}
+            {canManage && (
+              <DayModBar
+                dayKey={key}
+                mark={mark}
+                onStyleDay={onStyleDay}
+                onAddOnDay={onAddOnDay}
+              />
+            )}
+          </div>
           <div className="flex flex-col gap-2">
+
             {list.map((row) => {
               if (row.kind === "deadline") {
                 const d = row.deadline;
