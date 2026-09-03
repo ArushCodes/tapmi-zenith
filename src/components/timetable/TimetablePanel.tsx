@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AnimatePresence, motion } from "framer-motion";
@@ -555,6 +555,7 @@ export function TimetablePanel() {
             .filter(([day]) => !dayFocus || day === dayFocus)
             .map(([day, list]) => {
               const dayMarkable = list.sessions.filter((s) => !s.is_holiday);
+              const dayBreaks = breakMap(list.sessions.filter(isTeachingClass));
               const allPicked =
                 dayMarkable.length > 0 && dayMarkable.every((s) => pickedSet.has(s.id));
               const total = list.sessions.length + list.events.length;
