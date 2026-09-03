@@ -52,17 +52,17 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TAPMI IPM Deadline Board — Quizzes, Assignments & Exams" },
+      { title: "Zenith — Deadlines, Timetable & Attendance for TAPMI Manipal" },
       {
         name: "description",
         content:
-          "Live deadline board and interactive calendar for the TAPMI IPM 2026–2031 batch: quizzes, assignments, presentations and exams sorted by time remaining.",
+          "Zenith is the student board for TAPMI Manipal: quizzes, assignments and exams sorted by time left, a live timetable, and your attendance percentage in one place.",
       },
-      { property: "og:title", content: "TAPMI IPM Deadline Board" },
+      { property: "og:title", content: "Zenith — the TAPMI Manipal student board" },
       {
         property: "og:description",
         content:
-          "Every quiz, assignment, presentation and exam for the IPM 2026–2031 batch, in a feed and an interactive calendar.",
+          "Every deadline, class and attendance mark for your batch, kept accurate by your class reps.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "https://tapmi-zenith.lovable.app/" },
