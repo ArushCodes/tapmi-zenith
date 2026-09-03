@@ -21,6 +21,12 @@ import { db as supabase } from "@/lib/backend";
 import { useAuth } from "@/hooks/use-auth";
 import { useBatch } from "@/hooks/use-batch";
 import { useMe } from "@/hooks/use-me";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { Landing } from "@/components/landing/Landing";
 import { DeadlineRow } from "@/components/board/DeadlineRow";
@@ -360,7 +366,7 @@ function Board() {
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.96 }}
                     transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-ground shadow-[0_0_28px_-8px_var(--cyan)]"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl bg-cyan px-3.5 py-2 text-sm font-semibold text-white shadow-[0_6px_20px_-10px_var(--cyan)]"
                   >
                     <Plus className="size-4" />
                     <span className="hidden sm:inline">Add</span>
@@ -381,11 +387,11 @@ function Board() {
             transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
           >
             {tab === "feed" && (
-              <>
-                <div className="mb-8 grid gap-4 lg:grid-cols-2">
-                  <DayPulsePanel now={now} compact />
-                  <AnnouncementsPanel compact />
-                </div>
+              <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="min-w-0">
+                  <div className="mb-8">
+                    <DayPulsePanel now={now} compact />
+                  </div>
 
                 <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border pb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-faint sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
                   <span>Course · due</span>
@@ -497,10 +503,14 @@ function Board() {
                     ))}
                   </div>
                 )}
-              </>
-            )}
+                </div>
 
-            {tab === "announcements" && <AnnouncementsPanel />}
+                <aside className="flex flex-col gap-6 lg:sticky lg:top-32">
+                  <AnnouncementsPanel compact />
+                  <ActivityPanel compact />
+                </aside>
+              </div>
+            )}
 
 
             {tab === "calendar" && (
@@ -518,17 +528,6 @@ function Board() {
 
             {tab === "attendance" && <AttendancePanel now={now} />}
 
-            {tab === "approvals" && isMod && (
-              <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
-            )}
-
-            {tab === "inbox" && isMod && <EmailInboxPanel />}
-
-            {tab === "members" && <MembersPanel />}
-
-            {tab === "activity" && <ActivityPanel />}
-
-            {tab === "feedback" && <FeedbackPanel />}
           </motion.div>
         </AnimatePresence>
 
@@ -545,6 +544,22 @@ function Board() {
         onEdit={openEdit}
         onDelete={(d) => remove.mutate(d)}
       />
+
+      <Dialog open={panel !== null} onOpenChange={(o) => !o && setPanel(null)}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display tracking-tight">
+              {panel ? PANEL_TITLES[panel] : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {panel === "members" && <MembersPanel />}
+          {panel === "feedback" && <FeedbackPanel />}
+          {panel === "approvals" && isMod && (
+            <ApprovalsPanel deadlines={deadlines} onSelect={setSelected} />
+          )}
+          {panel === "inbox" && isMod && <EmailInboxPanel />}
+        </DialogContent>
+      </Dialog>
 
       {isMod && (
         <DeadlineDialog open={dialogOpen} onOpenChange={setDialogOpen} deadline={editing} />
