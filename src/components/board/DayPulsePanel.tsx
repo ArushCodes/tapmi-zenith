@@ -139,13 +139,20 @@ export function DayPulsePanel({ now, compact = false }: { now: number; compact?:
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-surface ring-1 ring-border">
+      <div
+        className={`overflow-hidden rounded-2xl ring-1 ${
+          dayOff ? "bg-amber/8 ring-amber/20" : "bg-surface ring-border"
+        }`}
+      >
         {classes.length === 0 ? (
           <p className="py-8 text-center font-mono text-[11px] text-faint">
-            {today.some((s) => s.is_holiday)
-              ? "Holiday — no classes today."
-              : "No classes scheduled today."}
+            {dayOff
+              ? "Sunday off — no classes today."
+              : today.some((s) => s.is_holiday)
+                ? "Holiday — no classes today."
+                : "No classes scheduled today."}
           </p>
+
         ) : (
           <>
             {/* ── Header strip: donut + status timer ─────────────────── */}
