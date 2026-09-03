@@ -35,6 +35,10 @@ export function autoColor(key: string) {
  *  subject in the batch, so no two subjects ever look alike — the more
  *  subjects there are, the wider they are spaced apart. */
 export function buildColorMap(courses: Course[], sessions: ClassSession[] = []) {
+  // Sorting both inputs keeps the palette identical on every surface, whatever
+  // order the queries happen to return rows in.
+  courses = [...courses].sort((a, b) => a.code.localeCompare(b.code));
+  sessions = [...sessions].sort((a, b) => a.id.localeCompare(b.id));
   const m = new Map<string, string>();
 
   /** Group aliases (code / short name / session key) per distinct subject. */

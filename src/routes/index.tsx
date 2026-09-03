@@ -11,7 +11,6 @@ import {
   ListFilter,
   Mail,
   Plus,
-  Search,
   MessageSquare,
   ShieldCheck,
   UserCheck,
@@ -126,7 +125,6 @@ function Board() {
 
   const [tab, setTab] = useState<TabKey>("feed");
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Deadline | null>(null);
   const [selected, setSelected] = useState<Deadline | null>(null);
@@ -160,6 +158,25 @@ function Board() {
     if (!isMod && (panel === "approvals" || panel === "inbox")) setPanel(null);
   }, [isMod, panel]);
 
+  // The header search box reaches the board through window events so it can
+  // live outside this tree while still opening events and switching tabs.
+  useEffect(() => {
+    function openDeadline(e: Event) {
+      const id = (e as CustomEvent<string>).detail;
+      const hit = deadlines.find((d) => d.id === id);
+      if (hit) setSelected(hit);
+    }
+    function gotoTab(e: Event) {
+      setTab((e as CustomEvent<string>).detail as TabKey);
+    }
+    window.addEventListener("zenith:open-deadline", openDeadline);
+    window.addEventListener("zenith:goto-tab", gotoTab);
+    return () => {
+      window.removeEventListener("zenith:open-deadline", openDeadline);
+      window.removeEventListener("zenith:goto-tab", gotoTab);
+    };
+  }, [deadlines]);
+
   const remove = useMutation({
     mutationFn: async (deadline: Deadline) => {
       const { error } = await supabase.from("deadlines").delete().eq("id", deadline.id);
@@ -192,8 +209,8 @@ function Board() {
   );
 
   const filtered = useMemo(
-    () => filterByKey(approved, filter, search),
-    [approved, filter, search],
+    () => filterByKey(approved, filter, ""),
+    [approved, filter],
   );
 
   /** Quizzes, exams and coursework each get their own tab and feed section. */
@@ -252,8 +269,8 @@ function Board() {
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-ground font-body text-ink">
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/12 blur-[130px]" />
-        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/12 blur-[140px]" />
+        <div className="absolute -left-24 -top-32 h-[420px] w-[560px] rounded-full bg-cyan/[0.06] blur-[130px] dark:bg-cyan/12" />
+        <div className="absolute right-[-80px] top-[180px] h-[380px] w-[500px] rounded-full bg-amber/[0.06] blur-[140px] dark:bg-amber/12" />
       </div>
 
       <BoardHeader menuItems={menuItems} onMenuSelect={(k) => setPanel(k as PanelKey)} />
@@ -331,41 +348,25 @@ function Board() {
         </div>
 
         {tab === "calendar" && (
-          <div className="sticky top-16 z-20 -mx-5 mb-5 border-b border-border/60 bg-ground/80 px-5 py-3 backdrop-blur-md sm:-mx-8 sm:px-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {/* Segmented type filter */}
-              <div className="flex shrink-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {FILTERS.map((f) => (
-                  <button
-                    key={f.key}
-                    onClick={() => setFilter(f.key)}
-                    className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
-                      filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
-                    }`}
-                  >
-                    {filter === f.key && (
-                      <motion.span
-                        layoutId="filter-pill"
-                        className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
-                        transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                      />
-                    )}
-                    <span className="relative whitespace-nowrap">{f.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="relative flex-1 sm:ml-auto sm:flex-none">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-faint" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search course or code…"
-                  aria-label="Search deadlines"
-                  className="w-full rounded-xl bg-surface2/70 py-2 pl-9 pr-3.5 text-sm text-ink ring-1 ring-border outline-none transition-all placeholder:text-faint focus:ring-2 focus:ring-cyan/40 sm:w-56 sm:focus:w-72"
-                />
-              </div>
-            </div>
+          <div className="mb-4 flex flex-wrap items-center gap-1">
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={`relative shrink-0 rounded-lg px-3 py-1.5 text-[13px] transition-colors ${
+                  filter === f.key ? "text-cyan" : "text-dim hover:text-ink"
+                }`}
+              >
+                {filter === f.key && (
+                  <motion.span
+                    layoutId="filter-pill"
+                    className="absolute inset-0 rounded-lg bg-cyan/15 ring-1 ring-cyan/30"
+                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                  />
+                )}
+                <span className="relative whitespace-nowrap">{f.label}</span>
+              </button>
+            ))}
           </div>
         )}
 
@@ -444,13 +445,6 @@ function Board() {
                         />
                       </FeedSection>
 
-                      <FeedSection
-                        title="Attendance"
-                        tone="text-cyan"
-                        onSeeAll={() => setTab("attendance")}
-                      >
-                        <AttendancePanel now={now} compact />
-                      </FeedSection>
                     </>
                   )}
                 </div>
@@ -458,6 +452,13 @@ function Board() {
                 <aside className="flex min-w-0 flex-col gap-6 lg:sticky lg:top-32">
                   <AnnouncementsPanel compact />
                   <ActivityPanel compact />
+                  <FeedSection
+                    title="Attendance"
+                    tone="text-cyan"
+                    onSeeAll={() => setTab("attendance")}
+                  >
+                    <AttendancePanel now={now} compact />
+                  </FeedSection>
                 </aside>
               </div>
             )}
@@ -470,7 +471,7 @@ function Board() {
                 batchId={batchId}
 
                 deadlines={filtered}
-                sessions={sessions}
+                sessions={filter === "all" ? sessions : []}
                 courses={courses}
                 now={now}
                 onSelect={setSelected}
