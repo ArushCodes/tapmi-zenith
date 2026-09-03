@@ -312,21 +312,14 @@ export function CalendarPanel({
                 onSelect={onSelect}
               />
             )}
-
-                weekStart={weekStart}
-                byDay={byDay}
-                classesByDay={classesByDay}
-                academicByDay={academicByDay}
-                colorMap={colorMap}
-                marks={marks}
-                now={now}
-                onSelect={onSelect}
-              />
-            )}
             {subView === "agenda" && (
               <Agenda
                 focusDay={focusDay}
-                onClearFocus={() => setFocusDay(null)}
+                onClearFocus={() => {
+                  setFocusDay(null);
+                  setSubView(returnView);
+                }}
+
                 cursor={cursor}
                 deadlines={deadlines}
                 classes={visibleClasses}
