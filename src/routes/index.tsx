@@ -40,6 +40,7 @@ import { ActivityPanel } from "@/components/board/ActivityPanel";
 import { CalendarPanel } from "@/components/calendar/CalendarPanel";
 import { TimetablePanel } from "@/components/timetable/TimetablePanel";
 import { AttendancePanel } from "@/components/attendance/AttendancePanel";
+import { GradingPanel } from "@/components/board/GradingPanel";
 import { EmailInboxPanel } from "@/components/board/EmailInboxPanel";
 import { MembersPanel } from "@/components/board/MembersPanel";
 import { FeedbackPanel } from "@/components/board/FeedbackPanel";
@@ -96,7 +97,7 @@ function IndexPage() {
   return <Board />;
 }
 
-type TabKey = "feed" | "calendar" | "timetable" | "quizzes" | "exams" | "projects" | "attendance";
+type TabKey = "feed" | "calendar" | "timetable" | "quizzes" | "exams" | "projects" | "attendance" | "grading";
 
 const QUIZ_TYPES = ["quiz"] as const;
 const EXAM_TYPES = ["midterm", "endterm"] as const;
@@ -248,6 +249,7 @@ function Board() {
     { key: "exams", label: "Exams", icon: <GraduationCap className="size-4" /> },
     { key: "projects", label: "Projects", icon: <BookOpen className="size-4" /> },
     { key: "attendance", label: "Attendance", icon: <UserCheck className="size-4" /> },
+    { key: "grading", label: "Grading", icon: <GraduationCap className="size-4" /> },
   ];
 
 
@@ -544,6 +546,8 @@ function Board() {
             )}
 
             {tab === "attendance" && <AttendancePanel now={now} />}
+
+            {tab === "grading" && <GradingPanel />}
 
           </motion.div>
         </AnimatePresence>
