@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { db as supabase, backendConfigured } from "@/lib/backend";
-import { lovable } from "@/integrations/lovable/index";
 import { batchTreeQuery } from "@/lib/batches";
 
 export const Route = createFileRoute("/auth")({
@@ -98,21 +97,7 @@ function AuthPage() {
     }
   }
 
-  async function handleGoogle() {
-    if (!backendConfigured) {
-      toast.error("Sign-in is temporarily unavailable. Please try again shortly.");
-      return;
-    }
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(result.error.message);
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/", replace: true });
-  }
+
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ground px-5 font-body text-ink">
@@ -132,20 +117,7 @@ function AuthPage() {
           TAPMI IPM · Batch 2026–2031
         </p>
 
-        <button
-          onClick={handleGoogle}
-          className="mt-5 w-full rounded-lg bg-surface2 px-3 py-2.5 text-sm font-medium text-ink ring-1 ring-border transition-colors hover:ring-cyan/40"
-        >
-          Continue with Google
-        </button>
-
-        <div className="my-4 flex items-center gap-3">
-          <span className="h-px flex-1 bg-border" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">or</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-3">
           {mode === "signup" && (
             <div>
               <label htmlFor="name" className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim">

@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/sync-timetable")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["LOVABLE_CRON_SECRET"];
+        const secret = process.env["CRON_SECRET"];
         const provided =
           request.headers.get("x-cron-secret") ??
           request.headers.get("authorization")?.replace("Bearer ", "");
