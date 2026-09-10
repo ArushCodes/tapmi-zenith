@@ -8,5 +8,5 @@ export function reportLovableError(error: unknown, context: Record<string, unkno
         ? error.message
         : String(error);
   const stack = error instanceof Error ? error.stack : undefined;
-  console.error(`[${context.boundary ?? 'unknown'}]`, message, stack, context);
+  console.error(`[${context['boundary'] ?? 'unknown'}]`, message, stack, context);
 }
